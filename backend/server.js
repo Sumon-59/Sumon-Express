@@ -9,6 +9,8 @@ const authRoutes = require("./src/routes/auth.routes");
 const userRoutes = require("./src/routes/user.routes");
 const adminRoutes = require("./src/routes/admin.routes");
 const errorHandler = require("./src/middleware/error.middleware");
+const productRoutes = require("./src/routes/product.routes");
+const categoryRoutes = require("./src/routes/category.routes");
 
 const app = express();
 
@@ -21,6 +23,11 @@ app.use(morgan("dev"));
 app.use("/api/auth", authRoutes);
 app.use("/api/users", userRoutes);
 app.use("/api/admin", adminRoutes);
+app.use("/api/products", productRoutes);
+app.use("/api/categories", categoryRoutes);
+
+// error handler
+app.use(errorHandler);
 
 // test route
 app.get("/", (req, res) => {
@@ -35,5 +42,5 @@ app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 });
 
-app.use(errorHandler);
+
 
