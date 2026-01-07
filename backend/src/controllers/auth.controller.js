@@ -1,67 +1,168 @@
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
 const User = require("../models/User.model");
+const asyncHandler = require("../utils/asyncHandler");
+const {
+  generateAccessToken,
+  generateRefreshToken,
+} = require("../utils/token");
 
-const registerUser = async (req, res) => {
-  try {
-    const { name, email, password } = req.body;
+/**
+ * @desc    Register new user
+ * @route   POST /api/auth/register
+ * @access  Public
+ */
+const registerUser = asyncHandler(async (req, res) => {
+  const { name, email, password } = req.body;
 
-    if (!name || !email || !password) {
-      return res.status(400).json({ message: "All fields are required" });
-    }
-
-    const existingUser = await User.findOne({ email });
-    if (existingUser) {
-      return res.status(409).json({ message: "User already exists" });
-    }
-
-    const hashedPassword = await bcrypt.hash(password, 10);
-
-    await User.create({
-      name,
-      email,
-      password: hashedPassword,
-    });
-
-    res.status(201).json({
-      message: "User registered successfully",
-    });
-  } catch (error) {
-    res.status(500).json({ message: "Server error" });
+  if (!name || !email || !password) {
+    const err = new Error("All fields are required");
+    err.statusCode = 400;
+    throw err;
   }
-};
 
-const loginUser = async (req, res) => {
-  try {
-    const { email, password } = req.body;
-
-    if (!email || !password) {
-      return res.status(400).json({ message: "All fields are required" });
-    }
-
-    const user = await User.findOne({ email });
-    if (!user) {
-      return res.status(401).json({ message: "Invalid credentials" });
-    }
-
-    const isMatch = await bcrypt.compare(password, user.password);
-    if (!isMatch) {
-      return res.status(401).json({ message: "Invalid credentials" });
-    }
-
-    const token = jwt.sign(
-      { userId: user._id },
-      process.env.JWT_SECRET,
-      { expiresIn: "1d" }
-    );
-
-    res.json({
-      message: "Login successful",
-      token,
-    });
-  } catch (error) {
-    res.status(500).json({ message: "Server error" });
+  const existingUser = await User.findOne({ email });
+  if (existingUser) {
+    const err = new Error("User already exists");
+    err.statusCode = 409;
+    throw err;
   }
-};
 
-module.exports = { registerUser, loginUser };
+  const hashedPassword = await bcrypt.hash(password, 10);
+
+  await User.create({
+    name,
+    email,
+    password: hashedPassword,
+  });
+
+  res.status(201).json({ message: "User registered successfully" });
+});
+
+/**
+ * @desc    Login user (issue access + refresh token)
+ * @route   POST /api/auth/login
+ * @access  Public
+ */
+const loginUser = asyncHandler(async (req, res) => {
+  const { email, password } = req.body;
+
+  const user = await User.findOne({ email });
+  if (!user) {
+    const err = new Error("Invalid credentials");
+    err.statusCode = 401;
+    throw err;
+  }
+
+  const isMatch = await bcrypt.compare(password, user.password);
+  if (!isMatch) {
+    const err = new Error("Invalid credentials");
+    err.statusCode = 401;
+    throw err;
+  }
+
+  // generate tokens
+  const accessToken = generateAccessToken(user._id);
+  const refreshToken = generateRefreshToken(user._id);
+
+  // store refresh token in DB (rotation support)
+  user.refreshToken = refreshToken;
+  await user.save();
+
+  // send refresh token as httpOnly cookie
+  res.cookie("jwt", refreshToken, {
+    httpOnly: true,
+    secure: process.env.NODE_ENV === "production",
+    sameSite: "strict",
+    maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+  });
+
+  res.json({ accessToken });
+});
+
+/**
+ * @desc    Refresh access token (rotate refresh token)
+ * @route   GET /api/auth/refresh
+ * @access  Public (cookie based)
+ */
+const refreshTokenHandler = asyncHandler(async (req, res) => {
+  const cookies = req.cookies;
+
+  if (!cookies?.jwt) {
+    const err = new Error("Unauthorized");
+    err.statusCode = 401;
+    throw err;
+  }
+
+  const refreshToken = cookies.jwt;
+
+  const user = await User.findOne({ refreshToken });
+  if (!user) {
+    const err = new Error("Forbidden");
+    err.statusCode = 403;
+    throw err;
+  }
+
+  jwt.verify(
+    refreshToken,
+    process.env.JWT_REFRESH_SECRET,
+    async (err, decoded) => {
+      if (err || user._id.toString() !== decoded.userId) {
+        const error = new Error("Forbidden");
+        error.statusCode = 403;
+        throw error;
+      }
+
+      // rotate tokens
+      const newAccessToken = generateAccessToken(user._id);
+      const newRefreshToken = generateRefreshToken(user._id);
+
+      user.refreshToken = newRefreshToken;
+      await user.save();
+
+      res.cookie("jwt", newRefreshToken, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "strict",
+        maxAge: 7 * 24 * 60 * 60 * 1000,
+      });
+
+      res.json({ accessToken: newAccessToken });
+    }
+  );
+});
+
+/**
+ * @desc    Logout user (revoke refresh token)
+ * @route   POST /api/auth/logout
+ * @access  Public (cookie based)
+ */
+const logoutUser = asyncHandler(async (req, res) => {
+  const cookies = req.cookies;
+
+  if (!cookies?.jwt) {
+    return res.sendStatus(204); // No content
+  }
+
+  const refreshToken = cookies.jwt;
+
+  const user = await User.findOne({ refreshToken });
+  if (user) {
+    user.refreshToken = "";
+    await user.save();
+  }
+
+  res.clearCookie("jwt", {
+    httpOnly: true,
+    sameSite: "strict",
+  });
+
+  res.sendStatus(204);
+});
+
+module.exports = {
+  registerUser,
+  loginUser,
+  refreshTokenHandler,
+  logoutUser,
+};
