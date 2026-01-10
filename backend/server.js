@@ -11,6 +11,7 @@ const adminRoutes = require("./src/routes/admin.routes");
 const errorHandler = require("./src/middleware/error.middleware");
 const productRoutes = require("./src/routes/product.routes");
 const categoryRoutes = require("./src/routes/category.routes");
+const orderRoutes = require("./src/routes/order.routes");
 
 const app = express();
 
@@ -25,6 +26,7 @@ app.use("/api/users", userRoutes);
 app.use("/api/admin", adminRoutes);
 app.use("/api/products", productRoutes);
 app.use("/api/categories", categoryRoutes);
+app.use("/api/orders", orderRoutes);
 
 // error handler
 app.use(errorHandler);

@@ -66,6 +66,38 @@ const getProductById = asyncHandler(async (req, res) => {
     } 
     res.json(product);
 });
+
+const updateProduct = asyncHandler(async (req, res) => {
+    const product = await Product.findById(req.params.id);
+    if (!product) {
+        const error = new Error("Product not found");
+        error.statusCode = 404;
+        throw error;
+    }
+    const {
+        name,
+        description,
+        price,
+        discountPrice,
+        stock,
+        category,
+        images,
+        isActive,
+    } = req.body;
+
+    if (name !== undefined) product.name = name;
+    if (description !== undefined) product.description = description;
+    if (price !== undefined) product.price = price;
+    if (discountPrice !== undefined) product.discountPrice = discountPrice;
+    if (stock !== undefined) product.stock = stock;
+    if (category !== undefined) product.category = category;
+    if (images !== undefined) product.images = images;
+    if (isActive !== undefined) product.isActive = isActive;
+
+    await product.save();
+    res.json(product);
+});
+
 module.exports = {
     createProduct,
     getProducts,

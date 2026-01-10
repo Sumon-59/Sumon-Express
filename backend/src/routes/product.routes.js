@@ -14,5 +14,6 @@ router.get("/:id", getProductById);
 router.get("/", getProducts);
 
 router.post("/", protect, isAdmin, createProduct);
+router.put("/:id", protect, isAdmin, updateProduct);
 
 module.exports = router;
