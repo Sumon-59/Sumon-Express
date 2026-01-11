@@ -8,15 +8,15 @@ const {
     createProduct,
     getProductById,
     getProducts,
-    updateProduct,
-    deleteProduct,
+    //updateProduct,
+    //deleteProduct,
 } = require('../controllers/product.controller');
 
 router.get("/:id", getProductById);
 router.get("/", getProducts);
 
 router.post("/", protect, isAdmin, createProduct);
-router.put("/:id", protect, isAdmin, updateProduct);
-router.delete("/:id", protect, isAdmin, deleteProduct);
+//router.put("/:id", protect, isAdmin, updateProduct);
+//router.delete("/:id", protect, isAdmin, deleteProduct);
 
 module.exports = router;
