@@ -8,6 +8,7 @@ const isAdmin = require("../middleware/admin.middleware");
 const {
   getAllOrders,
   updateOrderStatus,
+  cancelOrderByAdmin,
 } = require("../controllers/adminOrder.controller");
 
 // admin dashboard test route
