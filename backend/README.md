@@ -73,14 +73,6 @@ This is the full, industry-level version of my original *Sumon Express* prototyp
 
 ---
 
-
-এটা GitHub-এ সবসময় সুন্দর দেখায় ✅
-
----
-
-## ✅ Option C: Bullet-Flow (সবচেয়ে simple, always works)
-
-```md
 ## 🧱 Architecture Overview
 
 - Client (Web / API Client)
