@@ -1,4 +1,4 @@
-const Order = require("../models/order.model");
+const Order = require("../models/Order.model");
 const Product = require("../models/Product.model");
 const asyncHandler = require("../utils/asyncHandler");
 
