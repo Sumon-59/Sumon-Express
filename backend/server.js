@@ -16,7 +16,19 @@ const orderRoutes = require("./src/routes/order.routes");
 const app = express();
 
 // middlewares
-app.use(cors());
+app.use(
+  cors({
+    origin: [
+      "http://localhost:3000",
+      "https://sumon-express-frontend.onrender.com"
+    ],
+    credentials: true,
+  })
+);
+
+// preflight support
+app.options("*", cors());
+
 app.use(express.json());
 app.use(morgan("dev"));
 
