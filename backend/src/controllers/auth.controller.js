@@ -184,9 +184,42 @@ const logoutUser = asyncHandler(async (req, res) => {
   res.sendStatus(204);
 });
 
+const me = asyncHandler(async (req, res) => {
+  const cookies = req.cookies;
+
+  if (!cookies?.jwt) {
+    const err = new Error("Unauthorized");
+    err.statusCode = 401;
+    throw err;
+  }
+
+  const refreshToken = cookies.jwt;
+
+  // Verify refresh token
+  jwt.verify(refreshToken, process.env.JWT_REFRESH_SECRET, async (err, decoded) => {
+    if (err) {
+      const error = new Error("Unauthorized");
+      error.statusCode = 401;
+      throw error;
+    }
+
+    // decoded.userId because our tokens use { userId }
+    const user = await User.findById(decoded.userId).select("_id name email role");
+
+    if (!user) {
+      const error = new Error("Unauthorized");
+      error.statusCode = 401;
+      throw error;
+    }
+
+    res.status(200).json({ user });
+  });
+});
+
 module.exports = {
   registerUser,
   loginUser,
   refreshTokenHandler,
   logoutUser,
+  me,
 };

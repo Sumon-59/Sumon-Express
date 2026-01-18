@@ -1,12 +1,23 @@
-const express = require('express');
+const express = require("express");
 const router = express.Router();
 
-const { registerUser, loginUser } = require('../controllers/auth.controller');
+const {
+  registerUser,
+  loginUser,
+  refreshTokenHandler,
+  logoutUser,
+  me,
+} = require("../controllers/auth.controller");
+
 const { loginLimiter } = require("../middleware/rateLimit.middleware");
 
-
-router.post("/login", loginLimiter, loginUser);
+// Auth routes
 router.post("/register", registerUser);
-router.post("/login", loginUser);
+router.post("/login", loginLimiter, loginUser);
+
+// Session routes (cookie-based)
+router.get("/me", me);
+router.get("/refresh", refreshTokenHandler);
+router.post("/logout", logoutUser);
 
 module.exports = router;
