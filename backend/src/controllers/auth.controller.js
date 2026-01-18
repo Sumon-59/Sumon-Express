@@ -8,7 +8,23 @@ const {
 } = require("../utils/token");
 
 /**
- * @desc    Register new user
+ * Helper to set refresh token cookie in a dev/prod safe way.
+ * - Dev (localhost): secure=false, sameSite=lax
+ * - Prod (https):     secure=true, sameSite=none
+ */
+const setRefreshCookie = (res, refreshToken) => {
+  const isProd = process.env.NODE_ENV === "production";
+
+  res.cookie("jwt", refreshToken, {
+    httpOnly: true,
+    secure: isProd,
+    sameSite: isProd ? "none" : "lax",
+    maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+  });
+};
+
+/**
+ * @desc    Register new user (auto-login by setting refresh cookie)
  * @route   POST /api/auth/register
  * @access  Public
  */
@@ -30,13 +46,27 @@ const registerUser = asyncHandler(async (req, res) => {
 
   const hashedPassword = await bcrypt.hash(password, 10);
 
-  await User.create({
+  const newUser = await User.create({
     name,
     email,
     password: hashedPassword,
   });
 
-  res.status(201).json({ message: "User registered successfully" });
+  // Generate tokens (auto-login)
+  const accessToken = generateAccessToken(newUser._id);
+  const refreshToken = generateRefreshToken(newUser._id);
+
+  // Store refresh token in DB (rotation support)
+  newUser.refreshToken = refreshToken;
+  await newUser.save();
+
+  // Set refresh cookie
+  setRefreshCookie(res, refreshToken);
+
+  res.status(201).json({
+    message: "User registered successfully",
+    accessToken, // optional; frontend may ignore because cookie is the source of truth
+  });
 });
 
 /**
@@ -61,21 +91,16 @@ const loginUser = asyncHandler(async (req, res) => {
     throw err;
   }
 
-  // generate tokens
+  // Generate tokens
   const accessToken = generateAccessToken(user._id);
   const refreshToken = generateRefreshToken(user._id);
 
-  // store refresh token in DB (rotation support)
+  // Store refresh token in DB (rotation support)
   user.refreshToken = refreshToken;
   await user.save();
 
-  // send refresh token as httpOnly cookie
-  res.cookie("jwt", refreshToken, {
-    httpOnly: true,
-    secure: process.env.NODE_ENV === "production",
-    sameSite: "strict",
-    maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
-  });
+  // Set refresh cookie
+  setRefreshCookie(res, refreshToken);
 
   res.json({ accessToken });
 });
@@ -113,19 +138,15 @@ const refreshTokenHandler = asyncHandler(async (req, res) => {
         throw error;
       }
 
-      // rotate tokens
+      // Rotate tokens
       const newAccessToken = generateAccessToken(user._id);
       const newRefreshToken = generateRefreshToken(user._id);
 
       user.refreshToken = newRefreshToken;
       await user.save();
 
-      res.cookie("jwt", newRefreshToken, {
-        httpOnly: true,
-        secure: process.env.NODE_ENV === "production",
-        sameSite: "strict",
-        maxAge: 7 * 24 * 60 * 60 * 1000,
-      });
+      // Set rotated refresh cookie
+      setRefreshCookie(res, newRefreshToken);
 
       res.json({ accessToken: newAccessToken });
     }
@@ -152,9 +173,12 @@ const logoutUser = asyncHandler(async (req, res) => {
     await user.save();
   }
 
+  // Clear cookie with matching attributes
+  const isProd = process.env.NODE_ENV === "production";
   res.clearCookie("jwt", {
     httpOnly: true,
-    sameSite: "strict",
+    secure: isProd,
+    sameSite: isProd ? "none" : "lax",
   });
 
   res.sendStatus(204);
