@@ -48,9 +48,6 @@ const corsOptions = {
 // ----- Middlewares -----
 app.use(cors(corsOptions));
 
-// Preflight must use the SAME cors options (do not use default cors())
-app.options("*", cors(corsOptions));
-
 app.use(express.json());
 
 // Cookie parser is REQUIRED for req.cookies (refresh/logout/me)
