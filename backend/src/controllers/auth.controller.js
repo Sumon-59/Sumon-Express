@@ -204,6 +204,7 @@ const me = asyncHandler(async (req, res) => {
     }
 
     // decoded.userId because our tokens use { userId }
+    const userId = decoded.userId || decoded.id;
     const user = await User.findById(decoded.userId).select("_id name email role");
 
     if (!user) {
