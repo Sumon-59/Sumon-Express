@@ -27,7 +27,9 @@ const allowedOrigins = [
   "http://127.0.0.1:3000",
   "https://sumon-express-frontend.onrender.com",
   // Add your Vercel domain later:
-  // "https://your-app.vercel.app",
+  "https://sumon-express.vercel.app",
+  "https://sumon-express-c5egp6hae-md-sumon-hossains-projects.vercel.app"
+
 ];
 
 const corsOptions = {
