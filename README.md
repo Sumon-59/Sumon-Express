@@ -155,28 +155,39 @@ Sumon-Express/
   },
   "paymentMethod": "cod"
 }
+```
+---
 ## ⚙️ Environment Variables
 Frontend (.env.local)
+```
 NEXT_PUBLIC_API_BASE_URL=https://sumon-express-backend.onrender.com/api
+```
 Backend (Render)
+```
 MONGO_URI=your_mongodb_uri
 JWT_SECRET=your_secret
 JWT_REFRESH_SECRET=your_refresh_secret
 NODE_ENV=production
+```
+---
 ## 🚀 Run Locally
 Backend
+```
 cd backend
 npm install
 npm run dev
-
+```
 Frontend
+```
 cd sumon-express-frontend
 npm install
 npm run dev
+```
+---
 ## 🧪 Demo Data
 - Product data seeded via backend seed script
 - No hardcoded frontend mock data
-
+---
 ## 🔮 Future Improvements
 - Product search, filter & pagination
 - Admin dashboard
@@ -185,6 +196,7 @@ npm run dev
 - Image upload (Cloudinary / S3)
 - Docker & CI/CD
 - Redis caching
+---
 ## 👨‍💻 Author
 Md. Sumon Hossain
 GitHub: https://github.com/Sumon-59
