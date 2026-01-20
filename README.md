@@ -95,6 +95,7 @@ No tutorial copy–paste — everything was **implemented, debugged, and fixed m
 ---
 
 ## 📂 Project Structure
+```
 Sumon-Express/
 │
 ├── backend/
@@ -116,7 +117,7 @@ Sumon-Express/
 │ └── public/
 │
 └── README.md
-
+```
 ---
 
 ## 🔑 API Endpoints
