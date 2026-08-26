@@ -305,7 +305,7 @@ provider (Stripe test). Pick by appetite when we get here — re-plan with `/way
 
 | Slice | Status |
 |-------|--------|
-| 0 — Test infrastructure + dev DB | ⬜ not started |
+| 0 — Test infrastructure + dev DB | ✅ 2026-08-26 — 25 tests (17 backend, 8 frontend); Sumon wrote the inactive-product test; extra vs plan: idempotent model registration, ESM test files (Vitest 4 requirement) |
 | 0.5 — Backend TypeScript migration | ⬜ |
 | 1 — Auth refactor + admin shell | ⬜ |
 | 2 — Product management | ⬜ |
