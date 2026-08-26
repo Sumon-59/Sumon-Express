@@ -2,7 +2,11 @@ const mongoose = require("mongoose");
 require("dotenv").config();
 
 const Product = require("../models/Product.model");
+const Category = require("../models/Category.model");
 const User = require("../models/User.model");
+
+// Deterministic, reliable demo images
+const img = (slug) => `https://picsum.photos/seed/${slug}/600/600`;
 
 async function seedProducts() {
   try {
@@ -16,53 +20,128 @@ async function seedProducts() {
       throw new Error("No user found. Please register at least one user first.");
     }
 
-    // Clear existing products (optional but recommended for demo)
+    // Upsert categories
+    const categoryNames = ["Electronics", "Accessories", "Home & Living", "Fashion"];
+    const categories = {};
+    for (const name of categoryNames) {
+      categories[name] = await Category.findOneAndUpdate(
+        { name },
+        { name, isActive: true },
+        { upsert: true, new: true }
+      );
+    }
+    console.log(`✅ ${categoryNames.length} categories upserted`);
+
+    // Clear existing products (demo reset)
     await Product.deleteMany({});
     console.log("Old products cleared");
 
     const demoProducts = [
       {
         name: "Wireless Mouse",
-        description: "Ergonomic wireless mouse with long battery life",
+        description: "Ergonomic wireless mouse with silent clicks, adjustable DPI and up to 12 months of battery life.",
         price: 799,
+        discountPrice: 649,
         stock: 50,
-        images: ["https://via.placeholder.com/300"],
-        createdBy: adminUser._id,
+        category: categories["Electronics"]._id,
+        images: [img("wireless-mouse")],
       },
       {
         name: "Mechanical Keyboard",
-        description: "RGB mechanical keyboard with blue switches",
+        description: "RGB mechanical keyboard with hot-swappable blue switches and a detachable USB-C cable.",
         price: 3499,
         discountPrice: 2999,
         stock: 30,
-        images: ["https://via.placeholder.com/300"],
-        createdBy: adminUser._id,
-      },
-      {
-        name: "USB-C Cable",
-        description: "Fast charging USB-C cable (1 meter)",
-        price: 299,
-        stock: 200,
-        images: ["https://via.placeholder.com/300"],
-        createdBy: adminUser._id,
-      },
-      {
-        name: "Laptop Stand",
-        description: "Adjustable aluminum laptop stand",
-        price: 1299,
-        stock: 40,
-        images: ["https://via.placeholder.com/300"],
-        createdBy: adminUser._id,
+        category: categories["Electronics"]._id,
+        images: [img("mech-keyboard")],
       },
       {
         name: "Noise Cancelling Headphones",
-        description: "Over-ear ANC headphones with deep bass",
+        description: "Over-ear ANC headphones with deep bass, transparency mode and 40-hour playtime.",
         price: 5999,
+        discountPrice: 5199,
         stock: 15,
-        images: ["https://via.placeholder.com/300"],
-        createdBy: adminUser._id,
+        category: categories["Electronics"]._id,
+        images: [img("anc-headphones")],
       },
-    ];
+      {
+        name: "Smart Watch",
+        description: "1.8\" AMOLED display, heart-rate and SpO2 tracking, 7-day battery, IP68 water resistance.",
+        price: 4499,
+        stock: 25,
+        category: categories["Electronics"]._id,
+        images: [img("smart-watch")],
+      },
+      {
+        name: "Bluetooth Speaker",
+        description: "Portable speaker with 360° sound, 12-hour battery and IPX7 waterproofing.",
+        price: 2499,
+        discountPrice: 1999,
+        stock: 40,
+        category: categories["Electronics"]._id,
+        images: [img("bt-speaker")],
+      },
+      {
+        name: "USB-C Cable",
+        description: "Fast charging 60W USB-C to USB-C braided cable, 1 meter.",
+        price: 299,
+        stock: 200,
+        category: categories["Accessories"]._id,
+        images: [img("usbc-cable")],
+      },
+      {
+        name: "Laptop Stand",
+        description: "Adjustable aluminum laptop stand with ventilation cutouts, fits 13–17\" laptops.",
+        price: 1299,
+        discountPrice: 1099,
+        stock: 40,
+        category: categories["Accessories"]._id,
+        images: [img("laptop-stand")],
+      },
+      {
+        name: "Power Bank 20000mAh",
+        description: "Dual-port 22.5W fast-charging power bank with LED charge indicator.",
+        price: 1899,
+        stock: 60,
+        category: categories["Accessories"]._id,
+        images: [img("power-bank")],
+      },
+      {
+        name: "Phone Case",
+        description: "Shockproof transparent phone case with raised bezels and anti-yellowing coating.",
+        price: 349,
+        discountPrice: 249,
+        stock: 150,
+        category: categories["Accessories"]._id,
+        images: [img("phone-case")],
+      },
+      {
+        name: "LED Desk Lamp",
+        description: "Dimmable LED desk lamp with three color temperatures and a USB charging port.",
+        price: 1599,
+        stock: 35,
+        category: categories["Home & Living"]._id,
+        images: [img("desk-lamp")],
+      },
+      {
+        name: "Ceramic Coffee Mug Set",
+        description: "Set of 4 matte ceramic mugs, 350ml each, dishwasher and microwave safe.",
+        price: 999,
+        discountPrice: 799,
+        stock: 45,
+        category: categories["Home & Living"]._id,
+        images: [img("coffee-mugs")],
+      },
+      {
+        name: "Cotton T-Shirt",
+        description: "Premium 180 GSM combed cotton t-shirt, regular fit, available in solid colors.",
+        price: 599,
+        discountPrice: 449,
+        stock: 120,
+        category: categories["Fashion"]._id,
+        images: [img("cotton-tshirt")],
+      },
+    ].map((p) => ({ ...p, createdBy: adminUser._id }));
 
     await Product.insertMany(demoProducts);
     console.log(`✅ ${demoProducts.length} demo products inserted`);

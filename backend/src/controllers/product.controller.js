@@ -42,6 +42,13 @@ const getProducts = asyncHandler(async (req, res) => {
 
     const filter = { isActive: true };
 
+    if (req.query.q) {
+        filter.name = { $regex: String(req.query.q).trim(), $options: "i" };
+    }
+    if (req.query.category) {
+        filter.category = req.query.category;
+    }
+
     const products = await Product.find(filter)
         .populate("category", "name")
         .sort(sort)

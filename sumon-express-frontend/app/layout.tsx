@@ -16,8 +16,9 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Sumon Express",
-  description: "E-commerce frontend",
+  title: "Sumon Express — Online Shopping in Bangladesh",
+  description:
+    "Shop electronics, accessories and more with cash on delivery across Bangladesh.",
 };
 
 export default function RootLayout({
@@ -28,13 +29,18 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+        className={`${geistSans.variable} ${geistMono.variable} flex min-h-screen flex-col antialiased`}
       >
-        {/* ✅ ONLY THIS WRAP IS NEW */}
         <AuthProvider>
           <CartProvider>
-          <Navbar />
-          {children}
+            <Navbar />
+            <div className="flex-1">{children}</div>
+            <footer className="border-t bg-card">
+              <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-2 px-4 py-6 text-sm text-muted-foreground">
+                <span>© {new Date().getFullYear()} Sumon Express</span>
+                <span>Cash on delivery across Bangladesh</span>
+              </div>
+            </footer>
           </CartProvider>
         </AuthProvider>
       </body>

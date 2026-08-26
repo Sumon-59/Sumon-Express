@@ -1,8 +1,9 @@
 "use client";
 
 import { useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -10,7 +11,7 @@ import { useAuth } from "@/context/AuthContext";
 
 export default function LoginPage() {
   const router = useRouter();
-  const { login, loading } = useAuth();
+  const { login } = useAuth();
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -24,53 +25,62 @@ export default function LoginPage() {
     try {
       setSubmitting(true);
       await login({ email, password });
-      router.push("/products");
+      router.push("/");
     } catch (err: any) {
-      const msg =
-        err?.response?.data?.message ||
-        err?.message ||
-        "Login failed";
-      setError(msg);
+      setError(err?.response?.data?.message || err?.message || "Login failed");
     } finally {
       setSubmitting(false);
     }
   };
 
   return (
-    <div className="mx-auto max-w-md">
-      <Card>
+    <main className="mx-auto flex min-h-[70vh] max-w-md items-center px-4">
+      <Card className="w-full">
         <CardHeader>
-          <CardTitle>Login</CardTitle>
+          <CardTitle className="text-xl">Welcome back</CardTitle>
+          <CardDescription>Log in to continue shopping</CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={onSubmit} className="space-y-4">
             <div className="space-y-2">
-              <Label>Email</Label>
+              <Label htmlFor="email">Email</Label>
               <Input
+                id="email"
+                type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                placeholder="sumon@test.com"
+                placeholder="you@example.com"
+                required
               />
             </div>
 
             <div className="space-y-2">
-              <Label>Password</Label>
+              <Label htmlFor="password">Password</Label>
               <Input
+                id="password"
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="••••••••"
+                required
               />
             </div>
 
-            {error && <p className="text-sm text-red-600">{error}</p>}
+            {error && <p className="text-sm text-destructive">{error}</p>}
 
-            <Button className="w-full" disabled={submitting || loading}>
-              {submitting ? "Logging in..." : "Login"}
+            <Button className="w-full" disabled={submitting}>
+              {submitting ? "Logging in…" : "Login"}
             </Button>
+
+            <p className="text-center text-sm text-muted-foreground">
+              New to Sumon Express?{" "}
+              <Link href="/register" className="font-medium text-primary hover:underline">
+                Create an account
+              </Link>
+            </p>
           </form>
         </CardContent>
       </Card>
-    </div>
+    </main>
   );
 }
