@@ -95,6 +95,22 @@ describe("POST /api/orders", () => {
 
     expect(res.status).toBe(401);
   });
+  it("rejects an order for an inactive product", async () => {
+    // Arrange: a product that is switched off
+    const product = await plantProduct({ isActive: false });
+
+    // Act: try to order it, logged in
+    const res = await request(app)
+      .post("/api/orders")
+      .set("Cookie", cookies)
+      .send({ items: [{ product: product._id.toString(), quantity: 1 }] });
+
+    // Assert: the server must refuse as if the product doesn't exist
+    expect(res.status).toBe(404);
+    expect(res.body.message).toMatch(/not found/i);
+  });
+
+
 });
 
 describe("PUT /api/orders/:id/cancel", () => {
