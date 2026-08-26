@@ -165,9 +165,10 @@ NEXT_PUBLIC_API_BASE_URL=https://sumon-express-backend.onrender.com/api
 Backend (Render)
 ```
 MONGO_URI=your_mongodb_uri
-JWT_SECRET=your_secret
+JWT_ACCESS_SECRET=your_access_secret
 JWT_REFRESH_SECRET=your_refresh_secret
 NODE_ENV=production
+CLIENT_URL=https://sumon-express.vercel.app
 ```
 ---
 ## 🚀 Run Locally

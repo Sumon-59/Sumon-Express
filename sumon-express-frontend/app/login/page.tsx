@@ -15,15 +15,25 @@ export default function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
+  const [submitting, setSubmitting] = useState(false);
 
   const onSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
 
-    const res = await login(email, password);
-    if (!res.ok) return setError(res.message);
-
-    router.push("/products");
+    try {
+      setSubmitting(true);
+      await login({ email, password });
+      router.push("/products");
+    } catch (err: any) {
+      const msg =
+        err?.response?.data?.message ||
+        err?.message ||
+        "Login failed";
+      setError(msg);
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (
@@ -55,8 +65,8 @@ export default function LoginPage() {
 
             {error && <p className="text-sm text-red-600">{error}</p>}
 
-            <Button className="w-full" disabled={loading}>
-              {loading ? "Logging in..." : "Login"}
+            <Button className="w-full" disabled={submitting || loading}>
+              {submitting ? "Logging in..." : "Login"}
             </Button>
           </form>
         </CardContent>

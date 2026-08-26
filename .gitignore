@@ -1,0 +1,13 @@
+# dependencies
+node_modules/
+
+# environment files — never commit secrets
+.env
+.env.*
+!.env.example
+
+# OS / editor
+.DS_Store
+
+# logs
+*.log

@@ -1,5 +1,6 @@
 const express = require("express");
 const cors = require("cors");
+const helmet = require("helmet");
 const morgan = require("morgan");
 const cookieParser = require("cookie-parser");
 require("dotenv").config();
@@ -17,6 +18,9 @@ const errorHandler = require("./src/middleware/error.middleware");
 
 const app = express();
 
+// Behind Render's proxy: needed for secure cookies + correct client IPs (rate limiting)
+app.set("trust proxy", 1);
+
 /**
  * CORS configuration (credentials + cookies friendly)
  * NOTE: When credentials=true, Access-Control-Allow-Origin cannot be '*'
@@ -26,11 +30,14 @@ const allowedOrigins = [
   "http://localhost:3001",
   "http://127.0.0.1:3000",
   "https://sumon-express-frontend.onrender.com",
-  // Add your Vercel domain later:
   "https://sumon-express.vercel.app",
-  "https://sumon-express-c5egp6hae-md-sumon-hossains-projects.vercel.app"
-
+  "https://sumon-express-c5egp6hae-md-sumon-hossains-projects.vercel.app",
 ];
+
+// Allow an extra origin via env (e.g. a new Vercel domain) without a code change
+if (process.env.CLIENT_URL && !allowedOrigins.includes(process.env.CLIENT_URL)) {
+  allowedOrigins.push(process.env.CLIENT_URL);
+}
 
 const corsOptions = {
   origin: function (origin, callback) {
@@ -49,6 +56,8 @@ const corsOptions = {
 };
 
 // ----- Middlewares -----
+app.use(helmet());
+
 app.use(cors(corsOptions));
 
 app.use(express.json());

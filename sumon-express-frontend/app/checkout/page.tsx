@@ -15,6 +15,10 @@ export default function CheckoutPage() {
   const [submitting, setSubmitting] = React.useState(false);
   const [error, setError] = React.useState<string | null>(null);
 
+  const [address, setAddress] = React.useState("");
+  const [city, setCity] = React.useState("");
+  const [phone, setPhone] = React.useState("");
+
   // Simple guard: must be logged in
   React.useEffect(() => {
     if (!loading && !user) {
@@ -29,13 +33,13 @@ export default function CheckoutPage() {
       setSubmitting(true);
       setError(null);
 
-      // Adjust payload if your backend expects different keys
       const payload = {
         items: items.map((x) => ({
             product: x.productId,
             quantity: x.quantity,
         })),
-        totalPrice: total,
+        shippingAddress: { address, city, phone },
+        paymentMethod: "cod",
     };
 
 
@@ -82,6 +86,28 @@ export default function CheckoutPage() {
           </div>
 
           <h3 style={{ marginTop: 16 }}>Total: ৳{total}</h3>
+
+          <div style={{ marginTop: 16, display: "grid", gap: 10, maxWidth: 420 }}>
+            <h3>Shipping Address</h3>
+            <input
+              placeholder="Address"
+              value={address}
+              onChange={(e) => setAddress(e.target.value)}
+              style={{ padding: 8, border: "1px solid #ddd", borderRadius: 8 }}
+            />
+            <input
+              placeholder="City"
+              value={city}
+              onChange={(e) => setCity(e.target.value)}
+              style={{ padding: 8, border: "1px solid #ddd", borderRadius: 8 }}
+            />
+            <input
+              placeholder="Phone"
+              value={phone}
+              onChange={(e) => setPhone(e.target.value)}
+              style={{ padding: 8, border: "1px solid #ddd", borderRadius: 8 }}
+            />
+          </div>
 
           <div style={{ marginTop: 12, display: "flex", gap: 12 }}>
             <Link href="/cart">← Back to cart</Link>

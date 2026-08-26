@@ -33,7 +33,7 @@ async function seedProducts() {
         name: "Mechanical Keyboard",
         description: "RGB mechanical keyboard with blue switches",
         price: 3499,
-        discoutPrice: 2999,
+        discountPrice: 2999,
         stock: 30,
         images: ["https://via.placeholder.com/300"],
         createdBy: adminUser._id,

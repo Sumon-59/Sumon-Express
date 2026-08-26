@@ -11,7 +11,13 @@ const createOrder = asyncHandler(async (req, res) => {
     throw error;
   }
 
-  const productIds = items.map((i) => i.product);
+  const productIds = [...new Set(items.map((i) => String(i.product)))];
+  if (productIds.length !== items.length) {
+    const error = new Error("Duplicate products in order items");
+    error.statusCode = 400;
+    throw error;
+  }
+
   const products = await Product.find({ _id: { $in: productIds }, isActive: true });
 
   if (products.length !== productIds.length) {
@@ -31,30 +37,53 @@ const createOrder = asyncHandler(async (req, res) => {
       throw error;
     }
 
-    if (p.stock < i.quantity) {
+    const quantity = Number(i.quantity);
+    if (!Number.isInteger(quantity) || quantity < 1) {
+      const error = new Error(`Invalid quantity for product: ${p.name}`);
+      error.statusCode = 400;
+      throw error;
+    }
+
+    if (p.stock < quantity) {
       const error = new Error(`Insufficient stock for product: ${p.name}`);
       error.statusCode = 400;
       throw error;
     }
 
-    // NOTE: Your product model has 'discoutPrice' (typo). Use it here to work.
-    const unitPrice = p.discoutPrice ?? p.price;
+    const unitPrice = p.discountPrice ?? p.price;
 
-    totalPrice += unitPrice * i.quantity;
+    totalPrice += unitPrice * quantity;
 
     return {
       product: p._id,
       name: p.name,
       price: unitPrice,
-      quantity: i.quantity,
+      quantity,
     };
   });
 
-  // Decrement stock
-  for (const i of items) {
-    const p = products.find((x) => x._id.toString() === i.product);
-    p.stock -= i.quantity;
-    await p.save();
+  // Decrement stock atomically; roll back prior decrements if any item fails
+  const decremented = [];
+  for (const item of orderItems) {
+    const updated = await Product.findOneAndUpdate(
+      { _id: item.product, stock: { $gte: item.quantity } },
+      { $inc: { stock: -item.quantity } },
+      { new: true }
+    );
+
+    if (!updated) {
+      for (const done of decremented) {
+        await Product.updateOne(
+          { _id: done.product },
+          { $inc: { stock: done.quantity } }
+        );
+      }
+      const error = new Error(`Insufficient stock for product: ${item.name}`);
+      error.statusCode = 400;
+      throw error;
+    }
+
+    decremented.push(item);
   }
 
   const order = await Order.create({
@@ -102,11 +131,10 @@ const cancelOrder = asyncHandler(async (req, res) => {
 
   // Rollback stock from saved items
   for (const item of order.items) {
-    const product = await Product.findById(item.product);
-    if (product) {
-      product.stock += item.quantity;
-      await product.save();
-    }
+    await Product.updateOne(
+      { _id: item.product },
+      { $inc: { stock: item.quantity } }
+    );
   }
 
   order.status = "cancelled";

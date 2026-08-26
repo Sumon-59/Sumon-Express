@@ -11,7 +11,7 @@ type Product = {
   name: string;
   description: string;
   price: number;
-  discoutPrice?: number;
+  discountPrice?: number;
   stock: number;
   images?: string[];
 };
@@ -60,7 +60,7 @@ export default function ProductDetailsPage() {
     {
       productId: product._id,
       name: product.name,
-      price: product.discoutPrice ?? product.price,
+      price: product.discountPrice ?? product.price,
     },
     1
   );
@@ -92,7 +92,7 @@ export default function ProductDetailsPage() {
     );
   }
 
-  const finalPrice = product.discoutPrice ?? product.price;
+  const finalPrice = product.discountPrice ?? product.price;
 
   return (
     <div style={{ padding: 20, maxWidth: 800 }}>
@@ -105,7 +105,7 @@ export default function ProductDetailsPage() {
       <div style={{ marginTop: 10 }}>
         <div>
           <strong>Price:</strong> ৳{finalPrice}{" "}
-          {product.discoutPrice ? (
+          {product.discountPrice ? (
             <span style={{ textDecoration: "line-through", opacity: 0.6, marginLeft: 8 }}>
               ৳{product.price}
             </span>

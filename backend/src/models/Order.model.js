@@ -22,28 +22,21 @@ const orderSchema = new mongoose.Schema(
             required: true,
         },
 
-        orderItems: [
-            {
-                name: String,
-                price: Number,
-                quantity: Number,
-                product: {
-                    type: mongoose.Schema.Types.ObjectId,
-                    ref: "Product",
-                },
-            },
-        ],
+        items: {
+            type: [orderItemSchema],
+            required: true,
+        },
 
         totalPrice: {
             type: Number,
             required: true,
         },
-        // shippingAddress: {
-        //     address: { type: String, required: true },
-        //     phone: { type: String, required: true },
-        //     addressLine: { type: String, required: true }
-        //     city: { type: String, required: true },
-        // },
+
+        shippingAddress: {
+            address: { type: String },
+            city: { type: String },
+            phone: { type: String },
+        },
 
         paymentMethod: {
             type: String,

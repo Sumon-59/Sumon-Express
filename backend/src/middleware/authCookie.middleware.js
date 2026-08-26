@@ -14,24 +14,25 @@ const protectCookie = async (req, res, next) => {
       return res.status(401).json({ message: "Not authorized, no token" });
     }
 
-    jwt.verify(token, process.env.JWT_REFRESH_SECRET, async (err, decoded) => {
-      if (err) {
-        return res.status(401).json({ message: "Not authorized, invalid token" });
-      }
+    let decoded;
+    try {
+      decoded = jwt.verify(token, process.env.JWT_REFRESH_SECRET);
+    } catch (err) {
+      return res.status(401).json({ message: "Not authorized, invalid token" });
+    }
 
-      const userId = decoded.userId || decoded.id;
-      if (!userId) {
-        return res.status(401).json({ message: "Not authorized, invalid payload" });
-      }
+    const userId = decoded.userId || decoded.id;
+    if (!userId) {
+      return res.status(401).json({ message: "Not authorized, invalid payload" });
+    }
 
-      const user = await User.findById(userId).select("_id name email role");
-      if (!user) {
-        return res.status(401).json({ message: "Not authorized, user not found" });
-      }
+    const user = await User.findById(userId).select("_id name email role refreshToken");
+    if (!user || user.refreshToken !== token) {
+      return res.status(401).json({ message: "Not authorized, session revoked" });
+    }
 
-      req.user = user;
-      next();
-    });
+    req.user = { _id: user._id, name: user.name, email: user.email, role: user.role };
+    next();
   } catch (e) {
     return res.status(500).json({ message: "Auth error" });
   }

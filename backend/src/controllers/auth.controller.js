@@ -128,29 +128,32 @@ const refreshTokenHandler = asyncHandler(async (req, res) => {
     throw err;
   }
 
-  jwt.verify(
-    refreshToken,
-    process.env.JWT_REFRESH_SECRET,
-    async (err, decoded) => {
-      if (err || user._id.toString() !== decoded.userId) {
-        const error = new Error("Forbidden");
-        error.statusCode = 403;
-        throw error;
-      }
+  let decoded;
+  try {
+    decoded = jwt.verify(refreshToken, process.env.JWT_REFRESH_SECRET);
+  } catch (e) {
+    const error = new Error("Forbidden");
+    error.statusCode = 403;
+    throw error;
+  }
 
-      // Rotate tokens
-      const newAccessToken = generateAccessToken(user._id);
-      const newRefreshToken = generateRefreshToken(user._id);
+  if (user._id.toString() !== decoded.userId) {
+    const error = new Error("Forbidden");
+    error.statusCode = 403;
+    throw error;
+  }
 
-      user.refreshToken = newRefreshToken;
-      await user.save();
+  // Rotate tokens
+  const newAccessToken = generateAccessToken(user._id);
+  const newRefreshToken = generateRefreshToken(user._id);
 
-      // Set rotated refresh cookie
-      setRefreshCookie(res, newRefreshToken);
+  user.refreshToken = newRefreshToken;
+  await user.save();
 
-      res.json({ accessToken: newAccessToken });
-    }
-  );
+  // Set rotated refresh cookie
+  setRefreshCookie(res, newRefreshToken);
+
+  res.json({ accessToken: newAccessToken });
 });
 
 /**
@@ -196,24 +199,28 @@ const me = asyncHandler(async (req, res) => {
   const refreshToken = cookies.jwt;
 
   // Verify refresh token
-  jwt.verify(refreshToken, process.env.JWT_REFRESH_SECRET, async (err, decoded) => {
-    if (err) {
-      const error = new Error("Unauthorized");
-      error.statusCode = 401;
-      throw error;
-    }
+  let decoded;
+  try {
+    decoded = jwt.verify(refreshToken, process.env.JWT_REFRESH_SECRET);
+  } catch (e) {
+    const error = new Error("Unauthorized");
+    error.statusCode = 401;
+    throw error;
+  }
 
-    // decoded.userId because our tokens use { userId }
-    const userId = decoded.userId || decoded.id;
-    const user = await User.findById(decoded.userId).select("_id name email role");
+  // decoded.userId because our tokens use { userId }
+  const userId = decoded.userId || decoded.id;
+  const user = await User.findById(userId).select("_id name email role refreshToken");
 
-    if (!user) {
-      const error = new Error("Unauthorized");
-      error.statusCode = 401;
-      throw error;
-    }
+  // Token must still match the one stored in DB (logout revokes it)
+  if (!user || user.refreshToken !== refreshToken) {
+    const error = new Error("Unauthorized");
+    error.statusCode = 401;
+    throw error;
+  }
 
-    res.status(200).json({ user });
+  res.status(200).json({
+    user: { _id: user._id, name: user.name, email: user.email, role: user.role },
   });
 });
 

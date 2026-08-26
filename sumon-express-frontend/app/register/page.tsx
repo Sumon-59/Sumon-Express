@@ -8,8 +8,8 @@ export default function RegisterPage() {
   const router = useRouter();
   const { register, loading } = useAuth();
 
-  const [name, setName] = useState("Md Sumon");
-  const [email, setEmail] = useState("sumon2026@gmail.com");
+  const [name, setName] = useState("");
+  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
 
