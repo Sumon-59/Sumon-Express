@@ -8,32 +8,7 @@
 import { describe, it, expect, beforeEach } from "vitest";
 import request from "supertest";
 import app from "../app";
-import Product from "../src/models/Product.model";
-import User from "../src/models/User.model";
-
-// --- Fixtures -------------------------------------------------------
-// Creating a product needs an admin route we aren't testing here, so
-// we plant products directly in the (in-memory) database. Planting
-// SETUP data via models is fine; ASSERTING via models is not.
-
-async function registerUser(email = "shopper@example.com") {
-  const res = await request(app)
-    .post("/api/auth/register")
-    .send({ name: "Shopper", email, password: "password123" });
-  return { cookies: res.headers["set-cookie"] };
-}
-
-async function plantProduct(overrides = {}) {
-  const owner = await User.findOne();
-  return Product.create({
-    name: "Test Widget",
-    description: "A widget for testing",
-    price: 100,
-    stock: 10,
-    createdBy: owner._id,
-    ...overrides,
-  });
-}
+import { registerUser, plantProduct } from "./helpers";
 
 describe("POST /api/orders", () => {
   let cookies;
@@ -109,8 +84,6 @@ describe("POST /api/orders", () => {
     expect(res.status).toBe(404);
     expect(res.body.message).toMatch(/not found/i);
   });
-
-
 });
 
 describe("PUT /api/orders/:id/cancel", () => {
@@ -139,8 +112,8 @@ describe("PUT /api/orders/:id/cancel", () => {
   });
 
   it("does not let one user cancel another user's order", async () => {
-    const alice = await registerUser("alice@example.com");
-    const bob = await registerUser("bob@example.com");
+    const alice = await registerUser({ email: "alice@example.com" });
+    const bob = await registerUser({ email: "bob@example.com" });
     const product = await plantProduct();
 
     const order = await request(app)

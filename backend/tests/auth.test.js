@@ -9,20 +9,7 @@
 import { describe, it, expect } from "vitest";
 import request from "supertest";
 import app from "../app";
-
-// A tiny helper: register a user and keep the cookie jar (the "jwt"
-// httpOnly cookie) so later requests are authenticated — exactly what
-// a browser does automatically.
-async function registerUser(overrides = {}) {
-  const user = {
-    name: "Test User",
-    email: "test@example.com",
-    password: "password123",
-    ...overrides,
-  };
-  const res = await request(app).post("/api/auth/register").send(user);
-  return { res, user, cookies: res.headers["set-cookie"] };
-}
+import { registerUser } from "./helpers";
 
 describe("POST /api/auth/register", () => {
   it("registers a new user and starts a session", async () => {
@@ -48,6 +35,30 @@ describe("POST /api/auth/register", () => {
       .send({ email: "no-name@example.com" });
 
     expect(res.status).toBe(400);
+  });
+});
+
+describe("POST /api/auth/login", () => {
+  it("logs in with correct credentials and starts a session", async () => {
+    const { user } = await registerUser();
+
+    const res = await request(app)
+      .post("/api/auth/login")
+      .send({ email: user.email, password: user.password });
+
+    expect(res.status).toBe(200);
+    expect(res.headers["set-cookie"].join(";")).toContain("jwt=");
+  });
+
+  it("rejects a wrong password with 401 and no session cookie", async () => {
+    const { user } = await registerUser();
+
+    const res = await request(app)
+      .post("/api/auth/login")
+      .send({ email: user.email, password: "wrong-password" });
+
+    expect(res.status).toBe(401);
+    expect(res.headers["set-cookie"]).toBeUndefined();
   });
 });
 

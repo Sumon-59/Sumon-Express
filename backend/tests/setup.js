@@ -1,7 +1,10 @@
 // Runs before every test file (see vitest.config.mjs).
 //
-// Job 1: set env vars BEFORE the app is imported, so nothing in the app
-//        ever sees real secrets or the real database.
+// Job 1: set env vars so the app never sees real secrets or the real
+//        database. (Note: ESM imports hoist above these lines, so the
+//        modules imported *here* load first — that's fine, because none
+//        of them read env at import time, and this whole setup file
+//        finishes before any TEST file imports the app.)
 // Job 2: give each test file its own throwaway in-memory MongoDB.
 // Job 3: wipe all data between tests, so no test depends on another.
 
