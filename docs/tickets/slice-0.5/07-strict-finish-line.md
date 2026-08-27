@@ -10,9 +10,9 @@ slice's definition of done lands here.
 
 **Status:** ready-for-agent (owner: pair — Sumon converts, Claude handles deploy config)
 
-- [ ] Backend type check passes clean with the JS allowance off
-- [ ] Production build + compiled-entry boot check passes (health endpoint answers)
-- [ ] Render blueprint build/start commands updated for the compiled output
-- [ ] CLAUDE.md commands section reflects the new build/dev/test commands
-- [ ] All 17 backend tests still green, unmodified
+- [x] Backend type check passes clean with the JS allowance off
+- [x] Production build + compiled-entry boot check passes (health endpoint answers)
+- [x] Render blueprint build/start commands updated for the compiled output
+- [x] CLAUDE.md commands section reflects the new build/dev/test commands
+- [x] All 17 backend tests still green, unmodified
 - [ ] Merged via /code-review per D9; plan.md tracker updated

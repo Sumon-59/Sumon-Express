@@ -2,7 +2,7 @@
 
 Full-stack e-commerce app. Two independent apps in one repo, deployed separately:
 
-- `backend/` — Express 5 + Mongoose 9 REST API. Deployed to **Render** (https://sumon-express-backend.onrender.com). CommonJS (`require`), plain JavaScript.
+- `backend/` — Express 5 + Mongoose 9 REST API in **strict TypeScript**, compiled with `tsc` to `dist/` (CommonJS output; production runs `node dist/server.js`). Deployed to **Render** (https://sumon-express-backend.onrender.com) — its build step runs `npm run build` (see `render.yaml`).
 - `sumon-express-frontend/` — Next.js 16 (App Router) + React 19 + TypeScript + Tailwind 4 + shadcn/ui. Deployed to **Vercel** (https://sumon-express.vercel.app). Root `vercel.json` points Vercel's build into this subdirectory.
 
 Database: MongoDB Atlas — **production uses the `sumon_express` database (Render only); local dev uses `sumon_dev`** on the same cluster (set in `backend/.env`). Tests use an in-memory MongoDB and never touch Atlas.
@@ -10,10 +10,12 @@ Database: MongoDB Atlas — **production uses the `sumon_express` database (Rend
 ## Commands
 
 Backend (from `backend/`):
-- `npm run dev` — start with nodemon (port 5000, reads `backend/.env`)
-- `npm start` — production start (`node server.js`)
+- `npm run dev` — start with tsx watch (port 5000, reads `backend/.env`)
+- `npm run build` — compile TypeScript to `dist/` (what Render runs)
+- `npm run typecheck` — `tsc --noEmit`, keep it clean
+- `npm start` — production start (`node dist/server.js`; requires a build first)
 - `npm test` / `npm run test:watch` — Vitest + Supertest integration tests (in-memory MongoDB via `mongodb-memory-server`; see `tests/setup.js`)
-- `npm run seed` — seed demo products (requires at least one registered user; **wipes existing products**)
+- `npm run seed` — seed demo products via tsx (requires at least one registered user; **wipes existing products**)
 
 Frontend (from `sumon-express-frontend/`):
 - `npm run dev` — Next dev server on port 3000
@@ -23,10 +25,11 @@ Frontend (from `sumon-express-frontend/`):
 
 Testing conventions: tests live in `tests/` in each app and assert only through public
 seams (the HTTP API via Supertest on the backend; hooks/components on the frontend).
-Backend **source** is CommonJS, but backend **test files use ESM `import`** — Vitest 4
-requires it and transpiles them; don't "fix" test imports back to `require`.
-`backend/app.js` exports the Express app (what tests mount); `backend/server.js` is the
-runtime entry (dotenv + DB connect + listen) — keep that split.
+Backend test files stay JavaScript (ESM `import`) on purpose — they are the migration's
+impartial safety net; Vitest transpiles them. `backend/app.ts` exports the Express app
+(what tests mount); `backend/server.ts` is the runtime entry (dotenv + DB connect +
+listen) — keep that split. In `server.ts`, `import "dotenv/config"` must stay the FIRST
+import (app.ts reads `CLIENT_URL` at import time).
 
 ## Environment variables
 

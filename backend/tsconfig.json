@@ -6,11 +6,6 @@
     "outDir": "dist",
     "rootDir": ".",
 
-    // Migration mode: .js and .ts files coexist until ticket 06 flips
-    // allowJs off and the backend is 100% TypeScript.
-    "allowJs": true,
-    "checkJs": false,
-
     // The whole point of the migration:
     "strict": true,
 
@@ -20,6 +15,6 @@
     "skipLibCheck": true,
     "resolveJsonModule": true
   },
-  "include": ["server.js", "server.ts", "app.js", "app.ts", "src/**/*"],
+  "include": ["server.ts", "app.ts", "src/**/*"],
   "exclude": ["node_modules", "dist", "tests"]
 }
