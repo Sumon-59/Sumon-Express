@@ -65,15 +65,14 @@ every slice after it is built test-first.
 
 ## 2. How we work
 
-### The learning-first contract (D1)
+### The learning contract (D1, revised 2026-08-27)
 
-- **Sumon writes the code.** In `/tdd` sessions, Sumon writes both the failing test and the
-  implementation; Claude reviews each red-green step and explains, but doesn't type the
-  solution.
-- Claude may scaffold boilerplate (config files, empty test files, folder moves) **only when
-  Sumon approves it explicitly** in the moment.
-- Any concept used but not understood → `/teach` it before moving on. If an explanation
-  doesn't land → `/wait-what`.
+- **Claude implements everything.** Sumon's role is reading the code and the explanations;
+  no implementation tasks are assigned to him.
+- **Claude explains the concepts** behind each change as the work happens — a concept recap
+  per ticket or slice, in simple language.
+- Any concept that doesn't land → Sumon says so (or `/wait-what`) and gets a smaller
+  re-pitch; `/teach` for deeper dives on request.
 
 ### The slice loop
 
@@ -83,7 +82,7 @@ every slice after it is built test-first.
 | 2. Spec | Discuss the slice, then turn the conversation into `docs/specs/slice-N.md` (D10) | `/to-spec` |
 | 3. Grill | Stress-test the spec before writing code | `/grill-me` |
 | 4. Tickets | Break the spec into tracer-bullet tickets in `docs/tickets/` | `/to-tickets` |
-| 5. Build | Sumon red-green-refactors each ticket test-first | `/tdd` |
+| 5. Build | Claude implements each ticket test-first, explaining concepts (D1 revised) | `/tdd` |
 | 6. Review | `/code-review` on the branch; fix findings | `/code-review` |
 | 7. Merge & deploy | Merge to `fullstack-v2` → auto-deploys Render + Vercel | |
 | 8. Reflect | Review architecture after the slice lands | `/improve-codebase-architecture` |
