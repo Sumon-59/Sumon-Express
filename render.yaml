@@ -3,7 +3,7 @@ services:
     name: sumon-express-backend
     runtime: node
     rootDir: backend
-    buildCommand: npm install
+    buildCommand: npm install && npm run build
     startCommand: npm start
     healthCheckPath: /healthz
     envVars:

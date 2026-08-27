@@ -1,0 +1,20 @@
+{
+  "compilerOptions": {
+    // What JS the compiler EMITS (runtime stays plain Node + CommonJS)
+    "target": "ES2022",
+    "module": "commonjs",
+    "outDir": "dist",
+    "rootDir": ".",
+
+    // The whole point of the migration:
+    "strict": true,
+
+    // Interop and hygiene
+    "esModuleInterop": true,
+    "forceConsistentCasingInFileNames": true,
+    "skipLibCheck": true,
+    "resolveJsonModule": true
+  },
+  "include": ["server.ts", "app.ts", "src/**/*"],
+  "exclude": ["node_modules", "dist", "tests"]
+}

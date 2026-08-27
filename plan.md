@@ -19,7 +19,7 @@ means re-grilling it.
 
 | # | Decision | Outcome |
 |---|----------|---------|
-| D1 | Working mode | **Learning-first.** Sumon writes the code — tests and implementation. Claude specs, reviews, pairs, and `/teach`es; Claude only scaffolds with explicit approval. Expected pace: one slice per 1–3 sessions. |
+| D1 | Working mode | **Revised 2026-08-27 (during Slice 0.5), at Sumon's request:** Claude implements everything; Sumon's role is reading the code and the explanations — no implementation tasks are assigned to him. Claude explains the concepts behind each change. *(Original 2026-08-26: Sumon writes the code; superseded.)* |
 | D2 | Dev database | Local dev points at a **separate `sumon_dev` database** on the same Atlas cluster. Only Render uses the production DB. (Slice 0) |
 | D3 | Auth architecture | **Canonical JWT pattern for everyone**: access token in memory, axios interceptor auto-refreshes via the httpOnly cookie, single mechanism for shoppers and admin. (Slice 1) Further hardening deferred to Slice 15. |
 | D4 | Product images | URL input in Slice 2; **real Cloudinary uploads as dedicated Slice 2b**. |
@@ -306,7 +306,7 @@ provider (Stripe test). Pick by appetite when we get here — re-plan with `/way
 | Slice | Status |
 |-------|--------|
 | 0 — Test infrastructure + dev DB | ✅ 2026-08-26 — 25 tests (17 backend, 8 frontend); Sumon wrote the inactive-product test; extra vs plan: idempotent model registration, ESM test files (Vitest 4 requirement) |
-| 0.5 — Backend TypeScript migration | ⬜ |
+| 0.5 — Backend TypeScript migration | ✅ 2026-08-27 — 100% strict TS compiled to dist/; 17 tests unchanged and green throughout; deviation from plan: conversion order flipped to top-down (JS cannot require TS), D1 revised (Claude implements, Sumon reads) |
 | 1 — Auth refactor + admin shell | ⬜ |
 | 2 — Product management | ⬜ |
 | 2b — Image uploads | ⬜ |
