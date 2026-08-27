@@ -9,8 +9,8 @@ duality explicit and safe; *fixing* it stays out of scope (Slice 1's auth refact
 
 **Status:** ready-for-agent (owner: Sumon, Claude reviews each middleware)
 
-- [ ] Each middleware has typed request/response/next signatures
-- [ ] The two `req.user` shapes are distinct named types, not `any`
-- [ ] The error handler's error shape (statusCode carrier) is a named type
-- [ ] Type check passes on the converted files
-- [ ] All 17 backend tests still green, unmodified
+- [x] Each middleware has typed request/response/next signatures
+- [x] The two `req.user` shapes are distinct named types, not `any`
+- [x] The error handler's error shape (statusCode carrier) is a named type
+- [x] Type check passes on the converted files
+- [x] All 17 backend tests still green, unmodified
