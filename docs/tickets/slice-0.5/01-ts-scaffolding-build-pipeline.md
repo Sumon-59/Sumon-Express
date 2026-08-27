@@ -10,8 +10,8 @@ converted yet — this ticket proves the pipeline end to end before any source c
 
 **Status:** ready-for-agent (owner: Claude, approved scaffolding)
 
-- [ ] Production build command compiles the backend successfully
-- [ ] The compiled entry boots and answers the health endpoint
-- [ ] Dev watch command starts the server and reloads on change
-- [ ] All 17 backend tests still green, unmodified
-- [ ] Build output directory is gitignored
+- [x] Production build command compiles the backend successfully
+- [x] The compiled entry boots and answers the health endpoint
+- [x] Dev watch command starts the server and reloads on change
+- [x] All 17 backend tests still green, unmodified
+- [x] Build output directory is gitignored
