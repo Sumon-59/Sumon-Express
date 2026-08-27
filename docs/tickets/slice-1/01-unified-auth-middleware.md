@@ -10,6 +10,6 @@ authenticated non-admin, 200 admin. The old middlewares stay in place everywhere
 
 **Status:** ready-for-agent
 
-- [ ] One shared verify helper replaces hand-rolled jwt.verify at the new sites
-- [ ] Admin routes answer 401 (anonymous), 403 (non-admin), 200 (admin) — tested
-- [ ] All 17 existing backend tests still green, untouched
+- [x] One shared verify helper replaces hand-rolled jwt.verify at the new sites
+- [x] Admin routes answer 401 (anonymous), 403 (non-admin), 200 (admin) — tested
+- [x] All 17 existing backend tests still green, untouched

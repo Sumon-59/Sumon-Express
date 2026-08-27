@@ -1,7 +1,6 @@
 import express from "express";
 
-import protect from "../middleware/auth.middleware";
-import isAdmin from "../middleware/admin.middleware";
+import { requireAuth, requireAdmin } from "../middleware/requireAuth";
 
 // admin order controllers
 import {
@@ -13,15 +12,15 @@ import {
 const router = express.Router();
 
 // admin dashboard test route
-router.get("/dashboard", protect, isAdmin, (req, res) => {
+router.get("/dashboard", requireAuth, requireAdmin, (req, res) => {
   res.json({ message: "Welcome to Admin Dashboard" });
 });
 
 // admin: get all orders
-router.get("/orders", protect, isAdmin, getAllOrders);
+router.get("/orders", requireAuth, requireAdmin, getAllOrders);
 
 // admin: update order status
-router.put("/orders/:id", protect, isAdmin, updateOrderStatus);
-router.put("/orders/:id/cancel", protect, isAdmin, cancelOrderByAdmin);
+router.put("/orders/:id", requireAuth, requireAdmin, updateOrderStatus);
+router.put("/orders/:id/cancel", requireAuth, requireAdmin, cancelOrderByAdmin);
 
 export = router;
