@@ -25,3 +25,11 @@ code-review findings (2026-08-27).
   (`export =` / `export default` / named); retire the req.user duality.
 - **Future slice:** replace `req.body as X` assertions with real runtime
   validation (e.g. zod) at the API boundary.
+
+## Post-slice lesson (2026-08-27, found during Slice 1 deploy)
+
+Render's production install (`NODE_ENV=production`) skips devDependencies, and strict
+`tsc` cannot compile without `@types/*` — so the Slice 0.5 and Slice 1 backend deploys
+failed silently on Render (old build kept serving; healthz alone cannot detect this).
+Fix: `typescript` AND all `@types/*` live in `dependencies`. Deploy verification must
+probe a version-distinguishing endpoint, not just `/healthz`.
