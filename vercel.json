@@ -1,5 +1,0 @@
-{
-  "buildCommand": "cd sumon-express-frontend && npm run build",
-  "outputDirectory": "sumon-express-frontend/.next",
-  "installCommand": "cd sumon-express-frontend && npm install"
-}
