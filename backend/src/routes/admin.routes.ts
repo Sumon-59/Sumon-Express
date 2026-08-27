@@ -1,15 +1,16 @@
-const express = require("express");
-const router = express.Router();
+import express from "express";
 
-const protect = require("../middleware/auth.middleware");
-const isAdmin = require("../middleware/admin.middleware");
+import protect from "../middleware/auth.middleware";
+import isAdmin from "../middleware/admin.middleware";
 
 // admin order controllers
-const {
+import {
   getAllOrders,
   updateOrderStatus,
   cancelOrderByAdmin,
-} = require("../controllers/adminOrder.controller");
+} from "../controllers/adminOrder.controller";
+
+const router = express.Router();
 
 // admin dashboard test route
 router.get("/dashboard", protect, isAdmin, (req, res) => {
@@ -23,4 +24,4 @@ router.get("/orders", protect, isAdmin, getAllOrders);
 router.put("/orders/:id", protect, isAdmin, updateOrderStatus);
 router.put("/orders/:id/cancel", protect, isAdmin, cancelOrderByAdmin);
 
-module.exports = router;
+export = router;

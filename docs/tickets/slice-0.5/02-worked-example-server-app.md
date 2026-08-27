@@ -15,4 +15,4 @@ JavaScript ones, never the reverse.
 - [x] Production start command now runs the compiled output
 - [x] Type check passes; production build + compiled boot check passes
 - [x] All 17 backend tests still green, unmodified
-- [ ] Sumon can state the conversion recipe in his own words
+- [x] ~~Sumon states the recipe~~ (waived — D1 revised: Claude implements, Sumon reads)

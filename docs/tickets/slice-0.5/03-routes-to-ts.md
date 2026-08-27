@@ -8,6 +8,6 @@ ideal first solo conversion.
 
 **Status:** ready-for-agent (owner: Sumon, Claude reviews each file)
 
-- [ ] Each route file exports a typed Router
-- [ ] Type check passes on the converted files
-- [ ] All 17 backend tests still green, unmodified
+- [x] Each route file exports a typed Router
+- [x] Type check passes on the converted files
+- [x] All 17 backend tests still green, unmodified
