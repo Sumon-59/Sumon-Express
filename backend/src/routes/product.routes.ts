@@ -1,7 +1,6 @@
 import express from "express";
 
-import protect from "../middleware/auth.middleware";
-import isAdmin from "../middleware/admin.middleware";
+import { requireAuth, requireAdmin } from "../middleware/requireAuth";
 
 import {
   createProduct,
@@ -16,8 +15,8 @@ const router = express.Router();
 router.get("/:id", getProductById);
 router.get("/", getProducts);
 
-router.post("/", protect, isAdmin, createProduct);
-//router.put("/:id", protect, isAdmin, updateProduct);
-//router.delete("/:id", protect, isAdmin, deleteProduct);
+router.post("/", requireAuth, requireAdmin, createProduct);
+//router.put("/:id", requireAuth, requireAdmin, updateProduct);
+//router.delete("/:id", requireAuth, requireAdmin, deleteProduct);
 
 export = router;

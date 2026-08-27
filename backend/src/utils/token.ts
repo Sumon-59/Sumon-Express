@@ -1,4 +1,5 @@
 import jwt from "jsonwebtoken";
+import { randomUUID } from "node:crypto";
 import { Types } from "mongoose";
 
 // Strict mode forces us to face a truth the old JS hid: process.env
@@ -52,5 +53,10 @@ export const generateAccessToken = (userId: UserId): string => {
 export const generateRefreshToken = (userId: UserId): string => {
   return jwt.sign({ userId: userId.toString() }, requireEnv("JWT_REFRESH_SECRET"), {
     expiresIn: "7d",
+    // jti makes every token unique. Without it, two tokens minted for
+    // the same user within the same SECOND are byte-identical (iat has
+    // one-second resolution) — and rotation becomes a silent no-op.
+    // Our own rotation test caught this.
+    jwtid: randomUUID(),
   });
 };

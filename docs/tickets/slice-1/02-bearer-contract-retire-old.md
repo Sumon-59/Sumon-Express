@@ -10,7 +10,7 @@ garbage/expired access tokens get 401. The backend auth contract is final after 
 
 **Status:** ready-for-agent
 
-- [ ] Session-info + orders + product/category management routes use the unified middleware
-- [ ] Legacy cookie-session and id-string middlewares deleted; one `req.user` type remains
-- [ ] Refresh rotation / logout revocation / bad-token tests green
-- [ ] Existing tests updated ONLY where the auth contract changed (Bearer via shared helper)
+- [x] Session-info + orders + product/category management routes use the unified middleware
+- [x] Legacy cookie-session and id-string middlewares deleted; one `req.user` type remains
+- [x] Refresh rotation / logout revocation / bad-token tests green
+- [x] Existing tests updated ONLY where the auth contract changed (Bearer via shared helper)

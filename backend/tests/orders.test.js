@@ -11,9 +11,9 @@ import app from "../app";
 import { registerUser, plantProduct } from "./helpers";
 
 describe("POST /api/orders", () => {
-  let cookies;
+  let auth;
   beforeEach(async () => {
-    ({ cookies } = await registerUser());
+    ({ auth } = await registerUser());
   });
 
   it("creates an order with item snapshot, server-side total, and decrements stock", async () => {
@@ -22,7 +22,7 @@ describe("POST /api/orders", () => {
 
     const res = await request(app)
       .post("/api/orders")
-      .set("Cookie", cookies)
+      .set("Authorization", auth)
       .send({
         items: [{ product: product._id.toString(), quantity: 2 }],
         shippingAddress: { address: "House 1, Road 2", city: "Dhaka", phone: "01700000000" },
@@ -52,7 +52,7 @@ describe("POST /api/orders", () => {
 
     const res = await request(app)
       .post("/api/orders")
-      .set("Cookie", cookies)
+      .set("Authorization", auth)
       .send({ items: [{ product: product._id.toString(), quantity: 5 }] });
 
     expect(res.status).toBe(400);
@@ -77,7 +77,7 @@ describe("POST /api/orders", () => {
     // Act: try to order it, logged in
     const res = await request(app)
       .post("/api/orders")
-      .set("Cookie", cookies)
+      .set("Authorization", auth)
       .send({ items: [{ product: product._id.toString(), quantity: 1 }] });
 
     // Assert: the server must refuse as if the product doesn't exist
@@ -88,18 +88,18 @@ describe("POST /api/orders", () => {
 
 describe("PUT /api/orders/:id/cancel", () => {
   it("cancels a pending order and restores stock", async () => {
-    const { cookies } = await registerUser();
+    const { auth } = await registerUser();
     const product = await plantProduct({ stock: 10 });
 
     const order = await request(app)
       .post("/api/orders")
-      .set("Cookie", cookies)
+      .set("Authorization", auth)
       .send({ items: [{ product: product._id.toString(), quantity: 4 }] });
     expect(order.status).toBe(201);
 
     const cancel = await request(app)
       .put(`/api/orders/${order.body._id}/cancel`)
-      .set("Cookie", cookies);
+      .set("Authorization", auth);
     expect(cancel.status).toBe(200);
 
     // Stock is back: 10 - 4 + 4 = 10.
@@ -107,7 +107,7 @@ describe("PUT /api/orders/:id/cancel", () => {
     expect(productView.body.stock).toBe(10);
 
     // And the order shows as cancelled in the user's order list:
-    const myOrders = await request(app).get("/api/orders/my-orders").set("Cookie", cookies);
+    const myOrders = await request(app).get("/api/orders/my-orders").set("Authorization", auth);
     expect(myOrders.body.orders[0].status).toBe("cancelled");
   });
 
@@ -118,12 +118,12 @@ describe("PUT /api/orders/:id/cancel", () => {
 
     const order = await request(app)
       .post("/api/orders")
-      .set("Cookie", alice.cookies)
+      .set("Authorization", alice.auth)
       .send({ items: [{ product: product._id.toString(), quantity: 1 }] });
 
     const cancel = await request(app)
       .put(`/api/orders/${order.body._id}/cancel`)
-      .set("Cookie", bob.cookies);
+      .set("Authorization", bob.auth);
 
     expect(cancel.status).toBe(403);
   });

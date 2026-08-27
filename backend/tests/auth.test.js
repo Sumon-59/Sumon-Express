@@ -63,10 +63,10 @@ describe("POST /api/auth/login", () => {
 });
 
 describe("GET /api/auth/me", () => {
-  it("returns the logged-in user when the session cookie is present", async () => {
-    const { cookies, user } = await registerUser();
+  it("returns the logged-in user for a valid access token", async () => {
+    const { auth, user } = await registerUser();
 
-    const res = await request(app).get("/api/auth/me").set("Cookie", cookies);
+    const res = await request(app).get("/api/auth/me").set("Authorization", auth);
 
     expect(res.status).toBe(200);
     expect(res.body.user.email).toBe(user.email);
@@ -74,22 +74,56 @@ describe("GET /api/auth/me", () => {
     expect(res.body.user.password).toBeUndefined();
   });
 
-  it("returns 401 with no cookie", async () => {
+  it("returns 401 with no token", async () => {
     const res = await request(app).get("/api/auth/me");
+    expect(res.status).toBe(401);
+  });
+
+  it("returns 401 for a garbage token", async () => {
+    const res = await request(app)
+      .get("/api/auth/me")
+      .set("Authorization", "Bearer definitely-not-a-jwt");
+    expect(res.status).toBe(401);
+  });
+});
+
+describe("GET /api/auth/refresh", () => {
+  it("issues a new working access token and rotates the cookie", async () => {
+    const { cookies } = await registerUser();
+
+    const refresh = await request(app).get("/api/auth/refresh").set("Cookie", cookies);
+    expect(refresh.status).toBe(200);
+    expect(refresh.body.accessToken).toBeTruthy();
+
+    // The new access token really works:
+    const me = await request(app)
+      .get("/api/auth/me")
+      .set("Authorization", `Bearer ${refresh.body.accessToken}`);
+    expect(me.status).toBe(200);
+
+    // Rotation: the OLD cookie has been replaced server-side, so using
+    // it again must fail — a stolen old cookie dies at first reuse.
+    const reuse = await request(app).get("/api/auth/refresh").set("Cookie", cookies);
+    expect(reuse.status).toBe(403);
+  });
+
+  it("rejects a refresh with no cookie", async () => {
+    const res = await request(app).get("/api/auth/refresh");
     expect(res.status).toBe(401);
   });
 });
 
 describe("POST /api/auth/logout", () => {
-  it("revokes the session: /me stops working after logout", async () => {
+  it("revokes the refresh path: no new access tokens after logout", async () => {
     const { cookies } = await registerUser();
 
     const logout = await request(app).post("/api/auth/logout").set("Cookie", cookies);
     expect(logout.status).toBe(204);
 
-    // The OLD cookie must now be useless — this is the exact bug we
-    // fixed in v2 (logout didn't really revoke the session).
-    const me = await request(app).get("/api/auth/me").set("Cookie", cookies);
-    expect(me.status).toBe(401);
+    // Canonical JWT: the in-memory access token dies with the tab and
+    // expires within 15 minutes regardless. What logout must guarantee
+    // is that the refresh cookie can never mint a new one.
+    const refresh = await request(app).get("/api/auth/refresh").set("Cookie", cookies);
+    expect([401, 403]).toContain(refresh.status);
   });
 });

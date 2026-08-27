@@ -9,6 +9,7 @@ import {
 } from "../controllers/auth.controller";
 
 import { loginLimiter } from "../middleware/rateLimit.middleware";
+import { requireAuth } from "../middleware/requireAuth";
 
 const router = express.Router();
 
@@ -17,7 +18,7 @@ router.post("/register", registerUser);
 router.post("/login", loginLimiter, loginUser);
 
 // Session routes (cookie-based)
-router.get("/me", me);
+router.get("/me", requireAuth, me);
 router.get("/refresh", refreshTokenHandler);
 router.post("/logout", logoutUser);
 

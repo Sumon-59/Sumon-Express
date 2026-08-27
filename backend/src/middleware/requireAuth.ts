@@ -53,14 +53,24 @@ export const requireAuth = async (
  * boundary for the admin area (the frontend guard is only UX).
  */
 export const requireAdmin = (req: Request, res: Response, next: NextFunction): void => {
-  const user = req.user;
-  if (!user || typeof user === "string") {
+  if (!req.user) {
     res.status(401).json({ message: "Not authorized" });
     return;
   }
-  if (user.role !== "admin") {
+  if (req.user.role !== "admin") {
     res.status(403).json({ message: "Admin access only" });
     return;
   }
   next();
+};
+
+/**
+ * Accessor for handlers behind requireAuth: returns the attached
+ * session user, or throws 401 if somehow absent (defense in depth).
+ */
+export const sessionUser = (req: Request): SessionUser => {
+  if (!req.user) {
+    throw Object.assign(new Error("Unauthorized"), { statusCode: 401 });
+  }
+  return req.user;
 };

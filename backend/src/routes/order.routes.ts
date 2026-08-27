@@ -1,6 +1,6 @@
 import express from "express";
 
-import { protectCookie } from "../middleware/authCookie.middleware";
+import { requireAuth } from "../middleware/requireAuth";
 import {
   createOrder,
   getMyOrders,
@@ -10,8 +10,8 @@ import {
 const router = express.Router();
 
 // Cookie-based protected routes
-router.post("/", protectCookie, createOrder);
-router.get("/my-orders", protectCookie, getMyOrders);
-router.put("/:id/cancel", protectCookie, cancelOrder);
+router.post("/", requireAuth, createOrder);
+router.get("/my-orders", requireAuth, getMyOrders);
+router.put("/:id/cancel", requireAuth, cancelOrder);
 
 export = router;
