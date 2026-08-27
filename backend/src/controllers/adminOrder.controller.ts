@@ -1,20 +1,8 @@
 import { Request, Response } from "express";
-import Order, { OrderStatus } from "../models/Order.model";
+import Order, { ORDER_STATUSES, isOrderStatus } from "../models/Order.model";
 import Product from "../models/Product.model";
 import asyncHandler from "../utils/asyncHandler";
 import { httpError } from "../types/http.types";
-
-const ORDER_STATUSES = [
-  "pending",
-  "processing",
-  "shipped",
-  "delivered",
-  "cancelled",
-] as const;
-
-// Type guard: proves to the compiler a plain string is an OrderStatus.
-const isOrderStatus = (s: string): s is OrderStatus =>
-  (ORDER_STATUSES as readonly string[]).includes(s);
 
 interface UpdateStatusBody {
   status?: string;

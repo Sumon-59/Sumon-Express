@@ -1,11 +1,18 @@
 import mongoose, { Schema, Model, Types } from "mongoose";
 
-export type OrderStatus =
-  | "pending"
-  | "processing"
-  | "shipped"
-  | "delivered"
-  | "cancelled";
+export const ORDER_STATUSES = [
+  "pending",
+  "processing",
+  "shipped",
+  "delivered",
+  "cancelled",
+] as const;
+
+export type OrderStatus = (typeof ORDER_STATUSES)[number];
+
+// Type guard: proves to the compiler a plain string is an OrderStatus.
+export const isOrderStatus = (s: string): s is OrderStatus =>
+  (ORDER_STATUSES as readonly string[]).includes(s);
 
 export type PaymentMethod = "cod" | "bkash" | "nagad" | "rocket" | "card";
 
@@ -81,7 +88,7 @@ const orderSchema = new Schema<IOrder>(
 
     status: {
       type: String,
-      enum: ["pending", "processing", "shipped", "delivered", "cancelled"],
+      enum: [...ORDER_STATUSES],
       default: "pending",
     },
 

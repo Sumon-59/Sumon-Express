@@ -18,12 +18,13 @@ const protect = (req: Request, res: Response, next: NextFunction): void => {
 
     const decoded = jwt.verify(token, secret);
     // jwt.verify returns `string | JwtPayload` — narrow before touching it.
-    if (typeof decoded === "string" || !decoded.userId) {
-      res.status(401).json({ message: "Not authorized, token failed" });
-      return;
-    }
-    // Bearer auth attaches the user ID STRING (see auth.types.ts).
-    req.user = String(decoded.userId);
+    // Behavior-preserving: like the old JS, a signed token without a
+    // usable userId flows on with req.user undefined; downstream
+    // middleware rejects it (isAdmin -> 401 "User not found").
+    req.user =
+      typeof decoded !== "string" && typeof decoded.userId === "string"
+        ? decoded.userId
+        : undefined;
     next();
   } catch (error) {
     res.status(401).json({ message: "Not authorized, token failed" });
