@@ -10,6 +10,6 @@ promoted admin).
 
 **Status:** ready-for-agent
 
-- [ ] All suites, type checks, builds, smoke green
-- [ ] /code-review findings addressed
-- [ ] Merged to fullstack-v2; plan.md tracker updated; deploy verified
+- [x] All suites, type checks, builds, smoke green
+- [x] /code-review findings addressed
+- [x] Merged to fullstack-v2; plan.md tracker updated; deploy verified
