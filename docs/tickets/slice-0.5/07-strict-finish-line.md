@@ -15,4 +15,4 @@ slice's definition of done lands here.
 - [x] Render blueprint build/start commands updated for the compiled output
 - [x] CLAUDE.md commands section reflects the new build/dev/test commands
 - [x] All 17 backend tests still green, unmodified
-- [ ] Merged via /code-review per D9; plan.md tracker updated
+- [x] Merged via /code-review per D9; plan.md tracker updated
