@@ -6,14 +6,13 @@ import {
   updateCategory,
 } from "../controllers/category.controller";
 
-import protect from "../middleware/auth.middleware";
-import isAdmin from "../middleware/admin.middleware";
+import { requireAuth, requireAdmin } from "../middleware/requireAuth";
 
 const router = express.Router();
 
 router.get("/", getCategories);
 
-router.post("/", protect, isAdmin, createCategory);
-router.put("/:id", protect, isAdmin, updateCategory);
+router.post("/", requireAuth, requireAdmin, createCategory);
+router.put("/:id", requireAuth, requireAdmin, updateCategory);
 
-export = router;
+export default router;

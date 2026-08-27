@@ -1,10 +1,10 @@
 import bcrypt from "bcryptjs";
-import jwt from "jsonwebtoken";
 import { Request, Response } from "express";
 import User from "../models/User.model";
 import asyncHandler from "../utils/asyncHandler";
-import { generateAccessToken, generateRefreshToken } from "../utils/token";
+import { generateAccessToken, generateRefreshToken, verifyToken } from "../utils/token";
 import { httpError } from "../types/http.types";
+import { sessionUser } from "../middleware/requireAuth";
 
 interface RegisterBody {
   name?: string;
@@ -124,19 +124,8 @@ export const refreshTokenHandler = asyncHandler(async (req: Request, res: Respon
     throw httpError("Forbidden", 403);
   }
 
-  const secret = process.env.JWT_REFRESH_SECRET;
-  if (!secret) {
-    throw httpError("Server misconfigured", 500);
-  }
-
-  let decoded: string | jwt.JwtPayload;
-  try {
-    decoded = jwt.verify(refreshToken, secret);
-  } catch (e) {
-    throw httpError("Forbidden", 403);
-  }
-
-  if (typeof decoded === "string" || user._id.toString() !== decoded.userId) {
+  const tokenUserId = verifyToken(refreshToken, "refresh");
+  if (!tokenUserId || user._id.toString() !== tokenUserId) {
     throw httpError("Forbidden", 403);
   }
 
@@ -183,40 +172,11 @@ export const logoutUser = asyncHandler(async (req: Request, res: Response) => {
   res.sendStatus(204);
 });
 
+/**
+ * @desc    Current session user
+ * @route   GET /api/auth/me (behind requireAuth — Bearer access token)
+ */
 export const me = asyncHandler(async (req: Request, res: Response) => {
-  const refreshToken: string | undefined = req.cookies?.jwt;
-
-  if (!refreshToken) {
-    throw httpError("Unauthorized", 401);
-  }
-
-  const secret = process.env.JWT_REFRESH_SECRET;
-  if (!secret) {
-    throw httpError("Server misconfigured", 500);
-  }
-
-  // Verify refresh token
-  let decoded: string | jwt.JwtPayload;
-  try {
-    decoded = jwt.verify(refreshToken, secret);
-  } catch (e) {
-    throw httpError("Unauthorized", 401);
-  }
-
-  if (typeof decoded === "string") {
-    throw httpError("Unauthorized", 401);
-  }
-
-  // decoded.userId because our tokens use { userId }
-  const userId = decoded.userId || decoded.id;
-  const user = await User.findById(userId).select("_id name email role refreshToken");
-
-  // Token must still match the one stored in DB (logout revokes it)
-  if (!user || user.refreshToken !== refreshToken) {
-    throw httpError("Unauthorized", 401);
-  }
-
-  res.status(200).json({
-    user: { _id: user._id, name: user.name, email: user.email, role: user.role },
-  });
+  // requireAuth verified the access token and attached the user.
+  res.status(200).json({ user: sessionUser(req) });
 });

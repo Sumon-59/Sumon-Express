@@ -2,6 +2,7 @@ import { Request, Response } from "express";
 import Order, { IOrderItem } from "../models/Order.model";
 import Product from "../models/Product.model";
 import asyncHandler from "../utils/asyncHandler";
+import { sessionUser } from "../middleware/requireAuth";
 import { httpError } from "../types/http.types";
 
 interface OrderItemInput {
@@ -19,17 +20,8 @@ interface CreateOrderBody {
   paymentMethod?: string;
 }
 
-// Cookie-auth routes attach a SessionUser; narrow req.user before use.
-const requireSessionUser = (req: Request) => {
-  const user = req.user;
-  if (!user || typeof user === "string") {
-    throw httpError("Unauthorized", 401);
-  }
-  return user;
-};
-
 export const createOrder = asyncHandler(async (req: Request, res: Response) => {
-  const sessionUser = requireSessionUser(req);
+  const user = sessionUser(req);
   const { items, shippingAddress, paymentMethod } = req.body as CreateOrderBody;
 
   if (!items || !Array.isArray(items) || items.length === 0) {
@@ -100,7 +92,7 @@ export const createOrder = asyncHandler(async (req: Request, res: Response) => {
   }
 
   const order = await Order.create({
-    user: sessionUser._id,
+    user: user._id,
     items: orderItems,
     shippingAddress,
     paymentMethod: paymentMethod || "cod",
@@ -111,20 +103,20 @@ export const createOrder = asyncHandler(async (req: Request, res: Response) => {
 });
 
 export const getMyOrders = asyncHandler(async (req: Request, res: Response) => {
-  const sessionUser = requireSessionUser(req);
-  const orders = await Order.find({ user: sessionUser._id }).sort({ createdAt: -1 });
+  const user = sessionUser(req);
+  const orders = await Order.find({ user: user._id }).sort({ createdAt: -1 });
   res.json({ orders });
 });
 
 export const cancelOrder = asyncHandler(async (req: Request, res: Response) => {
-  const sessionUser = requireSessionUser(req);
+  const user = sessionUser(req);
   const order = await Order.findById(req.params.id);
 
   if (!order) {
     throw httpError("Order not found", 404);
   }
 
-  if (order.user.toString() !== sessionUser._id.toString()) {
+  if (order.user.toString() !== user._id.toString()) {
     throw httpError("Not authorized to cancel this order", 403);
   }
 

@@ -1,9 +1,9 @@
 import express from "express";
-import protect from "../middleware/auth.middleware";
+import { requireAuth } from "../middleware/requireAuth";
 import { getProfile } from "../controllers/user.controller";
 
 const router = express.Router();
 
-router.get("/profile", protect, getProfile);
+router.get("/profile", requireAuth, getProfile);
 
-export = router;
+export default router;

@@ -1,6 +1,7 @@
 import { Request, Response } from "express";
 import Product from "../models/Product.model";
 import asyncHandler from "../utils/asyncHandler";
+import { sessionUser } from "../middleware/requireAuth";
 import { httpError } from "../types/http.types";
 
 interface ProductBody {
@@ -30,7 +31,7 @@ export const createProduct = asyncHandler(async (req: Request, res: Response) =>
     stock,
     category,
     images,
-    createdBy: typeof req.user === "string" ? req.user : req.user?._id,
+    createdBy: sessionUser(req)._id,
   });
   res.status(201).json(product);
 });

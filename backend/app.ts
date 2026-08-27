@@ -90,4 +90,4 @@ app.use(errorHandler);
 
 // `export =` compiles to `module.exports = app`, so the tests'
 // `import app from "../app"` and server.ts both keep working.
-export = app;
+export default app;

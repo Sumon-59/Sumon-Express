@@ -306,7 +306,7 @@ provider (Stripe test). Pick by appetite when we get here — re-plan with `/way
 |-------|--------|
 | 0 — Test infrastructure + dev DB | ✅ 2026-08-26 — 25 tests (17 backend, 8 frontend); Sumon wrote the inactive-product test; extra vs plan: idempotent model registration, ESM test files (Vitest 4 requirement) |
 | 0.5 — Backend TypeScript migration | ✅ 2026-08-27 — 100% strict TS compiled to dist/; 17 tests unchanged and green throughout; deviation from plan: conversion order flipped to top-down (JS cannot require TS), D1 revised (Claude implements, Sumon reads) |
-| 1 — Auth refactor + admin shell | ⬜ |
+| 1 — Auth refactor + admin shell | ✅ 2026-08-27 — canonical JWT (memory token + single-flight refresh interceptor), one req.user, admin shell + promote script; 38 tests (25 BE + 13 FE); rotation no-op bug found by test, fixed with jti |
 | 2 — Product management | ⬜ |
 | 2b — Image uploads | ⬜ |
 | 3 — Order management | ⬜ |

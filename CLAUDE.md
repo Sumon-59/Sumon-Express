@@ -44,13 +44,25 @@ Frontend `sumon-express-frontend/.env.local` (on Vercel set in dashboard):
 
 ## Architecture notes
 
-### Two auth mechanisms exist — don't mix them up
-1. **Cookie auth (what the frontend uses).** Refresh token in an httpOnly cookie named `jwt`, signed with `JWT_REFRESH_SECRET`. `middleware/authCookie.middleware.js` (`protectCookie`) verifies it and attaches the full user doc as `req.user`. Used by `/api/auth/me`, `/api/auth/refresh`, `/api/auth/logout`, and all `/api/orders` routes.
-2. **Bearer auth (admin/API-client only).** Short-lived access token from login/register responses, signed with `JWT_ACCESS_SECRET`. `middleware/auth.middleware.js` (`protect`) verifies the `Authorization: Bearer` header and sets `req.user` to the **userId string** (not a doc). `middleware/admin.middleware.js` (`isAdmin`) then loads the user and checks `role === "admin"`. Used by `/api/admin/*`, product/category create/update, `/api/users/profile`. The frontend ignores access tokens entirely — admin routes are exercised via Postman/curl.
-
-Consequence: `req.user` is a **document** under `protectCookie` but a **string id** under `protect`. Check which middleware a route uses before touching `req.user`.
-
-Cookie flags are env-dependent (`setRefreshCookie` in `auth.controller.js`): prod = `secure: true, sameSite: "none"` (cross-site Vercel→Render), dev = `secure: false, sameSite: "lax"`. `app.set("trust proxy", 1)` in `server.js` is required for this to work behind Render's proxy — don't remove it.
+### Auth: one mechanism (canonical JWT, since Slice 1)
+- **Access token** — 15-minute JWT signed with `JWT_ACCESS_SECRET`, returned in the login/
+  register/refresh JSON body. The frontend keeps it **in memory only** (`lib/api.ts`) and
+  sends it as `Authorization: Bearer` on every call. `requireAuth`
+  (`middleware/requireAuth.ts`) verifies it on every protected route and attaches the one
+  `req.user` shape (`SessionUser`: _id, name, email, role); handlers read it via the
+  `sessionUser(req)` accessor. Admin routes chain `requireAdmin` (403 for non-admins).
+- **Refresh token** — 7-day JWT with a unique `jti`, stored in the httpOnly cookie `jwt`
+  AND on the user record. `GET /api/auth/refresh` (cookie-authed) rotates it and mints a
+  new access token; reusing a rotated-away cookie fails. Logout clears the cookie and the
+  stored token, so no new access tokens can be minted; outstanding access tokens die
+  within 15 minutes (no denylist — accepted).
+- **Frontend engine** (`lib/api.ts`): request interceptor attaches the Bearer header; the
+  response interceptor does single-flight refresh on 401 and retries once. Only a
+  definitive 401/403 from refresh logs the user out — transient errors (5xx, network,
+  Render cold start) fail the one request without ending the session.
+- All token verification goes through `verifyToken` in `utils/token.js` — don't hand-roll
+  `jwt.verify` at call sites.
+- Promote an admin: `npm run promote -- <email>` (backend; acts on the `.env` database).
 
 ### CORS
 Allowlist in `server.js` (`allowedOrigins`) + `credentials: true`. When the frontend gets a new domain (e.g. a Vercel preview URL), it must be added there or via `CLIENT_URL`.

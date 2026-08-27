@@ -1,11 +1,15 @@
 "use client";
 
 import React, { createContext, useContext, useEffect, useMemo, useState } from "react";
-import { api } from "@/lib/api";
+import {
+  api,
+  setAccessToken,
+  refreshAccessToken,
+  setOnAuthFailure,
+} from "@/lib/api";
 
 /**
  * Minimal user shape used by the frontend.
- * Keep it minimal; you can expand later if needed.
  */
 type User = {
   _id: string;
@@ -14,10 +18,6 @@ type User = {
   name?: string;
 };
 
-/**
- * Inputs for auth actions.
- * Adjust fields if your backend expects different keys.
- */
 type RegisterInput = {
   email: string;
   password: string;
@@ -31,21 +31,23 @@ type LoginInput = {
 
 /**
  * Auth context contract: what the app can access from anywhere.
+ * (Same public surface as before Slice 1 — the engine underneath is
+ * now the canonical JWT pattern: in-memory access token + refresh.)
  */
 type AuthContextType = {
   user: User | null;
   loading: boolean;
 
-  /** Re-check session from backend (cookie-based). */
+  /** Re-check session from backend (refresh → me). */
   checkAuth: () => Promise<void>;
 
-  /** Register and then restore session from backend. */
+  /** Register and then load the session user. */
   register: (data: RegisterInput) => Promise<void>;
 
-  /** Login and then restore session from backend. */
+  /** Login and then load the session user. */
   login: (data: LoginInput) => Promise<void>;
 
-  /** Logout (revoke refresh cookie on backend) and clear frontend state. */
+  /** Logout (revoke refresh cookie) and clear frontend state. */
   logout: () => Promise<void>;
 };
 
@@ -53,76 +55,65 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
-
-  /**
-   * loading=true means we are currently checking session state (e.g. on app load).
-   * This prevents UI flicker and helps route guards later.
-   */
   const [loading, setLoading] = useState<boolean>(true);
 
+  const fetchMe = async () => {
+    const res = await api.get("/auth/me");
+    setUser(res.data?.user ?? null);
+  };
+
   /**
-   * Backend is the single source of truth.
-   * If cookies are valid, /auth/me returns the user.
-   * If not, it fails (401) and we set user=null.
+   * Bootstrap / re-check: the access token lives only in memory, so on
+   * a fresh page load we first exchange the httpOnly refresh cookie for
+   * a new access token, then ask who we are.
    */
   const checkAuth = async () => {
     try {
       setLoading(true);
-
-      // Your confirmed endpoint:
-      // baseURL: .../api  => final URL: .../api/auth/me
-      const res = await api.get("/auth/me");
-
-      // Support both shapes:
-      // 1) { user: {...} }
-      // 2) direct user object
-      const currentUser = res.data?.user ?? res.data;
-
-      setUser(currentUser ?? null);
-    } catch (err) {
+      const token = await refreshAccessToken();
+      if (!token) {
+        setUser(null);
+        return;
+      }
+      await fetchMe();
+    } catch {
       setUser(null);
     } finally {
       setLoading(false);
     }
   };
 
-  /**
-   * Register:
-   * Do NOT trust response shape. After register, ask backend who we are.
-   * This works whether backend returns user or not.
-   */
   const register = async (data: RegisterInput) => {
-    await api.post("/auth/register", data);
-    await checkAuth();
+    const res = await api.post("/auth/register", data);
+    setAccessToken(res.data?.accessToken ?? null);
+    await fetchMe();
   };
 
-  /**
-   * Login:
-   * Same strategy as register. After login, confirm session via /auth/me.
-   */
   const login = async (data: LoginInput) => {
-    await api.post("/auth/login", data);
-    await checkAuth();
+    const res = await api.post("/auth/login", data);
+    setAccessToken(res.data?.accessToken ?? null);
+    await fetchMe();
   };
 
-  /**
-   * Logout:
-   * Always clear frontend user state even if backend fails.
-   */
   const logout = async () => {
     try {
       await api.post("/auth/logout");
     } finally {
+      setAccessToken(null);
       setUser(null);
     }
   };
 
-  /**
-   * On first app load, restore session (cookie-based auth).
-   * This is what makes page refresh keep the user logged in.
-   */
   useEffect(() => {
+    // If a refresh definitively fails mid-session, the session is over.
+    setOnAuthFailure(() => {
+      setAccessToken(null);
+      setUser(null);
+    });
+
     checkAuth();
+
+    return () => setOnAuthFailure(null);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -141,10 +132,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }
 
-/**
- * Safe hook to consume auth context.
- * Throws early if used outside <AuthProvider>.
- */
 export function useAuth() {
   const ctx = useContext(AuthContext);
   if (!ctx) {

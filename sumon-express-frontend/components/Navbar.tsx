@@ -3,7 +3,7 @@
 import React from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Search, ShoppingCart, User, Package, LogOut } from "lucide-react";
+import { Search, ShoppingCart, User, Package, LogOut, LayoutDashboard } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { useCart } from "@/context/CartContext";
 import { Button } from "@/components/ui/button";
@@ -88,6 +88,11 @@ export default function Navbar() {
                 <DropdownMenuItem onClick={() => router.push("/orders")}>
                   <Package className="mr-2 h-4 w-4" /> My Orders
                 </DropdownMenuItem>
+                {user.role === "admin" && (
+                  <DropdownMenuItem onClick={() => router.push("/admin")}>
+                    <LayoutDashboard className="mr-2 h-4 w-4" /> Admin
+                  </DropdownMenuItem>
+                )}
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={onLogout}>
                   <LogOut className="mr-2 h-4 w-4" /> Logout

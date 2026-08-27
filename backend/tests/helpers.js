@@ -19,7 +19,14 @@ export async function registerUser(overrides = {}) {
     ...overrides,
   };
   const res = await request(app).post("/api/auth/register").send(user);
-  return { res, user, cookies: res.headers["set-cookie"] };
+  return {
+    res,
+    user,
+    cookies: res.headers["set-cookie"],
+    accessToken: res.body.accessToken,
+    // Convenience: the header protected routes now expect (Slice 1)
+    auth: `Bearer ${res.body.accessToken}`,
+  };
 }
 
 // Plant a product directly in the in-memory database (creating a
