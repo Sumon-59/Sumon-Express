@@ -1,18 +1,28 @@
-const bcrypt = require("bcryptjs");
-const jwt = require("jsonwebtoken");
-const User = require("../models/User.model");
-const asyncHandler = require("../utils/asyncHandler");
-const {
-  generateAccessToken,
-  generateRefreshToken,
-} = require("../utils/token");
+import bcrypt from "bcryptjs";
+import jwt from "jsonwebtoken";
+import { Request, Response } from "express";
+import User from "../models/User.model";
+import asyncHandler from "../utils/asyncHandler";
+import { generateAccessToken, generateRefreshToken } from "../utils/token";
+import { httpError } from "../types/http.types";
+
+interface RegisterBody {
+  name?: string;
+  email?: string;
+  password?: string;
+}
+
+interface LoginBody {
+  email?: string;
+  password?: string;
+}
 
 /**
  * Helper to set refresh token cookie in a dev/prod safe way.
  * - Dev (localhost): secure=false, sameSite=lax
  * - Prod (https):     secure=true, sameSite=none
  */
-const setRefreshCookie = (res, refreshToken) => {
+const setRefreshCookie = (res: Response, refreshToken: string): void => {
   const isProd = process.env.NODE_ENV === "production";
 
   res.cookie("jwt", refreshToken, {
@@ -28,20 +38,16 @@ const setRefreshCookie = (res, refreshToken) => {
  * @route   POST /api/auth/register
  * @access  Public
  */
-const registerUser = asyncHandler(async (req, res) => {
-  const { name, email, password } = req.body;
+export const registerUser = asyncHandler(async (req: Request, res: Response) => {
+  const { name, email, password } = req.body as RegisterBody;
 
   if (!name || !email || !password) {
-    const err = new Error("All fields are required");
-    err.statusCode = 400;
-    throw err;
+    throw httpError("All fields are required", 400);
   }
 
   const existingUser = await User.findOne({ email });
   if (existingUser) {
-    const err = new Error("User already exists");
-    err.statusCode = 409;
-    throw err;
+    throw httpError("User already exists", 409);
   }
 
   const hashedPassword = await bcrypt.hash(password, 10);
@@ -74,21 +80,17 @@ const registerUser = asyncHandler(async (req, res) => {
  * @route   POST /api/auth/login
  * @access  Public
  */
-const loginUser = asyncHandler(async (req, res) => {
-  const { email, password } = req.body;
+export const loginUser = asyncHandler(async (req: Request, res: Response) => {
+  const { email, password } = req.body as LoginBody;
 
   const user = await User.findOne({ email });
   if (!user) {
-    const err = new Error("Invalid credentials");
-    err.statusCode = 401;
-    throw err;
+    throw httpError("Invalid credentials", 401);
   }
 
-  const isMatch = await bcrypt.compare(password, user.password);
+  const isMatch = await bcrypt.compare(password ?? "", user.password);
   if (!isMatch) {
-    const err = new Error("Invalid credentials");
-    err.statusCode = 401;
-    throw err;
+    throw httpError("Invalid credentials", 401);
   }
 
   // Generate tokens
@@ -110,37 +112,32 @@ const loginUser = asyncHandler(async (req, res) => {
  * @route   GET /api/auth/refresh
  * @access  Public (cookie based)
  */
-const refreshTokenHandler = asyncHandler(async (req, res) => {
-  const cookies = req.cookies;
+export const refreshTokenHandler = asyncHandler(async (req: Request, res: Response) => {
+  const refreshToken: string | undefined = req.cookies?.jwt;
 
-  if (!cookies?.jwt) {
-    const err = new Error("Unauthorized");
-    err.statusCode = 401;
-    throw err;
+  if (!refreshToken) {
+    throw httpError("Unauthorized", 401);
   }
-
-  const refreshToken = cookies.jwt;
 
   const user = await User.findOne({ refreshToken });
   if (!user) {
-    const err = new Error("Forbidden");
-    err.statusCode = 403;
-    throw err;
+    throw httpError("Forbidden", 403);
   }
 
-  let decoded;
+  const secret = process.env.JWT_REFRESH_SECRET;
+  if (!secret) {
+    throw httpError("Server misconfigured", 500);
+  }
+
+  let decoded: string | jwt.JwtPayload;
   try {
-    decoded = jwt.verify(refreshToken, process.env.JWT_REFRESH_SECRET);
+    decoded = jwt.verify(refreshToken, secret);
   } catch (e) {
-    const error = new Error("Forbidden");
-    error.statusCode = 403;
-    throw error;
+    throw httpError("Forbidden", 403);
   }
 
-  if (user._id.toString() !== decoded.userId) {
-    const error = new Error("Forbidden");
-    error.statusCode = 403;
-    throw error;
+  if (typeof decoded === "string" || user._id.toString() !== decoded.userId) {
+    throw httpError("Forbidden", 403);
   }
 
   // Rotate tokens
@@ -161,14 +158,13 @@ const refreshTokenHandler = asyncHandler(async (req, res) => {
  * @route   POST /api/auth/logout
  * @access  Public (cookie based)
  */
-const logoutUser = asyncHandler(async (req, res) => {
-  const cookies = req.cookies;
+export const logoutUser = asyncHandler(async (req: Request, res: Response) => {
+  const refreshToken: string | undefined = req.cookies?.jwt;
 
-  if (!cookies?.jwt) {
-    return res.sendStatus(204); // No content
+  if (!refreshToken) {
+    res.sendStatus(204); // No content
+    return;
   }
-
-  const refreshToken = cookies.jwt;
 
   const user = await User.findOne({ refreshToken });
   if (user) {
@@ -187,25 +183,28 @@ const logoutUser = asyncHandler(async (req, res) => {
   res.sendStatus(204);
 });
 
-const me = asyncHandler(async (req, res) => {
-  const cookies = req.cookies;
+export const me = asyncHandler(async (req: Request, res: Response) => {
+  const refreshToken: string | undefined = req.cookies?.jwt;
 
-  if (!cookies?.jwt) {
-    const err = new Error("Unauthorized");
-    err.statusCode = 401;
-    throw err;
+  if (!refreshToken) {
+    throw httpError("Unauthorized", 401);
   }
 
-  const refreshToken = cookies.jwt;
+  const secret = process.env.JWT_REFRESH_SECRET;
+  if (!secret) {
+    throw httpError("Server misconfigured", 500);
+  }
 
   // Verify refresh token
-  let decoded;
+  let decoded: string | jwt.JwtPayload;
   try {
-    decoded = jwt.verify(refreshToken, process.env.JWT_REFRESH_SECRET);
+    decoded = jwt.verify(refreshToken, secret);
   } catch (e) {
-    const error = new Error("Unauthorized");
-    error.statusCode = 401;
-    throw error;
+    throw httpError("Unauthorized", 401);
+  }
+
+  if (typeof decoded === "string") {
+    throw httpError("Unauthorized", 401);
   }
 
   // decoded.userId because our tokens use { userId }
@@ -214,20 +213,10 @@ const me = asyncHandler(async (req, res) => {
 
   // Token must still match the one stored in DB (logout revokes it)
   if (!user || user.refreshToken !== refreshToken) {
-    const error = new Error("Unauthorized");
-    error.statusCode = 401;
-    throw error;
+    throw httpError("Unauthorized", 401);
   }
 
   res.status(200).json({
     user: { _id: user._id, name: user.name, email: user.email, role: user.role },
   });
 });
-
-module.exports = {
-  registerUser,
-  loginUser,
-  refreshTokenHandler,
-  logoutUser,
-  me,
-};

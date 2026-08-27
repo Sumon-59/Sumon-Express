@@ -9,7 +9,7 @@ boundary and tighten automatically when ticket 06 lands.
 
 **Status:** ready-for-agent (owner: Sumon, Claude reviews each controller)
 
-- [ ] Request body shapes for register/login/create-order/create-product are named types
-- [ ] No `any` escapes; unknown boundary data is narrowed, not silenced
-- [ ] Type check passes on the converted files
-- [ ] All 17 backend tests still green, unmodified
+- [x] Request body shapes for register/login/create-order/create-product are named types
+- [x] No `any` escapes; unknown boundary data is narrowed, not silenced
+- [x] Type check passes on the converted files
+- [x] All 17 backend tests still green, unmodified
