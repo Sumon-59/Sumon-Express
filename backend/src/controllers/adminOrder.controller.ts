@@ -1,16 +1,20 @@
 import { Request, Response } from "express";
-import Order from "../models/Order.model";
+import Order, { OrderStatus } from "../models/Order.model";
 import Product from "../models/Product.model";
 import asyncHandler from "../utils/asyncHandler";
 import { httpError } from "../types/http.types";
 
-const ORDER_STATUSES: string[] = [
+const ORDER_STATUSES = [
   "pending",
   "processing",
   "shipped",
   "delivered",
   "cancelled",
-];
+] as const;
+
+// Type guard: proves to the compiler a plain string is an OrderStatus.
+const isOrderStatus = (s: string): s is OrderStatus =>
+  (ORDER_STATUSES as readonly string[]).includes(s);
 
 interface UpdateStatusBody {
   status?: string;
@@ -26,7 +30,7 @@ export const getAllOrders = asyncHandler(async (req: Request, res: Response) => 
 export const updateOrderStatus = asyncHandler(async (req: Request, res: Response) => {
   const { status } = req.body as UpdateStatusBody;
 
-  if (!status || !ORDER_STATUSES.includes(status)) {
+  if (!status || !isOrderStatus(status)) {
     throw httpError(`Invalid status. Must be one of: ${ORDER_STATUSES.join(", ")}`, 400);
   }
 

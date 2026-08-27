@@ -1,5 +1,5 @@
 import { Request, Response } from "express";
-import Order from "../models/Order.model";
+import Order, { IOrderItem } from "../models/Order.model";
 import Product from "../models/Product.model";
 import asyncHandler from "../utils/asyncHandler";
 import { httpError } from "../types/http.types";
@@ -17,13 +17,6 @@ interface CreateOrderBody {
     phone?: string;
   };
   paymentMethod?: string;
-}
-
-interface OrderItemSnapshot {
-  product: unknown; // ObjectId once models are typed (ticket 06)
-  name: string;
-  price: number;
-  quantity: number;
 }
 
 // Cookie-auth routes attach a SessionUser; narrow req.user before use.
@@ -56,7 +49,7 @@ export const createOrder = asyncHandler(async (req: Request, res: Response) => {
 
   let totalPrice = 0;
 
-  const orderItems: OrderItemSnapshot[] = items.map((i) => {
+  const orderItems: IOrderItem[] = items.map((i) => {
     const p = products.find((x) => x._id.toString() === i.product);
 
     if (!p) {
@@ -85,7 +78,7 @@ export const createOrder = asyncHandler(async (req: Request, res: Response) => {
   });
 
   // Decrement stock atomically; roll back prior decrements if any item fails
-  const decremented: OrderItemSnapshot[] = [];
+  const decremented: IOrderItem[] = [];
   for (const item of orderItems) {
     const updated = await Product.findOneAndUpdate(
       { _id: item.product, stock: { $gte: item.quantity } },

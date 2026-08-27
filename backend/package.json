@@ -10,7 +10,7 @@
     "dev": "tsx watch server.ts",
     "build": "tsc",
     "typecheck": "tsc --noEmit",
-    "seed": "node src/seed/products.seed.js"
+    "seed": "tsx src/seed/products.seed.ts"
   },
   "keywords": [],
   "author": "",

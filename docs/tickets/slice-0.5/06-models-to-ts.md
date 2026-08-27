@@ -10,8 +10,8 @@ TypeScript ones). The idempotent-registration idiom from Slice 0 is preserved.
 
 **Status:** ready-for-agent (owner: Sumon, Claude reviews each model)
 
-- [ ] Each model exports a typed document interface and a typed model
-- [ ] A deliberately misspelled field (tried once, then reverted) fails the build
-- [ ] Seed script is TypeScript and still runnable via the seed command
-- [ ] Type check passes on the converted files
-- [ ] All 17 backend tests still green, unmodified
+- [x] Each model exports a typed document interface and a typed model
+- [x] A deliberately misspelled field (tried once, then reverted) fails the build
+- [x] Seed script is TypeScript and still runnable via the seed command
+- [x] Type check passes on the converted files
+- [x] All 17 backend tests still green, unmodified

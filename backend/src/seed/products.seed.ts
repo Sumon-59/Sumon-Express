@@ -1,17 +1,20 @@
-const mongoose = require("mongoose");
-require("dotenv").config();
+import "dotenv/config";
+import mongoose from "mongoose";
 
-const Product = require("../models/Product.model");
-const Category = require("../models/Category.model");
-const User = require("../models/User.model");
+import Product from "../models/Product.model";
+import Category, { ICategory } from "../models/Category.model";
+import User from "../models/User.model";
+import { HydratedDocument } from "mongoose";
 
 // Deterministic, reliable demo images
-const img = (slug) => `https://picsum.photos/seed/${slug}/600/600`;
+const img = (slug: string): string => `https://picsum.photos/seed/${slug}/600/600`;
 
-async function seedProducts() {
+async function seedProducts(): Promise<void> {
   try {
-    // Connect DB
-    await mongoose.connect(process.env.MONGO_URI);
+    const uri = process.env.MONGO_URI;
+    if (!uri) throw new Error("MONGO_URI is not set");
+
+    await mongoose.connect(uri);
     console.log("MongoDB connected");
 
     // Find an admin/user to assign as createdBy
@@ -22,13 +25,15 @@ async function seedProducts() {
 
     // Upsert categories
     const categoryNames = ["Electronics", "Accessories", "Home & Living", "Fashion"];
-    const categories = {};
+    const categories: Record<string, HydratedDocument<ICategory>> = {};
     for (const name of categoryNames) {
-      categories[name] = await Category.findOneAndUpdate(
+      const category = await Category.findOneAndUpdate(
         { name },
         { name, isActive: true },
         { upsert: true, new: true }
       );
+      if (!category) throw new Error(`Failed to upsert category: ${name}`);
+      categories[name] = category;
     }
     console.log(`✅ ${categoryNames.length} categories upserted`);
 
@@ -148,7 +153,7 @@ async function seedProducts() {
 
     process.exit(0);
   } catch (error) {
-    console.error("❌ Seed error:", error.message);
+    console.error("❌ Seed error:", error instanceof Error ? error.message : error);
     process.exit(1);
   }
 }
