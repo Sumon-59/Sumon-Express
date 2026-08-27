@@ -1,8 +1,9 @@
 # 05 — Controllers → TypeScript
 
 **What to build:** All six controllers (auth, user, product, category, order, admin
-order) typed: request bodies, params, and response payloads have explicit shapes, and the
-compiler enforces that handlers only touch fields the models actually declare.
+order) typed: request bodies, params, and response payloads have explicit shapes. Models
+are still JavaScript at this point, so model values are typed loosely at this ticket's
+boundary and tighten automatically when ticket 06 lands.
 
 **Blocked by:** 04 — Middleware → TypeScript.
 

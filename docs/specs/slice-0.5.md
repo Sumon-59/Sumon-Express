@@ -61,9 +61,13 @@ user can observe.
 - **`req.user` duality is typed honestly**: cookie-auth routes see a user document type,
   Bearer-auth routes see an id string. The duality itself is *not* fixed here — that is
   Slice 1's auth refactor — but the types make it explicit and safe until then.
-- **Conversion order follows the dependency direction** — leaf utilities first, then
-  config, models, middleware, controllers, routes, and finally the app and server entry —
-  with mixed JS/TS allowed mid-migration so the suite stays runnable after every step.
+- **Conversion order is top-down** — server and app first, then routes, middleware,
+  controllers, models (with the seed script), and leaf utilities last — with mixed JS/TS
+  allowed mid-migration so the suite stays runnable after every step.
+  *(Amended after a discovery on day one: the original leaf-first order is impossible in a
+  CommonJS codebase, because a still-JavaScript file cannot `require` a TypeScript file —
+  plain Node's resolver doesn't know `.ts` exists. A TypeScript file CAN depend on a
+  JavaScript one, so conversion must flow from consumers down to dependencies.)*
 - **Learning-first execution (D1):** the first file conversion is a worked example done
   together and narrated; Sumon converts the subsequent files himself with review at each
   step. Scaffolding (tsconfig, build scripts) is set up with approval and explained.

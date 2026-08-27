@@ -1,17 +1,19 @@
-const express = require("express");
-const cors = require("cors");
-const helmet = require("helmet");
-const morgan = require("morgan");
-const cookieParser = require("cookie-parser");
+import express from "express";
+import cors from "cors";
+import helmet from "helmet";
+import morgan from "morgan";
+import cookieParser from "cookie-parser";
 
-const authRoutes = require("./src/routes/auth.routes");
-const userRoutes = require("./src/routes/user.routes");
-const adminRoutes = require("./src/routes/admin.routes");
-const productRoutes = require("./src/routes/product.routes");
-const categoryRoutes = require("./src/routes/category.routes");
-const orderRoutes = require("./src/routes/order.routes");
+// These are still JavaScript modules — that's fine: TypeScript files may
+// depend on JavaScript ones during the migration (never the reverse).
+import authRoutes from "./src/routes/auth.routes";
+import userRoutes from "./src/routes/user.routes";
+import adminRoutes from "./src/routes/admin.routes";
+import productRoutes from "./src/routes/product.routes";
+import categoryRoutes from "./src/routes/category.routes";
+import orderRoutes from "./src/routes/order.routes";
 
-const errorHandler = require("./src/middleware/error.middleware");
+import errorHandler from "./src/middleware/error.middleware";
 
 const app = express();
 
@@ -22,7 +24,7 @@ app.set("trust proxy", 1);
  * CORS configuration (credentials + cookies friendly)
  * NOTE: When credentials=true, Access-Control-Allow-Origin cannot be '*'
  */
-const allowedOrigins = [
+const allowedOrigins: string[] = [
   "http://localhost:3000",
   "http://localhost:3001",
   "http://127.0.0.1:3000",
@@ -36,8 +38,8 @@ if (process.env.CLIENT_URL && !allowedOrigins.includes(process.env.CLIENT_URL)) 
   allowedOrigins.push(process.env.CLIENT_URL);
 }
 
-const corsOptions = {
-  origin: function (origin, callback) {
+const corsOptions: cors.CorsOptions = {
+  origin: (origin, callback) => {
     // Allow requests with no origin (Postman, curl, server-to-server)
     if (!origin) return callback(null, true);
 
@@ -86,4 +88,6 @@ app.get("/", (req, res) => {
 // ----- Error handler (must be after routes) -----
 app.use(errorHandler);
 
-module.exports = app;
+// `export =` compiles to `module.exports = app`, so the tests'
+// `import app from "../app"` and server.ts both keep working.
+export = app;

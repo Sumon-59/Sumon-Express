@@ -5,7 +5,7 @@ error handler) typed, including honest types for the project's known wart: `req.
 user document under cookie auth but an id string under Bearer auth. The types make the
 duality explicit and safe; *fixing* it stays out of scope (Slice 1's auth refactor).
 
-**Blocked by:** 03 — Models → TypeScript.
+**Blocked by:** 03 — Routes → TypeScript.
 
 **Status:** ready-for-agent (owner: Sumon, Claude reviews each middleware)
 

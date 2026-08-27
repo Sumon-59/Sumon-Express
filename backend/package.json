@@ -6,8 +6,8 @@
   "scripts": {
     "test": "vitest run",
     "test:watch": "vitest",
-    "start": "node server.js",
-    "dev": "tsx watch server.js",
+    "start": "node dist/server.js",
+    "dev": "tsx watch server.ts",
     "build": "tsc",
     "typecheck": "tsc --noEmit",
     "seed": "node src/seed/products.seed.js"
