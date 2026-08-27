@@ -11,8 +11,8 @@ on the new mechanism.
 
 **Status:** ready-for-agent
 
-- [ ] No token in localStorage or a readable cookie — memory only
-- [ ] Interceptor tests: 401 → one refresh → retry succeeds; refresh failure → logout
+- [x] No token in localStorage or a readable cookie — memory only
+- [x] Interceptor tests: 401 → one refresh → retry succeeds; refresh failure → logout
       signal; N concurrent 401s → exactly one refresh call
-- [ ] AuthContext keeps its public surface; storefront flows work in dev
-- [ ] Frontend type check, tests, and build green
+- [x] AuthContext keeps its public surface; storefront flows work in dev
+- [x] Frontend type check, tests, and build green
