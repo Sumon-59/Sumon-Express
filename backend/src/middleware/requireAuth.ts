@@ -2,6 +2,7 @@ import { Request, Response, NextFunction } from "express";
 import User from "../models/User.model";
 import { verifyToken } from "../utils/token";
 import { SessionUser } from "../types/auth.types";
+import { httpError } from "../types/http.types";
 
 /**
  * THE auth middleware (canonical JWT pattern, decision D3).
@@ -70,7 +71,7 @@ export const requireAdmin = (req: Request, res: Response, next: NextFunction): v
  */
 export const sessionUser = (req: Request): SessionUser => {
   if (!req.user) {
-    throw Object.assign(new Error("Unauthorized"), { statusCode: 401 });
+    throw httpError("Unauthorized", 401);
   }
   return req.user;
 };

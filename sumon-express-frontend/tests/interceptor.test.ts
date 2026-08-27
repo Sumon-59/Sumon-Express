@@ -115,6 +115,21 @@ describe("api auth interceptors", () => {
     expect(refreshCalls).toBe(1);
   });
 
+  it("a TRANSIENT refresh failure (5xx / cold start) does NOT log the user out", async () => {
+    api.defaults.adapter = async (config: Config) =>
+      respond(config, 401, { message: "Not authorized" });
+    // The refresh endpoint is down / cold-starting — not a revoked session:
+    axios.defaults.adapter = async (config: Config) =>
+      respond(config, 503, { message: "Service unavailable" });
+
+    const onFail = vi.fn();
+    setOnAuthFailure(onFail);
+    setAccessToken("stale-token");
+
+    await expect(api.get("/orders/my-orders")).rejects.toThrow();
+    expect(onFail).not.toHaveBeenCalled();
+  });
+
   it("a 401 from login is a real answer — no refresh attempt", async () => {
     api.defaults.adapter = async (config: Config) =>
       respond(config, 401, { message: "Invalid credentials" });

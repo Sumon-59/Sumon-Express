@@ -9,9 +9,9 @@ import {
 
 const router = express.Router();
 
-// Cookie-based protected routes
+// Bearer-protected routes (unified auth, Slice 1)
 router.post("/", requireAuth, createOrder);
 router.get("/my-orders", requireAuth, getMyOrders);
 router.put("/:id/cancel", requireAuth, cancelOrder);
 
-export = router;
+export default router;

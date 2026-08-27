@@ -19,4 +19,4 @@ router.post("/", requireAuth, requireAdmin, createProduct);
 //router.put("/:id", requireAuth, requireAdmin, updateProduct);
 //router.delete("/:id", requireAuth, requireAdmin, deleteProduct);
 
-export = router;
+export default router;

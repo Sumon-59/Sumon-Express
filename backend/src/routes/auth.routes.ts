@@ -17,9 +17,9 @@ const router = express.Router();
 router.post("/register", registerUser);
 router.post("/login", loginLimiter, loginUser);
 
-// Session routes (cookie-based)
+// /me is Bearer-protected; /refresh and /logout are the only cookie routes
 router.get("/me", requireAuth, me);
 router.get("/refresh", refreshTokenHandler);
 router.post("/logout", logoutUser);
 
-export = router;
+export default router;

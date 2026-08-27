@@ -8,6 +8,7 @@
 
 import { describe, it, expect } from "vitest";
 import request from "supertest";
+import jwt from "jsonwebtoken";
 import app from "../app";
 import { registerUser } from "./helpers";
 
@@ -83,6 +84,19 @@ describe("GET /api/auth/me", () => {
     const res = await request(app)
       .get("/api/auth/me")
       .set("Authorization", "Bearer definitely-not-a-jwt");
+    expect(res.status).toBe(401);
+  });
+
+  it("returns 401 for an EXPIRED access token", async () => {
+    await registerUser();
+    // Correctly signed with the real test secret, but already expired:
+    const expired = jwt.sign({ userId: "0".repeat(24) }, "test-access-secret", {
+      expiresIn: -10,
+    });
+
+    const res = await request(app)
+      .get("/api/auth/me")
+      .set("Authorization", `Bearer ${expired}`);
     expect(res.status).toBe(401);
   });
 });

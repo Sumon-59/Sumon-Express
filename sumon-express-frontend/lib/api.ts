@@ -53,9 +53,16 @@ export const refreshAccessToken = (): Promise<string | null> => {
         setAccessToken(token);
         return token;
       })
-      .catch(() => {
-        setAccessToken(null);
-        return null;
+      .catch((err) => {
+        const status = err?.response?.status;
+        // 401/403 = the cookie is truly dead: session over.
+        if (status === 401 || status === 403) {
+          setAccessToken(null);
+          return null;
+        }
+        // Network blip / 5xx / server cold start: NOT a logout — let
+        // the caller fail this one request and try again later.
+        throw err;
       })
       .finally(() => {
         refreshPromise = null;
@@ -80,16 +87,24 @@ api.interceptors.response.use(
       error.response?.status === 401 &&
       original &&
       !original._retried &&
-      !NO_RETRY_URLS.some((u) => url.includes(u));
+      !NO_RETRY_URLS.some((u) => url.endsWith(u));
 
     if (shouldTryRefresh) {
       original._retried = true;
-      const token = await refreshAccessToken();
+      let token: string | null = null;
+      let transient = false;
+      try {
+        token = await refreshAccessToken();
+      } catch {
+        transient = true; // refresh couldn't run — not a revoked session
+      }
       if (token) {
         original.headers.Authorization = `Bearer ${token}`;
         return api(original);
       }
-      onAuthFailure?.();
+      if (!transient) {
+        onAuthFailure?.();
+      }
     }
 
     return Promise.reject(error);

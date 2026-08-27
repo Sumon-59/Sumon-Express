@@ -15,4 +15,4 @@ router.get("/", getCategories);
 router.post("/", requireAuth, requireAdmin, createCategory);
 router.put("/:id", requireAuth, requireAdmin, updateCategory);
 
-export = router;
+export default router;

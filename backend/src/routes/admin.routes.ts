@@ -23,4 +23,4 @@ router.get("/orders", requireAuth, requireAdmin, getAllOrders);
 router.put("/orders/:id", requireAuth, requireAdmin, updateOrderStatus);
 router.put("/orders/:id/cancel", requireAuth, requireAdmin, cancelOrderByAdmin);
 
-export = router;
+export default router;
