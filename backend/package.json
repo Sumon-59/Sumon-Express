@@ -12,7 +12,8 @@
     "typecheck": "tsc --noEmit",
     "seed": "tsx src/seed/products.seed.ts",
     "smoke": "bash scripts/smoke-dist.sh",
-    "postinstall": "npm run build"
+    "postinstall": "npm run build",
+    "promote": "tsx src/seed/promote-admin.ts"
   },
   "keywords": [],
   "author": "",

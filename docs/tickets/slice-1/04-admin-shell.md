@@ -11,7 +11,7 @@ redirected.
 
 **Status:** ready-for-agent
 
-- [ ] Admin sees the sidebar shell at /admin; all six sections navigable placeholders
-- [ ] Non-admin and anonymous visitors are redirected without admin content flashing
-- [ ] Promote script sets a user's role by email (tsx, respects current .env database)
-- [ ] Frontend type check, tests, and build green
+- [x] Admin sees the sidebar shell at /admin; all six sections navigable placeholders
+- [x] Non-admin and anonymous visitors are redirected without admin content flashing
+- [x] Promote script sets a user's role by email (tsx, respects current .env database)
+- [x] Frontend type check, tests, and build green
