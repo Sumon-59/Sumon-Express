@@ -240,3 +240,19 @@ describe("the catalog lifecycle story", () => {
     expect(backPublic.body.name).toBe("Story Widget");
   });
 });
+
+describe("GET /api/admin/products/:id", () => {
+  it("returns an INACTIVE product to the admin (public detail would 404)", async () => {
+    const { auth } = await registerAdmin();
+    const product = await plantProduct({ name: "Archived Widget", isActive: false });
+
+    const publicView = await request(app).get(`/api/products/${product._id}`);
+    expect(publicView.status).toBe(404);
+
+    const adminView = await request(app)
+      .get(`/api/admin/products/${product._id}`)
+      .set("Authorization", auth);
+    expect(adminView.status).toBe(200);
+    expect(adminView.body.name).toBe("Archived Widget");
+  });
+});

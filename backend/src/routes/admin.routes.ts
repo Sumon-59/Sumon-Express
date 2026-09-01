@@ -8,7 +8,7 @@ import {
   updateOrderStatus,
   cancelOrderByAdmin,
 } from "../controllers/adminOrder.controller";
-import { getAdminProducts } from "../controllers/product.controller";
+import { getAdminProducts, getAdminProductById } from "../controllers/product.controller";
 
 const router = express.Router();
 
@@ -19,6 +19,7 @@ router.get("/dashboard", requireAuth, requireAdmin, (req, res) => {
 
 // admin: full catalog (all statuses, search, status filter, pagination)
 router.get("/products", requireAuth, requireAdmin, getAdminProducts);
+router.get("/products/:id", requireAuth, requireAdmin, getAdminProductById);
 
 // admin: get all orders
 router.get("/orders", requireAuth, requireAdmin, getAllOrders);

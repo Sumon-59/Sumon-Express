@@ -10,8 +10,8 @@ immediate feedback; the server remains the authority. Saving lands back on the t
 
 **Status:** ready-for-agent
 
-- [ ] Create round-trip: fill form → save → product appears in table and storefront
-- [ ] Edit pre-fills every field and saves only what changed
-- [ ] Image URL entries render live previews; broken URLs are visibly broken
-- [ ] Client-side validation mirrors the server rules
-- [ ] Frontend type check, tests, and build green
+- [x] Create round-trip: fill form → save → product appears in table and storefront
+- [x] Edit pre-fills every field and saves only what changed
+- [x] Image URL entries render live previews; broken URLs are visibly broken
+- [x] Client-side validation mirrors the server rules
+- [x] Frontend type check, tests, and build green

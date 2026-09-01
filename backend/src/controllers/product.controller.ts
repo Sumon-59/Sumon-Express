@@ -133,6 +133,18 @@ export const getAdminProducts = asyncHandler(async (req: Request, res: Response)
   });
 });
 
+/**
+ * Admin product detail: unlike the public detail, inactive products
+ * are visible — the owner must be able to open and edit archived items.
+ */
+export const getAdminProductById = asyncHandler(async (req: Request, res: Response) => {
+  const product = await Product.findById(req.params.id).populate("category", "name");
+  if (!product) {
+    throw httpError("Product not found", 404);
+  }
+  res.json(product);
+});
+
 export const getProductById = asyncHandler(async (req: Request, res: Response) => {
   const product = await Product.findById(req.params.id);
   if (!product || !product.isActive) {
