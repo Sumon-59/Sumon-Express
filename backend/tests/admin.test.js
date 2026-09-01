@@ -7,17 +7,7 @@
 import { describe, it, expect } from "vitest";
 import request from "supertest";
 import app from "../app";
-import User from "../src/models/User.model";
-import { registerUser } from "./helpers";
-
-// Register through the public API, then (fixture, not assertion) flip
-// the role in the database — there is deliberately no public route that
-// grants admin.
-async function registerAdmin() {
-  const { res, user } = await registerUser({ email: "admin@example.com" });
-  await User.updateOne({ email: user.email }, { role: "admin" });
-  return { accessToken: res.body.accessToken };
-}
+import { registerUser, registerAdmin } from "./helpers";
 
 describe("GET /api/admin/orders", () => {
   it("answers 401 to anonymous callers", async () => {
@@ -37,11 +27,11 @@ describe("GET /api/admin/orders", () => {
   });
 
   it("answers 200 with the order list to an admin", async () => {
-    const { accessToken } = await registerAdmin();
+    const { auth } = await registerAdmin();
 
     const res = await request(app)
       .get("/api/admin/orders")
-      .set("Authorization", `Bearer ${accessToken}`);
+      .set("Authorization", auth);
 
     expect(res.status).toBe(200);
     expect(Array.isArray(res.body)).toBe(true);

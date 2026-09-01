@@ -6,8 +6,8 @@ import {
   createProduct,
   getProductById,
   getProducts,
-  //updateProduct,
-  //deleteProduct,
+  updateProduct,
+  deleteProduct,
 } from "../controllers/product.controller";
 
 const router = express.Router();
@@ -16,7 +16,7 @@ router.get("/:id", getProductById);
 router.get("/", getProducts);
 
 router.post("/", requireAuth, requireAdmin, createProduct);
-//router.put("/:id", requireAuth, requireAdmin, updateProduct);
-//router.delete("/:id", requireAuth, requireAdmin, deleteProduct);
+router.put("/:id", requireAuth, requireAdmin, updateProduct);
+router.delete("/:id", requireAuth, requireAdmin, deleteProduct);
 
 export default router;
