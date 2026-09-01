@@ -3,7 +3,7 @@
 Full-stack e-commerce app. Two independent apps in one repo, deployed separately:
 
 - `backend/` — Express 5 + Mongoose 9 REST API in **strict TypeScript**, compiled with `tsc` to `dist/` (CommonJS output; production runs `node dist/server.js`). Deployed to **Render** (https://sumon-express-backend.onrender.com) — its build step runs `npm run build` (see `render.yaml`).
-- `sumon-express-frontend/` — Next.js 16 (App Router) + React 19 + TypeScript + Tailwind 4 + shadcn/ui. Deployed to **Vercel** (https://sumon-express.vercel.app). Root `vercel.json` points Vercel's build into this subdirectory.
+- `sumon-express-frontend/` — Next.js 16 (App Router) + React 19 + TypeScript + Tailwind 4 + shadcn/ui. Deployed to **Vercel** (https://sumon-express.vercel.app) — the Vercel project's Root Directory setting points at this subdirectory (deliberately no root vercel.json).
 
 Database: MongoDB Atlas — **production uses the `sumon_express` database (Render only); local dev uses `sumon_dev`** on the same cluster (set in `backend/.env`). Tests use an in-memory MongoDB and never touch Atlas.
 
@@ -35,7 +35,7 @@ import (app.ts reads `CLIENT_URL` at import time).
 
 Backend `backend/.env` (never commit; on Render set these in the dashboard):
 - `PORT`, `NODE_ENV`, `MONGO_URI`
-- `JWT_ACCESS_SECRET` — signs 15-min access tokens (used by `utils/token.js` AND `middleware/auth.middleware.js` — keep them in sync)
+- `JWT_ACCESS_SECRET` — signs 15-min access tokens
 - `JWT_REFRESH_SECRET` — signs 7-day refresh tokens
 - `CLIENT_URL` — frontend origin, added to the CORS allowlist
 
@@ -60,15 +60,15 @@ Frontend `sumon-express-frontend/.env.local` (on Vercel set in dashboard):
   response interceptor does single-flight refresh on 401 and retries once. Only a
   definitive 401/403 from refresh logs the user out — transient errors (5xx, network,
   Render cold start) fail the one request without ending the session.
-- All token verification goes through `verifyToken` in `utils/token.js` — don't hand-roll
+- All token verification goes through `verifyToken` in `utils/token.ts` — don't hand-roll
   `jwt.verify` at call sites.
 - Promote an admin: `npm run promote -- <email>` (backend; acts on the `.env` database).
 
 ### CORS
-Allowlist in `server.js` (`allowedOrigins`) + `credentials: true`. When the frontend gets a new domain (e.g. a Vercel preview URL), it must be added there or via `CLIENT_URL`.
+Allowlist in `app.ts` (`allowedOrigins`) + `credentials: true`. When the frontend gets a new domain (e.g. a Vercel preview URL), it must be added there or via `CLIENT_URL`.
 
 ### Orders
-- Order items are stored under `items` in `Order.model.js` (embedded snapshot: product ref, name, price, quantity). The admin and user controllers both read `order.items`.
+- Order items are stored under `items` in `Order.model.ts` (embedded snapshot: product ref, name, price, quantity). The admin and user controllers both read `order.items`.
 - `createOrder` computes `totalPrice` server-side from DB prices (`discountPrice ?? price`) — never trust client totals.
 - Stock is decremented with a guarded atomic `findOneAndUpdate` (`stock: { $gte: qty }`, `$inc`) with manual rollback of prior decrements on failure; cancel restores stock the same way. There are no multi-document transactions.
 - Cancellation allowed for status `pending`/`processing` only.
@@ -99,4 +99,4 @@ The field is `discountPrice`. (It was historically misspelled `discoutPrice` acr
 - Never `throw` inside a `jwt.verify` callback — use the synchronous `jwt.verify` return + try/catch (async callback throws become unhandled rejections).
 - Render free tier sleeps; first request after idle takes ~30–60s. `/healthz` exists for uptime pings.
 - `backend/.env` holds real Atlas credentials — it is gitignored via the root `.gitignore`; keep it that way.
-- The seed script (`src/seed/products.seed.js`) deletes ALL products before inserting, and points at whatever `MONGO_URI` is in `.env` — check before running against prod.
+- The seed script (`src/seed/products.seed.ts`) deletes ALL products before inserting, and points at whatever `MONGO_URI` is in `.env` — check before running against prod.

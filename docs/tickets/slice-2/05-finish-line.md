@@ -9,6 +9,6 @@ create a product in the browser, see it on the live storefront.
 
 **Status:** ready-for-agent
 
-- [ ] All suites, type checks, builds, smoke green
-- [ ] /code-review findings addressed
+- [x] All suites, type checks, builds, smoke green
+- [x] /code-review findings addressed
 - [ ] Merged; deploy verified with a version probe; plan.md tracker updated
