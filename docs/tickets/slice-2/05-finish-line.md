@@ -11,4 +11,4 @@ create a product in the browser, see it on the live storefront.
 
 - [x] All suites, type checks, builds, smoke green
 - [x] /code-review findings addressed
-- [ ] Merged; deploy verified with a version probe; plan.md tracker updated
+- [x] Merged; deploy verified with a version probe; plan.md tracker updated
