@@ -7,6 +7,17 @@ export const api = axios.create({
   withCredentials: true, // send the httpOnly refresh cookie
 });
 
+// One place to turn any thrown value into a user-facing message
+// (server message first, then the error's own, then a fallback).
+export const getApiErrorMessage = (err: unknown, fallback: string): string => {
+  if (axios.isAxiosError(err)) {
+    const serverMessage = (err.response?.data as { message?: string } | undefined)?.message;
+    if (serverMessage) return serverMessage;
+  }
+  if (err instanceof Error && err.message) return err.message;
+  return fallback;
+};
+
 // ---------------------------------------------------------------
 // The access token lives in MEMORY ONLY — a module-level variable.
 // Never localStorage (XSS can read storage; it cannot enumerate a

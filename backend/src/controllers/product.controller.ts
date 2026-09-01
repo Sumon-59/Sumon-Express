@@ -1,4 +1,5 @@
 import { Request, Response } from "express";
+import { Types } from "mongoose";
 import Product from "../models/Product.model";
 import asyncHandler from "../utils/asyncHandler";
 import { sessionUser } from "../middleware/requireAuth";
@@ -25,6 +26,20 @@ const validateProductData = (
   data: ProductBody,
   current?: { price: number; discountPrice?: number }
 ): void => {
+  if (data.name !== undefined && (typeof data.name !== "string" || !data.name.trim())) {
+    throw httpError("name must be a non-empty string", 400);
+  }
+  if (
+    data.description !== undefined &&
+    (typeof data.description !== "string" || !data.description.trim())
+  ) {
+    throw httpError("description must be a non-empty string", 400);
+  }
+  if (data.category !== undefined && data.category !== null && data.category !== "") {
+    if (!Types.ObjectId.isValid(data.category)) {
+      throw httpError("category must be a valid category id", 400);
+    }
+  }
   if (data.price !== undefined && (typeof data.price !== "number" || Number.isNaN(data.price) || data.price < 0)) {
     throw httpError("price must be a non-negative number", 400);
   }
@@ -49,9 +64,10 @@ export const createProduct = asyncHandler(async (req: Request, res: Response) =>
   const { name, description, price, discountPrice, stock, category, images } =
     req.body as ProductBody;
 
-  if (!name || !description || price === undefined || stock === undefined) {
-    throw httpError("Please provide all required fields", 400);
-  }
+  if (!name) throw httpError("name is required", 400);
+  if (!description) throw httpError("description is required", 400);
+  if (price === undefined) throw httpError("price is required", 400);
+  if (stock === undefined) throw httpError("stock is required", 400);
 
   validateProductData(req.body as ProductBody);
 

@@ -2,7 +2,7 @@
 
 import React from "react";
 import { ImageIcon, Plus, Trash2 } from "lucide-react";
-import { api } from "@/lib/api";
+import { api, getApiErrorMessage } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -36,8 +36,12 @@ export default function ProductForm({ initial, submitLabel, onSubmit }: Props) {
   const [category, setCategory] = React.useState(
     initial?.category && typeof initial.category === "object" ? initial.category._id : ""
   );
-  const [images, setImages] = React.useState<string[]>(
-    initial?.images?.length ? initial.images : [""]
+  // Each row gets a stable id so removing one never confuses React's
+  // reconciliation (index keys shift when a middle row is deleted).
+  const nextImageId = React.useRef(0);
+  const newImageRow = (url = "") => ({ id: nextImageId.current++, url });
+  const [images, setImages] = React.useState(() =>
+    initial?.images?.length ? initial.images.map((u) => newImageRow(u)) : [newImageRow()]
   );
 
   const [categories, setCategories] = React.useState<Category[]>([]);
@@ -89,10 +93,10 @@ export default function ProductForm({ initial, submitLabel, onSubmit }: Props) {
         discountPrice: discountPrice === "" ? null : Number(discountPrice),
         stock: Number(stock),
         category: category || undefined,
-        images: images.map((u) => u.trim()).filter(Boolean),
+        images: images.map((row) => row.url.trim()).filter(Boolean),
       });
-    } catch (err: any) {
-      setError(err?.response?.data?.message || err?.message || "Failed to save product");
+    } catch (err) {
+      setError(getApiErrorMessage(err, "Failed to save product"));
       setSubmitting(false);
     }
   };
@@ -172,12 +176,12 @@ export default function ProductForm({ initial, submitLabel, onSubmit }: Props) {
       <div className="space-y-2">
         <Label>Images (URLs)</Label>
         <div className="space-y-2">
-          {images.map((url, i) => (
-            <div key={i} className="flex items-center gap-2">
+          {images.map((row) => (
+            <div key={row.id} className="flex items-center gap-2">
               <div className="h-12 w-12 shrink-0 overflow-hidden rounded-md border bg-muted">
-                {url.trim() ? (
+                {row.url.trim() ? (
                   // eslint-disable-next-line @next/next/no-img-element
-                  <img src={url} alt="" className="h-full w-full object-cover" />
+                  <img src={row.url} alt="" className="h-full w-full object-cover" />
                 ) : (
                   <div className="flex h-full w-full items-center justify-center text-muted-foreground">
                     <ImageIcon className="h-4 w-4" />
@@ -185,16 +189,18 @@ export default function ProductForm({ initial, submitLabel, onSubmit }: Props) {
                 )}
               </div>
               <Input
-                value={url}
+                value={row.url}
                 onChange={(e) =>
-                  setImages((prev) => prev.map((u, j) => (j === i ? e.target.value : u)))
+                  setImages((prev) =>
+                    prev.map((r) => (r.id === row.id ? { ...r, url: e.target.value } : r))
+                  )
                 }
                 placeholder="https://…"
               />
               <button
                 type="button"
                 aria-label="Remove image"
-                onClick={() => setImages((prev) => prev.filter((_, j) => j !== i))}
+                onClick={() => setImages((prev) => prev.filter((r) => r.id !== row.id))}
                 className="text-muted-foreground transition-colors hover:text-destructive"
               >
                 <Trash2 className="h-4 w-4" />
@@ -206,7 +212,7 @@ export default function ProductForm({ initial, submitLabel, onSubmit }: Props) {
           type="button"
           variant="outline"
           size="sm"
-          onClick={() => setImages((prev) => [...prev, ""])}
+          onClick={() => setImages((prev) => [...prev, newImageRow()])}
         >
           <Plus className="mr-1 h-4 w-4" /> Add image URL
         </Button>

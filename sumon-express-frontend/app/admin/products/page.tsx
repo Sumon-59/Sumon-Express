@@ -3,7 +3,7 @@
 import React from "react";
 import Link from "next/link";
 import { ImageIcon, Plus, Search } from "lucide-react";
-import { api } from "@/lib/api";
+import { api, getApiErrorMessage } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Product, ProductListResponse, formatTaka } from "@/types/product";
@@ -31,8 +31,8 @@ export default function AdminProductsPage() {
 
       const res = await api.get<ProductListResponse>(`/admin/products?${params}`);
       setData(res.data);
-    } catch (err: any) {
-      setError(err?.response?.data?.message || err?.message || "Failed to load products");
+    } catch (err) {
+      setError(getApiErrorMessage(err, "Failed to load products"));
     } finally {
       setLoading(false);
     }
@@ -48,8 +48,8 @@ export default function AdminProductsPage() {
       setBusyId(p._id);
       await api.delete(`/products/${p._id}`);
       await fetchList();
-    } catch (err: any) {
-      setError(err?.response?.data?.message || "Failed to deactivate");
+    } catch (err) {
+      setError(getApiErrorMessage(err, "Failed to deactivate"));
     } finally {
       setBusyId(null);
     }
@@ -60,8 +60,8 @@ export default function AdminProductsPage() {
       setBusyId(p._id);
       await api.put(`/products/${p._id}`, { isActive: true });
       await fetchList();
-    } catch (err: any) {
-      setError(err?.response?.data?.message || "Failed to reactivate");
+    } catch (err) {
+      setError(getApiErrorMessage(err, "Failed to reactivate"));
     } finally {
       setBusyId(null);
     }

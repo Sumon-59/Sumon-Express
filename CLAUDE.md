@@ -73,6 +73,19 @@ Allowlist in `server.js` (`allowedOrigins`) + `credentials: true`. When the fron
 - Stock is decremented with a guarded atomic `findOneAndUpdate` (`stock: { $gte: qty }`, `$inc`) with manual rollback of prior decrements on failure; cancel restores stock the same way. There are no multi-document transactions.
 - Cancellation allowed for status `pending`/`processing` only.
 
+### Product management (since Slice 2)
+- **Soft delete is the only delete.** `DELETE /api/products/:id` sets `isActive: false`;
+  nothing is ever removed (order snapshots depend on it). Reactivate via
+  `PUT /api/products/:id` with `isActive: true`.
+- **`validateProductData` in `product.controller.ts` is THE validation choke point** for
+  create and update — price ≥ 0, stock a non-negative integer, discount strictly below
+  the *effective* price (partial updates validate against existing values), name/
+  description non-empty, category a valid ObjectId. Violations answer 400 naming the
+  field. Add new product rules there, nowhere else.
+- **Admin catalog endpoints**: `GET /api/admin/products` (all statuses; `q`, `status`
+  active|inactive|all, `page`/`limit`) and `GET /api/admin/products/:id` (returns
+  inactive products — the public detail 404s them by design; the edit page needs this).
+
 ### Product pricing field
 The field is `discountPrice`. (It was historically misspelled `discoutPrice` across backend + frontend; that's fixed — don't reintroduce the typo, and note old DB documents may still carry the misspelled field.)
 

@@ -256,3 +256,42 @@ describe("GET /api/admin/products/:id", () => {
     expect(adminView.body.name).toBe("Archived Widget");
   });
 });
+
+describe("validation closes the review-found bypass paths", () => {
+  let auth;
+  beforeEach(async () => {
+    ({ auth } = await registerAdmin());
+  });
+
+  it("rejects an update clearing the name (400 naming the field, not a 500)", async () => {
+    const product = await plantProduct();
+    const res = await request(app)
+      .put(`/api/products/${product._id}`)
+      .set("Authorization", auth)
+      .send({ name: "" });
+
+    expect(res.status).toBe(400);
+    expect(res.body.message).toMatch(/name/i);
+  });
+
+  it("rejects a create without a description, naming the field", async () => {
+    const res = await request(app)
+      .post("/api/products")
+      .set("Authorization", auth)
+      .send({ name: "No Description", price: 100, stock: 1 });
+
+    expect(res.status).toBe(400);
+    expect(res.body.message).toMatch(/description/i);
+  });
+
+  it("rejects a malformed category id with 400, not a cast crash", async () => {
+    const product = await plantProduct();
+    const res = await request(app)
+      .put(`/api/products/${product._id}`)
+      .set("Authorization", auth)
+      .send({ category: "not-an-object-id" });
+
+    expect(res.status).toBe(400);
+    expect(res.body.message).toMatch(/category/i);
+  });
+});

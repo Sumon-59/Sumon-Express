@@ -4,7 +4,7 @@ import React from "react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { ChevronLeft } from "lucide-react";
-import { api } from "@/lib/api";
+import { api, getApiErrorMessage } from "@/lib/api";
 import ProductForm, { ProductPayload } from "@/components/admin/ProductForm";
 import { Product } from "@/types/product";
 
@@ -24,9 +24,7 @@ export default function EditProductPage() {
     api
       .get<Product>(`/admin/products/${id}`)
       .then((res) => setProduct(res.data))
-      .catch((err) =>
-        setError(err?.response?.data?.message || err?.message || "Failed to load product")
-      )
+      .catch((err) => setError(getApiErrorMessage(err, "Failed to load product")))
       .finally(() => setLoading(false));
   }, [id]);
 
