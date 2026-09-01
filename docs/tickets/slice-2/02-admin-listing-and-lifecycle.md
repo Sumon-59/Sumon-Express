@@ -10,7 +10,7 @@ reactivate → public again. The backend contract is final after this.
 
 **Status:** ready-for-agent
 
-- [ ] Admin listing: 401 anonymous / 403 non-admin / 200 admin (tested)
-- [ ] Inactive products included; status filter and name search work (tested)
-- [ ] Pagination shape matches the public listing convention (tested)
-- [ ] Full CRUD lifecycle story test green
+- [x] Admin listing: 401 anonymous / 403 non-admin / 200 admin (tested)
+- [x] Inactive products included; status filter and name search work (tested)
+- [x] Pagination shape matches the public listing convention (tested)
+- [x] Full CRUD lifecycle story test green

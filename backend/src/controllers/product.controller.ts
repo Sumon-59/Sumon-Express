@@ -101,6 +101,38 @@ export const getProducts = asyncHandler(async (req: Request, res: Response) => {
   });
 });
 
+/**
+ * Admin catalog listing: every product regardless of status, with the
+ * same query vocabulary as the public listing (q, page, limit) plus a
+ * status filter (active | inactive | all, default all).
+ */
+export const getAdminProducts = asyncHandler(async (req: Request, res: Response) => {
+  const page = Number(req.query.page) || 1;
+  const limit = Number(req.query.limit) || 10;
+  const skip = (page - 1) * limit;
+
+  const filter: Record<string, unknown> = {};
+  if (req.query.status === "active") filter.isActive = true;
+  if (req.query.status === "inactive") filter.isActive = false;
+  if (req.query.q) {
+    filter.name = { $regex: String(req.query.q).trim(), $options: "i" };
+  }
+
+  const products = await Product.find(filter)
+    .populate("category", "name")
+    .sort({ createdAt: -1 })
+    .skip(skip)
+    .limit(limit);
+  const total = await Product.countDocuments(filter);
+
+  res.json({
+    page,
+    pages: Math.ceil(total / limit),
+    total,
+    products,
+  });
+});
+
 export const getProductById = asyncHandler(async (req: Request, res: Response) => {
   const product = await Product.findById(req.params.id);
   if (!product || !product.isActive) {

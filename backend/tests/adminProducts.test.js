@@ -138,3 +138,105 @@ describe("DELETE /api/products/:id (soft delete)", () => {
     expect(nonAdmin.status).toBe(403);
   });
 });
+
+describe("GET /api/admin/products", () => {
+  it("answers 401 anonymous and 403 non-admin", async () => {
+    const anon = await request(app).get("/api/admin/products");
+    expect(anon.status).toBe(401);
+
+    const { auth } = await registerUser();
+    const nonAdmin = await request(app)
+      .get("/api/admin/products")
+      .set("Authorization", auth);
+    expect(nonAdmin.status).toBe(403);
+  });
+
+  it("shows every status, and the status filter narrows it", async () => {
+    const { auth } = await registerAdmin();
+    await plantProduct({ name: "Active One" });
+    await plantProduct({ name: "Hidden One", isActive: false });
+
+    const all = await request(app).get("/api/admin/products").set("Authorization", auth);
+    expect(all.body.total).toBe(2);
+
+    const inactive = await request(app)
+      .get("/api/admin/products?status=inactive")
+      .set("Authorization", auth);
+    expect(inactive.body.total).toBe(1);
+    expect(inactive.body.products[0].name).toBe("Hidden One");
+
+    const active = await request(app)
+      .get("/api/admin/products?status=active")
+      .set("Authorization", auth);
+    expect(active.body.total).toBe(1);
+    expect(active.body.products[0].name).toBe("Active One");
+  });
+
+  it("searches by name and paginates like the public listing", async () => {
+    const { auth } = await registerAdmin();
+    await plantProduct({ name: "Red Shirt" });
+    await plantProduct({ name: "Red Hat", isActive: false });
+    await plantProduct({ name: "Blue Pant" });
+
+    const search = await request(app)
+      .get("/api/admin/products?q=red")
+      .set("Authorization", auth);
+    expect(search.body.total).toBe(2); // finds the inactive one too
+
+    const paged = await request(app)
+      .get("/api/admin/products?limit=2&page=2")
+      .set("Authorization", auth);
+    expect(paged.body.pages).toBe(2);
+    expect(paged.body.products).toHaveLength(1);
+  });
+});
+
+describe("the catalog lifecycle story", () => {
+  it("create → edit → deactivate → admin-only → reactivate → public again", async () => {
+    const { auth } = await registerAdmin();
+
+    // Create through the API, like the form will:
+    const created = await request(app)
+      .post("/api/products")
+      .set("Authorization", auth)
+      .send({
+        name: "Story Widget",
+        description: "Lives a full life",
+        price: 1000,
+        discountPrice: 800,
+        stock: 5,
+      });
+    expect(created.status).toBe(201);
+    const id = created.body._id;
+
+    // Edit: restock and cut the price.
+    const edited = await request(app)
+      .put(`/api/products/${id}`)
+      .set("Authorization", auth)
+      .send({ stock: 20, discountPrice: 700 });
+    expect(edited.status).toBe(200);
+    expect(edited.body.stock).toBe(20);
+
+    // Deactivate: shoppers lose it…
+    await request(app).delete(`/api/products/${id}`).set("Authorization", auth);
+    const publicView = await request(app).get(`/api/products/${id}`);
+    expect(publicView.status).toBe(404);
+
+    // …but the admin still sees it, marked inactive:
+    const adminView = await request(app)
+      .get("/api/admin/products?status=inactive")
+      .set("Authorization", auth);
+    expect(adminView.body.products.map((p) => p.name)).toContain("Story Widget");
+
+    // Reactivate: back on sale.
+    const revived = await request(app)
+      .put(`/api/products/${id}`)
+      .set("Authorization", auth)
+      .send({ isActive: true });
+    expect(revived.status).toBe(200);
+
+    const backPublic = await request(app).get(`/api/products/${id}`);
+    expect(backPublic.status).toBe(200);
+    expect(backPublic.body.name).toBe("Story Widget");
+  });
+});
