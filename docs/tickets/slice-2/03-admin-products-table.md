@@ -9,7 +9,7 @@ edit link, one-click deactivate (with confirmation) and reactivate.
 
 **Status:** ready-for-agent
 
-- [ ] Table lists all statuses with search/filter/pagination wired to the admin endpoint
-- [ ] Deactivate asks for confirmation, then the row's status flips without a reload
-- [ ] Reactivate restores an inactive product from the same table
-- [ ] Frontend type check, tests, and build green
+- [x] Table lists all statuses with search/filter/pagination wired to the admin endpoint
+- [x] Deactivate asks for confirmation, then the row's status flips without a reload
+- [x] Reactivate restores an inactive product from the same table
+- [x] Frontend type check, tests, and build green
