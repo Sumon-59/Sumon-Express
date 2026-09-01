@@ -8,12 +8,42 @@ interface ProductBody {
   name?: string;
   description?: string;
   price?: number;
-  discountPrice?: number;
+  discountPrice?: number | null; // null = remove the discount
   stock?: number;
   category?: string;
   images?: string[];
   isActive?: boolean;
 }
+
+/**
+ * THE product data rules (Slice 2), applied to create and update.
+ * `current` supplies existing values so partial updates validate the
+ * EFFECTIVE result (e.g. a new discount against the unchanged price).
+ * Violations answer 400 naming the offending field.
+ */
+const validateProductData = (
+  data: ProductBody,
+  current?: { price: number; discountPrice?: number }
+): void => {
+  if (data.price !== undefined && (typeof data.price !== "number" || Number.isNaN(data.price) || data.price < 0)) {
+    throw httpError("price must be a non-negative number", 400);
+  }
+  if (data.stock !== undefined && (typeof data.stock !== "number" || !Number.isInteger(data.stock) || data.stock < 0)) {
+    throw httpError("stock must be a non-negative whole number", 400);
+  }
+
+  const effectivePrice = data.price ?? current?.price;
+  const effectiveDiscount = data.discountPrice === undefined ? current?.discountPrice : data.discountPrice;
+
+  if (effectiveDiscount !== undefined && effectiveDiscount !== null) {
+    if (typeof effectiveDiscount !== "number" || Number.isNaN(effectiveDiscount) || effectiveDiscount < 0) {
+      throw httpError("discountPrice must be a non-negative number", 400);
+    }
+    if (effectivePrice !== undefined && effectiveDiscount >= effectivePrice) {
+      throw httpError("discountPrice must be less than price", 400);
+    }
+  }
+};
 
 export const createProduct = asyncHandler(async (req: Request, res: Response) => {
   const { name, description, price, discountPrice, stock, category, images } =
@@ -23,11 +53,13 @@ export const createProduct = asyncHandler(async (req: Request, res: Response) =>
     throw httpError("Please provide all required fields", 400);
   }
 
+  validateProductData(req.body as ProductBody);
+
   const product = await Product.create({
     name,
     description,
     price,
-    discountPrice,
+    discountPrice: discountPrice ?? undefined,
     stock,
     category,
     images,
@@ -85,10 +117,15 @@ export const updateProduct = asyncHandler(async (req: Request, res: Response) =>
   const { name, description, price, discountPrice, stock, category, images, isActive } =
     req.body as ProductBody;
 
+  validateProductData(req.body as ProductBody, {
+    price: product.price,
+    discountPrice: product.discountPrice,
+  });
+
   if (name !== undefined) product.name = name;
   if (description !== undefined) product.description = description;
   if (price !== undefined) product.price = price;
-  if (discountPrice !== undefined) product.discountPrice = discountPrice;
+  if (discountPrice !== undefined) product.discountPrice = discountPrice ?? undefined;
   if (stock !== undefined) product.stock = stock;
   if (category !== undefined) product.category = category;
   if (images !== undefined) product.images = images;

@@ -10,8 +10,8 @@ the provided fields.
 
 **Status:** ready-for-agent
 
-- [ ] Validation rejections tested: negative price, negative/fractional stock, discount ≥ price
-- [ ] Partial update changes only provided fields (tested)
-- [ ] Delete deactivates: product vanishes from public listing and detail (tested)
-- [ ] Update/delete answer 401 anonymous, 403 non-admin
-- [ ] All existing tests still green
+- [x] Validation rejections tested: negative price, negative/fractional stock, discount ≥ price
+- [x] Partial update changes only provided fields (tested)
+- [x] Delete deactivates: product vanishes from public listing and detail (tested)
+- [x] Update/delete answer 401 anonymous, 403 non-admin
+- [x] All existing tests still green

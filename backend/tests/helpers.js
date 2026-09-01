@@ -29,6 +29,15 @@ export async function registerUser(overrides = {}) {
   };
 }
 
+// Register through the public API, then (fixture, not assertion) flip
+// the role in the database — there is deliberately no public route that
+// grants admin.
+export async function registerAdmin(overrides = {}) {
+  const result = await registerUser({ email: "admin@example.com", ...overrides });
+  await User.updateOne({ email: result.user.email }, { role: "admin" });
+  return result;
+}
+
 // Plant a product directly in the in-memory database (creating a
 // product via API needs admin auth, which isn't under test here).
 export async function plantProduct(overrides = {}) {
