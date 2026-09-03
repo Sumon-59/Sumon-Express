@@ -17,12 +17,12 @@ axios — no Bearer header, no cookies to a third party — and resolves to the 
 
 **Status:** ready-for-agent
 
-- [ ] Drag-and-drop and click-to-browse both accept files; multiple files upload in one action
-- [ ] Per-file progress visible during upload; success lands the `secure_url` as a normal image row
-- [ ] Non-image and >5 MB files rejected client-side with a message; no upload request is made (tested)
-- [ ] Upload failure shows an error and leaves existing rows untouched (tested, mocked adapter)
-- [ ] Success path appends the returned URL to the form's image list (tested, mocked adapter)
-- [ ] Submit disabled while any upload is in flight
-- [ ] Cloudinary POST goes through plain axios — no Authorization header, no credentials (tested)
+- [x] Drag-and-drop and click-to-browse both accept files; multiple files upload in one action
+- [x] Per-file progress visible during upload; success lands the `secure_url` as a normal image row
+- [x] Non-image and >5 MB files rejected client-side with a message; no upload request is made (tested)
+- [x] Upload failure shows an error and leaves existing rows untouched (tested, mocked adapter)
+- [x] Success path appends the returned URL to the form's image list (tested, mocked adapter)
+- [x] Submit disabled while any upload is in flight
+- [x] Cloudinary POST goes through plain axios — no Authorization header, no credentials (tested)
 - [ ] Manual demo: real photo dragged in dev, product saved, image visible on the storefront
-- [ ] All existing tests still green; frontend build green
+- [x] All existing tests still green; frontend build green
