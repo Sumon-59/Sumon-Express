@@ -1,8 +1,9 @@
 "use client";
 
 import React from "react";
-import { ImageIcon, Plus, Trash2 } from "lucide-react";
+import { ImageIcon, Loader2, Plus, Trash2, UploadCloud } from "lucide-react";
 import { api, getApiErrorMessage } from "@/lib/api";
+import { uploadProductImage, validateImageFile } from "@/lib/uploads";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -38,11 +39,49 @@ export default function ProductForm({ initial, submitLabel, onSubmit }: Props) {
   );
   // Each row gets a stable id so removing one never confuses React's
   // reconciliation (index keys shift when a middle row is deleted).
+  // A row is either a plain URL (pasted or finished upload), an upload
+  // in flight (progress %), or a failed/rejected file (error message).
+  type ImageRow = {
+    id: number;
+    url: string;
+    fileName?: string;
+    uploading?: boolean;
+    progress?: number;
+    error?: string;
+  };
   const nextImageId = React.useRef(0);
-  const newImageRow = (url = "") => ({ id: nextImageId.current++, url });
-  const [images, setImages] = React.useState(() =>
+  const newImageRow = (url = ""): ImageRow => ({ id: nextImageId.current++, url });
+  const [images, setImages] = React.useState<ImageRow[]>(() =>
     initial?.images?.length ? initial.images.map((u) => newImageRow(u)) : [newImageRow()]
   );
+  const fileInputRef = React.useRef<HTMLInputElement>(null);
+  const uploadsInFlight = images.some((r) => r.uploading);
+
+  const patchRow = (id: number, patch: Partial<ImageRow>) =>
+    setImages((prev) => prev.map((r) => (r.id === id ? { ...r, ...patch } : r)));
+
+  const handleFiles = (files: File[]) => {
+    for (const file of files) {
+      const row: ImageRow = { ...newImageRow(), fileName: file.name };
+      const problem = validateImageFile(file);
+      if (problem) {
+        // Rejected before any bytes move — an error row, no request.
+        setImages((prev) => [...prev, { ...row, error: problem }]);
+        continue;
+      }
+      setImages((prev) => [...prev, { ...row, uploading: true, progress: 0 }]);
+      uploadProductImage(file, (percent) => patchRow(row.id, { progress: percent }))
+        .then((url) =>
+          patchRow(row.id, { url, uploading: false, progress: undefined, fileName: undefined })
+        )
+        .catch((err) =>
+          patchRow(row.id, {
+            uploading: false,
+            error: getApiErrorMessage(err, "Upload failed"),
+          })
+        );
+    }
+  };
 
   const [categories, setCategories] = React.useState<Category[]>([]);
   const [error, setError] = React.useState<string | null>(null);
@@ -174,7 +213,43 @@ export default function ProductForm({ initial, submitLabel, onSubmit }: Props) {
       </div>
 
       <div className="space-y-2">
-        <Label>Images (URLs)</Label>
+        <Label>Images</Label>
+
+        {/* Drop zone: drag files in, or click to browse. */}
+        <div
+          role="button"
+          tabIndex={0}
+          onClick={() => fileInputRef.current?.click()}
+          onKeyDown={(e) => {
+            if (e.key === "Enter" || e.key === " ") fileInputRef.current?.click();
+          }}
+          onDragOver={(e) => e.preventDefault()}
+          onDrop={(e) => {
+            e.preventDefault();
+            handleFiles(Array.from(e.dataTransfer.files));
+          }}
+          className="flex cursor-pointer flex-col items-center justify-center gap-1 rounded-md border-2 border-dashed p-6 text-center text-sm text-muted-foreground transition-colors hover:border-primary/50 hover:text-foreground"
+        >
+          <UploadCloud className="h-6 w-6" />
+          <span>
+            Drag &amp; drop images here, or <span className="text-primary">browse</span>
+          </span>
+          <span className="text-xs">Image files up to 5 MB each</span>
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/*"
+            multiple
+            aria-label="Upload images"
+            className="sr-only"
+            onClick={(e) => e.stopPropagation()}
+            onChange={(e) => {
+              handleFiles(Array.from(e.target.files ?? []));
+              e.target.value = ""; // allow re-selecting the same file
+            }}
+          />
+        </div>
+
         <div className="space-y-2">
           {images.map((row) => (
             <div key={row.id} className="flex items-center gap-2">
@@ -184,19 +259,50 @@ export default function ProductForm({ initial, submitLabel, onSubmit }: Props) {
                   <img src={row.url} alt="" className="h-full w-full object-cover" />
                 ) : (
                   <div className="flex h-full w-full items-center justify-center text-muted-foreground">
-                    <ImageIcon className="h-4 w-4" />
+                    {row.uploading ? (
+                      <Loader2 className="h-4 w-4 animate-spin" />
+                    ) : (
+                      <ImageIcon className="h-4 w-4" />
+                    )}
                   </div>
                 )}
               </div>
-              <Input
-                value={row.url}
-                onChange={(e) =>
-                  setImages((prev) =>
-                    prev.map((r) => (r.id === row.id ? { ...r, url: e.target.value } : r))
-                  )
-                }
-                placeholder="https://…"
-              />
+
+              {row.uploading ? (
+                <div className="min-w-0 flex-1">
+                  <p className="truncate text-sm">{row.fileName}</p>
+                  <div
+                    role="progressbar"
+                    aria-valuenow={row.progress ?? 0}
+                    aria-valuemin={0}
+                    aria-valuemax={100}
+                    className="mt-1 h-1.5 w-full overflow-hidden rounded-full bg-muted"
+                  >
+                    <div
+                      className="h-full rounded-full bg-primary transition-all"
+                      style={{ width: `${row.progress ?? 0}%` }}
+                    />
+                  </div>
+                </div>
+              ) : row.error ? (
+                <p className="min-w-0 flex-1 truncate text-sm text-destructive">
+                  {row.fileName ? `${row.fileName}: ` : ""}
+                  {row.error}
+                </p>
+              ) : (
+                <Input
+                  value={row.url}
+                  onChange={(e) =>
+                    setImages((prev) =>
+                      prev.map((r) => (r.id === row.id ? { ...r, url: e.target.value } : r))
+                    )
+                  }
+                  placeholder="https://…"
+                />
+              )}
+
+              {/* Removing a row mid-upload is safe: the finished upload's
+                  patch maps over rows and finds nothing — a no-op. */}
               <button
                 type="button"
                 aria-label="Remove image"
@@ -223,8 +329,8 @@ export default function ProductForm({ initial, submitLabel, onSubmit }: Props) {
 
       {error && <p className="text-sm text-destructive">{error}</p>}
 
-      <Button type="submit" disabled={submitting}>
-        {submitting ? "Saving…" : submitLabel}
+      <Button type="submit" disabled={submitting || uploadsInFlight}>
+        {submitting ? "Saving…" : uploadsInFlight ? "Uploading…" : submitLabel}
       </Button>
     </form>
   );

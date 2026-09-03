@@ -38,6 +38,9 @@ Backend `backend/.env` (never commit; on Render set these in the dashboard):
 - `JWT_ACCESS_SECRET` — signs 15-min access tokens
 - `JWT_REFRESH_SECRET` — signs 7-day refresh tokens
 - `CLIENT_URL` — frontend origin, added to the CORS allowlist
+- `CLOUDINARY_CLOUD_NAME`, `CLOUDINARY_API_KEY`, `CLOUDINARY_API_SECRET` — sign direct
+  image uploads (Slice 2b). The secret must never reach the browser, git, or logs; cloud
+  name and API key are public by design. Tests use fake values from `tests/setup.js`.
 
 Frontend `sumon-express-frontend/.env.local` (on Vercel set in dashboard):
 - `NEXT_PUBLIC_API_BASE_URL` — e.g. `http://localhost:5000/api` locally, `https://sumon-express-backend.onrender.com/api` in prod. This is the **only** API URL var; the shared axios instance lives in `lib/api.ts`.
@@ -85,6 +88,24 @@ Allowlist in `app.ts` (`allowedOrigins`) + `credentials: true`. When the fronten
 - **Admin catalog endpoints**: `GET /api/admin/products` (all statuses; `q`, `status`
   active|inactive|all, `page`/`limit`) and `GET /api/admin/products/:id` (returns
   inactive products — the public detail 404s them by design; the edit page needs this).
+
+### Image uploads (since Slice 2b)
+- **Signed direct upload**: the browser asks `POST /api/admin/uploads/signature`
+  (requireAuth + requireAdmin) for `{cloudName, apiKey, timestamp, folder, signature}`,
+  then sends the file bytes straight to Cloudinary — they never touch our backend. The
+  signature is SHA-1 over `folder=…&timestamp=…` + secret (Cloudinary's scheme), computed
+  with Node's built-in crypto in `upload.controller.ts` — no Cloudinary SDK.
+- Uploads land in the Cloudinary folder `sumon-express/products` (server-chosen and
+  signed — the browser can't redirect them). The returned `secure_url` goes into the
+  product's existing `images: string[]`; nothing downstream knows or cares whether a URL
+  was uploaded or pasted.
+- Frontend helper `lib/uploads.ts`: pre-flight checks (image/*, ≤ 5 MB) before any bytes
+  move; the Cloudinary POST uses **plain axios, never the `api` instance** — our Bearer
+  header and cookies must not leak to a third party (same rule as the refresh call).
+  Cloudinary errors arrive as `{error:{message}}` and are unwrapped for display.
+- Removing an image row never deletes the Cloudinary asset (orphans accepted, free tier).
+- The signature test recomputes the SHA-1 independently and asserts byte equality —
+  change the folder, params, or hash and it goes red by design.
 
 ### Product pricing field
 The field is `discountPrice`. (It was historically misspelled `discoutPrice` across backend + frontend; that's fixed — don't reintroduce the typo, and note old DB documents may still carry the misspelled field.)
