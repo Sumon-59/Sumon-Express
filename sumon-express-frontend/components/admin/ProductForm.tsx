@@ -234,7 +234,7 @@ export default function ProductForm({ initial, submitLabel, onSubmit }: Props) {
           <span>
             Drag &amp; drop images here, or <span className="text-primary">browse</span>
           </span>
-          <span className="text-xs">JPG/PNG/WebP, up to 5 MB each</span>
+          <span className="text-xs">Image files up to 5 MB each</span>
           <input
             ref={fileInputRef}
             type="file"
@@ -301,12 +301,13 @@ export default function ProductForm({ initial, submitLabel, onSubmit }: Props) {
                 />
               )}
 
+              {/* Removing a row mid-upload is safe: the finished upload's
+                  patch maps over rows and finds nothing — a no-op. */}
               <button
                 type="button"
                 aria-label="Remove image"
-                disabled={row.uploading}
                 onClick={() => setImages((prev) => prev.filter((r) => r.id !== row.id))}
-                className="text-muted-foreground transition-colors hover:text-destructive disabled:opacity-40"
+                className="text-muted-foreground transition-colors hover:text-destructive"
               >
                 <Trash2 className="h-4 w-4" />
               </button>

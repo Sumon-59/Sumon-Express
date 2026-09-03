@@ -45,15 +45,27 @@ export const uploadProductImage = async (
   form.append("folder", sig.folder);
   form.append("signature", sig.signature);
 
-  const res = await axios.post(
-    `https://api.cloudinary.com/v1_1/${sig.cloudName}/image/upload`,
-    form,
-    {
-      onUploadProgress: (e) => {
-        if (e.total) onProgress?.(Math.round((e.loaded / e.total) * 100));
-      },
+  let res;
+  try {
+    res = await axios.post(
+      `https://api.cloudinary.com/v1_1/${sig.cloudName}/image/upload`,
+      form,
+      {
+        onUploadProgress: (e) => {
+          if (e.total) onProgress?.(Math.round((e.loaded / e.total) * 100));
+        },
+      }
+    );
+  } catch (err) {
+    // Cloudinary wraps its reason as { error: { message } } — surface it
+    // instead of the generic "Request failed with status code 400".
+    if (axios.isAxiosError(err)) {
+      const reason = (err.response?.data as { error?: { message?: string } } | undefined)
+        ?.error?.message;
+      if (reason) throw new Error(reason);
     }
-  );
+    throw err;
+  }
 
   const url: unknown = res.data?.secure_url;
   if (typeof url !== "string" || !url) {

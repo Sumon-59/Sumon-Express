@@ -4,7 +4,7 @@
 // backend (categories + the signature endpoint); the global axios
 // adapter plays Cloudinary. No real network anywhere.
 
-import { describe, it, expect, beforeEach, vi } from "vitest";
+import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import axios, { AxiosError, AxiosResponse, InternalAxiosRequestConfig } from "axios";
 import { api } from "@/lib/api";
@@ -60,8 +60,18 @@ const uploadFile = (file: File) => {
 const pngFile = (name = "photo.png") =>
   new File(["fake-png-bytes"], name, { type: "image/png" });
 
+// Adapters are module-global on the axios instances — restore them so
+// nothing leaks into other test files sharing this worker.
+const originalApiAdapter = api.defaults.adapter;
+const originalAxiosAdapter = axios.defaults.adapter;
+
 beforeEach(() => {
   api.defaults.adapter = backendAdapter;
+});
+
+afterEach(() => {
+  api.defaults.adapter = originalApiAdapter;
+  axios.defaults.adapter = originalAxiosAdapter;
 });
 
 describe("ProductForm image uploads", () => {
@@ -84,6 +94,18 @@ describe("ProductForm image uploads", () => {
     expect(config.url).toBe("https://api.cloudinary.com/v1_1/test-cloud/image/upload");
     expect(config.headers?.Authorization).toBeUndefined();
     expect(config.withCredentials).not.toBe(true);
+  });
+
+  it("accepts files via a real drop event on the drop zone", async () => {
+    axios.defaults.adapter = async (config: Config) =>
+      respond(config, 200, { secure_url: "https://res.cloudinary.com/test-cloud/dropped.png" });
+
+    render(<ProductForm submitLabel="Create" onSubmit={vi.fn()} />);
+    fireEvent.drop(screen.getByRole("button", { name: /drag & drop/i }), {
+      dataTransfer: { files: [pngFile("dropped.png")] },
+    });
+
+    await screen.findByDisplayValue("https://res.cloudinary.com/test-cloud/dropped.png");
   });
 
   it("rejects a non-image before any request is made", async () => {
@@ -135,8 +157,8 @@ describe("ProductForm image uploads", () => {
     );
     uploadFile(pngFile("bad.png"));
 
-    await screen.findByText(/bad\.png/);
-    await screen.findByText(/Request failed|boom|Upload failed/);
+    // Cloudinary's own reason must surface, not a generic status line.
+    await screen.findByText(/bad\.png.*boom/);
     // The pre-existing row is still there, untouched.
     expect(screen.getByDisplayValue("https://example.com/existing.png")).toBeTruthy();
   });

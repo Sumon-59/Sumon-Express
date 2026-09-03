@@ -1,7 +1,7 @@
 import { Request, Response } from "express";
 import { createHash } from "node:crypto";
 import asyncHandler from "../utils/asyncHandler";
-import { requireEnv } from "../utils/token";
+import { requireEnv } from "../utils/env";
 
 // Signed direct upload (Slice 2b): the browser sends file bytes straight
 // to Cloudinary; our only job is to SIGN the upload parameters with the
