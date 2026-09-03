@@ -9,6 +9,7 @@ import {
   cancelOrderByAdmin,
 } from "../controllers/adminOrder.controller";
 import { getAdminProducts, getAdminProductById } from "../controllers/product.controller";
+import { getUploadSignature } from "../controllers/upload.controller";
 
 const router = express.Router();
 
@@ -20,6 +21,9 @@ router.get("/dashboard", requireAuth, requireAdmin, (req, res) => {
 // admin: full catalog (all statuses, search, status filter, pagination)
 router.get("/products", requireAuth, requireAdmin, getAdminProducts);
 router.get("/products/:id", requireAuth, requireAdmin, getAdminProductById);
+
+// admin: sign a Cloudinary direct upload (Slice 2b)
+router.post("/uploads/signature", requireAuth, requireAdmin, getUploadSignature);
 
 // admin: get all orders
 router.get("/orders", requireAuth, requireAdmin, getAllOrders);

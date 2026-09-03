@@ -11,6 +11,11 @@
 process.env.NODE_ENV = "test";
 process.env.JWT_ACCESS_SECRET = "test-access-secret";
 process.env.JWT_REFRESH_SECRET = "test-refresh-secret";
+// Fake Cloudinary credentials: enough to sign with — tests recompute the
+// signature themselves and never call Cloudinary.
+process.env.CLOUDINARY_CLOUD_NAME = "test-cloud";
+process.env.CLOUDINARY_API_KEY = "test-api-key";
+process.env.CLOUDINARY_API_SECRET = "test-cloudinary-secret";
 
 import { beforeAll, afterEach, afterAll } from "vitest";
 import mongoose from "mongoose";

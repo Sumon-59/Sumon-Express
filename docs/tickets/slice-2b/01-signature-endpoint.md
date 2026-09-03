@@ -12,10 +12,10 @@ environment provides fake Cloudinary credentials; real ones stay in `.env`.
 
 **Status:** ready-for-agent
 
-- [ ] Anonymous request → 401; authenticated non-admin → 403
-- [ ] Admin → 200 with `cloudName`, `apiKey`, `timestamp`, `folder`, `signature` all present
-- [ ] `cloudName`/`apiKey` echo the environment values; `timestamp` is current (unix seconds)
-- [ ] Signature recomputed in the test from the response's own `timestamp` + `folder` and
+- [x] Anonymous request → 401; authenticated non-admin → 403
+- [x] Admin → 200 with `cloudName`, `apiKey`, `timestamp`, `folder`, `signature` all present
+- [x] `cloudName`/`apiKey` echo the environment values; `timestamp` is current (unix seconds)
+- [x] Signature recomputed in the test from the response's own `timestamp` + `folder` and
       the fake test secret matches the returned `signature` byte-for-byte
-- [ ] Missing Cloudinary env vars fail loudly (existing requireEnv behavior), not silently
-- [ ] All existing tests still green; typecheck clean
+- [x] Missing Cloudinary env vars fail loudly (existing requireEnv behavior), not silently
+- [x] All existing tests still green; typecheck clean
