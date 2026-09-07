@@ -122,6 +122,13 @@ endpoint — the one place that knows to restore stock.
 
 ## Further Notes
 
+- Accepted in review: re-setting an order's *current* status is refused as "not
+  forward" (the spec pinned only backwards moves; no-op moves are refused in the
+  same spirit and tested).
+- Deferred in review (recorded since Slice 2): the pagination wrapper is now
+  hand-rolled in two listings (products, orders). Slice 4 adds a third (customers)
+  — extract the shared helper then, at the rule of three.
+
 - Discovered while speccing: the pre-slice status route allowed backwards moves
   and — worse — `status: "cancelled"` without stock restore. Both are recorded
   above as explicit machine rules with dedicated refusal tests, so the hole can

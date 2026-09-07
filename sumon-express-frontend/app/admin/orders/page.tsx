@@ -41,6 +41,7 @@ export default function AdminOrdersPage() {
 
   const [data, setData] = React.useState<OrderListResponse | null>(null);
   const [error, setError] = React.useState<string | null>(null);
+  const [notice, setNotice] = React.useState<string | null>(null);
   const [loading, setLoading] = React.useState(true);
   const [busy, setBusy] = React.useState(false);
   const [openId, setOpenId] = React.useState<string | null>(null);
@@ -66,13 +67,17 @@ export default function AdminOrdersPage() {
 
   // The drawer renders from the row the listing already returned — the
   // items snapshot lives on the order, so no second request is needed.
-  const open = data?.orders.find((o) => o._id === openId) ?? null;
+  const selectedOrder = data?.orders.find((o) => o._id === openId) ?? null;
 
   const advance = async (order: AdminOrder, next: OrderStatus) => {
     try {
       setBusy(true);
       setError(null);
+      setNotice(null);
       await api.put(`/admin/orders/${order._id}`, { status: next });
+      // Under a status filter the order leaves this list (and the drawer
+      // closes with it) — the notice says what happened.
+      setNotice(`Order #${order._id.slice(-8)} marked ${next}`);
       await fetchList();
     } catch (err) {
       setError(getApiErrorMessage(err, "Failed to update status"));
@@ -91,7 +96,9 @@ export default function AdminOrdersPage() {
     try {
       setBusy(true);
       setError(null);
+      setNotice(null);
       await api.put(`/admin/orders/${order._id}/cancel`);
+      setNotice(`Order #${order._id.slice(-8)} cancelled — stock restored`);
       await fetchList();
     } catch (err) {
       setError(getApiErrorMessage(err, "Failed to cancel order"));
@@ -133,6 +140,12 @@ export default function AdminOrdersPage() {
       {error && (
         <div className="mt-4 rounded-md border border-destructive/30 bg-destructive/5 p-3 text-sm text-destructive">
           {error}
+        </div>
+      )}
+
+      {notice && (
+        <div className="mt-4 rounded-md border border-green-200 bg-green-50 p-3 text-sm text-green-800">
+          {notice}
         </div>
       )}
 
@@ -217,7 +230,7 @@ export default function AdminOrdersPage() {
       )}
 
       {/* Detail drawer */}
-      {open && (
+      {selectedOrder && (
         <div className="fixed inset-0 z-40" role="dialog" aria-label="Order details">
           <div className="absolute inset-0 bg-black/30" onClick={() => setOpenId(null)} />
           <aside className="absolute right-0 top-0 h-full w-full max-w-md overflow-y-auto border-l bg-card p-5 shadow-xl">
@@ -225,7 +238,7 @@ export default function AdminOrdersPage() {
               <div>
                 <h2 className="font-semibold">Order details</h2>
                 <p className="text-xs text-muted-foreground">
-                  #{open._id.slice(-8)} · {formatDate(open.createdAt)}
+                  #{selectedOrder._id.slice(-8)} · {formatDate(selectedOrder.createdAt)}
                 </p>
               </div>
               <button
@@ -239,10 +252,10 @@ export default function AdminOrdersPage() {
             </div>
 
             <div className="mt-3 flex items-center gap-2">
-              <Badge variant="outline" className={`capitalize ${STATUS_STYLES[open.status]}`}>
-                {open.status}
+              <Badge variant="outline" className={`capitalize ${STATUS_STYLES[selectedOrder.status]}`}>
+                {selectedOrder.status}
               </Badge>
-              {open.isPaid && (
+              {selectedOrder.isPaid && (
                 <Badge variant="outline" className="border-green-200 bg-green-100 text-green-800">
                   Paid
                 </Badge>
@@ -253,7 +266,7 @@ export default function AdminOrdersPage() {
 
             <h3 className="text-sm font-medium">Items</h3>
             <ul className="mt-2 space-y-2">
-              {open.items.map((it, i) => (
+              {selectedOrder.items.map((it, i) => (
                 <li key={i} className="flex items-center justify-between gap-2 text-sm">
                   <span className="min-w-0 truncate">
                     {it.name} <span className="text-muted-foreground">× {it.quantity}</span>
@@ -264,35 +277,35 @@ export default function AdminOrdersPage() {
             </ul>
             <div className="mt-3 flex items-center justify-between border-t pt-3 text-sm font-medium">
               <span>Total</span>
-              <span className="tabular-nums">{formatTaka(open.totalPrice)}</span>
+              <span className="tabular-nums">{formatTaka(selectedOrder.totalPrice)}</span>
             </div>
 
             <Separator className="my-4" />
 
             <h3 className="text-sm font-medium">Customer</h3>
-            <p className="mt-1 text-sm">{open.user?.name ?? "—"}</p>
-            <p className="text-sm text-muted-foreground">{open.user?.email}</p>
+            <p className="mt-1 text-sm">{selectedOrder.user?.name ?? "—"}</p>
+            <p className="text-sm text-muted-foreground">{selectedOrder.user?.email}</p>
 
             <h3 className="mt-4 text-sm font-medium">Shipping</h3>
             <p className="mt-1 text-sm">
-              {open.shippingAddress?.address ?? "—"}
-              {open.shippingAddress?.city ? `, ${open.shippingAddress.city}` : ""}
+              {selectedOrder.shippingAddress?.address ?? "—"}
+              {selectedOrder.shippingAddress?.city ? `, ${selectedOrder.shippingAddress.city}` : ""}
             </p>
-            {open.shippingAddress?.phone && (
-              <p className="text-sm text-muted-foreground">{open.shippingAddress.phone}</p>
+            {selectedOrder.shippingAddress?.phone && (
+              <p className="text-sm text-muted-foreground">{selectedOrder.shippingAddress.phone}</p>
             )}
             <p className="mt-1 text-sm text-muted-foreground uppercase">
-              {open.paymentMethod ?? ""}
+              {selectedOrder.paymentMethod ?? ""}
             </p>
 
             <Separator className="my-4" />
 
             <h3 className="mb-2 text-sm font-medium">Actions</h3>
             <OrderStatusActions
-              status={open.status}
+              status={selectedOrder.status}
               busy={busy}
-              onAdvance={(next) => advance(open, next)}
-              onCancel={() => cancel(open)}
+              onAdvance={(next) => advance(selectedOrder, next)}
+              onCancel={() => cancel(selectedOrder)}
             />
           </aside>
         </div>

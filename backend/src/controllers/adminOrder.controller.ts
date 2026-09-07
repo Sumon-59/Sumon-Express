@@ -30,12 +30,14 @@ export const getAllOrders = asyncHandler(async (req: Request, res: Response) => 
     filter.status = status;
   }
 
-  const orders = await Order.find(filter)
-    .populate("user", "name email")
-    .sort({ createdAt: -1 })
-    .skip(skip)
-    .limit(limit);
-  const total = await Order.countDocuments(filter);
+  const [orders, total] = await Promise.all([
+    Order.find(filter)
+      .populate("user", "name email")
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(limit),
+    Order.countDocuments(filter),
+  ]);
 
   res.json({
     page,

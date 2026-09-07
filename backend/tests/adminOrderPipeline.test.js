@@ -108,6 +108,7 @@ describe("PUT /api/admin/orders/:id — the status route", () => {
 
     const res = await setStatus(adminAuth, order._id, "pending");
     expect(res.status).toBe(400);
+    expect(res.body.message).toMatch(/pending/i);
   });
 
   it("refuses an unknown status naming the valid set", async () => {
@@ -175,6 +176,18 @@ describe("PUT /api/admin/orders/:id/cancel — the one door to cancelled", () =>
 
     const res = await cancelAsAdmin(adminAuth, order._id);
     expect(res.status).toBe(400);
+  });
+
+  it("answers 401 anonymous and 403 non-admin", async () => {
+    const { userAuth, order } = await pendingOrder();
+
+    const anon = await request(app).put(`/api/admin/orders/${order._id}/cancel`);
+    expect(anon.status).toBe(401);
+
+    const nonAdmin = await request(app)
+      .put(`/api/admin/orders/${order._id}/cancel`)
+      .set("Authorization", userAuth);
+    expect(nonAdmin.status).toBe(403);
   });
 
   it("refuses a double cancel (stock must not restore twice)", async () => {
