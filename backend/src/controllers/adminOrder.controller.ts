@@ -1,5 +1,5 @@
 import { Request, Response } from "express";
-import Order, { ORDER_STATUSES, isOrderStatus } from "../models/Order.model";
+import Order, { ORDER_STATUSES, isOrderStatus, OrderStatus } from "../models/Order.model";
 import Product from "../models/Product.model";
 import asyncHandler from "../utils/asyncHandler";
 import { httpError } from "../types/http.types";
@@ -7,6 +7,12 @@ import { httpError } from "../types/http.types";
 interface UpdateStatusBody {
   status?: string;
 }
+
+// The state machine (Slice 3): statuses only move FORWARD along this
+// pipeline (skips allowed). "cancelled" is deliberately absent — it is
+// reachable only through the cancel endpoints, the one code path that
+// restores stock. Terminal states never change again.
+const PIPELINE: readonly OrderStatus[] = ["pending", "processing", "shipped", "delivered"];
 
 export const getAllOrders = asyncHandler(async (req: Request, res: Response) => {
   const orders = await Order.find()
@@ -22,6 +28,17 @@ export const updateOrderStatus = asyncHandler(async (req: Request, res: Response
     throw httpError(`Invalid status. Must be one of: ${ORDER_STATUSES.join(", ")}`, 400);
   }
 
+  if (status === "cancelled") {
+    throw httpError(
+      "Orders cannot be cancelled through the status route — use the cancel endpoint, which restores stock",
+      400
+    );
+  }
+
+  if (status === "pending") {
+    throw httpError("Orders cannot return to pending", 400);
+  }
+
   const order = await Order.findById(req.params.id);
 
   if (!order) {
@@ -34,6 +51,13 @@ export const updateOrderStatus = asyncHandler(async (req: Request, res: Response
 
   if (order.status === "cancelled") {
     throw httpError("Cancelled orders cannot be updated", 400);
+  }
+
+  if (PIPELINE.indexOf(status) <= PIPELINE.indexOf(order.status)) {
+    throw httpError(
+      `Orders only move forward: ${order.status} → ${status} is not a legal move`,
+      400
+    );
   }
 
   order.status = status;
@@ -60,6 +84,10 @@ export const cancelOrderByAdmin = asyncHandler(async (req: Request, res: Respons
 
   if (order.status === "cancelled") {
     throw httpError("Order is already cancelled", 400);
+  }
+
+  if (order.status === "shipped") {
+    throw httpError("Shipped orders cannot be cancelled — they can only be delivered", 400);
   }
 
   for (const item of order.items) {

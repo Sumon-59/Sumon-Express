@@ -13,13 +13,13 @@ delivered still marks the order paid.
 
 **Status:** ready-for-agent
 
-- [ ] Happy pipeline tested: pending → processing → shipped → delivered, and pending → shipped skip
-- [ ] Backwards moves refused with 400 (e.g. shipped → processing)
-- [ ] Updates on delivered and on cancelled orders refused with 400 (both routes)
-- [ ] `status: "cancelled"` and `status: "pending"` refused by the status route with 400
-- [ ] Unknown status refused with 400 naming the valid set
-- [ ] Delivered sets `isPaid` and `paidAt`
-- [ ] Admin cancel from pending and from processing restores stock (asserted via public product API)
-- [ ] Admin cancel on a shipped order refused with 400
-- [ ] All refusals answer with a message naming the rule
-- [ ] All existing tests still green; typecheck clean
+- [x] Happy pipeline tested: pending → processing → shipped → delivered, and pending → shipped skip
+- [x] Backwards moves refused with 400 (e.g. shipped → processing)
+- [x] Updates on delivered and on cancelled orders refused with 400 (both routes)
+- [x] `status: "cancelled"` and `status: "pending"` refused by the status route with 400
+- [x] Unknown status refused with 400 naming the valid set
+- [x] Delivered sets `isPaid` and `paidAt`
+- [x] Admin cancel from pending and from processing restores stock (asserted via public product API)
+- [x] Admin cancel on a shipped order refused with 400
+- [x] All refusals answer with a message naming the rule
+- [x] All existing tests still green; typecheck clean
