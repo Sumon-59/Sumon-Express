@@ -308,7 +308,7 @@ provider (Stripe test). Pick by appetite when we get here — re-plan with `/way
 | 0.5 — Backend TypeScript migration | ✅ 2026-08-27 — 100% strict TS compiled to dist/; 17 tests unchanged and green throughout; deviation from plan: conversion order flipped to top-down (JS cannot require TS), D1 revised (Claude implements, Sumon reads) |
 | 1 — Auth refactor + admin shell | ✅ 2026-08-27 — canonical JWT (memory token + single-flight refresh interceptor), one req.user, admin shell + promote script; 38 tests (25 BE + 13 FE); rotation no-op bug found by test, fixed with jti |
 | 2 — Product management | ✅ 2026-08-31 — admin catalog: table+form UI, soft delete/reactivate, validation choke point (bypass found by review, closed), admin listing+detail endpoints; 54 tests (41 BE + 13 FE) |
-| 2b — Image uploads | ⬜ |
+| 2b — Image uploads | ✅ 2026-09-07 — Cloudinary signed direct upload (no SDK, Node crypto SHA-1): admin signature endpoint + drag-and-drop in the product form; 64 tests (45 BE + 19 FE); deploy probe caught a truncated API secret in Render (invisible in logs — only the end-to-end signature round-trip exposed it) |
 | 3 — Order management | ⬜ |
 | 4 — Customers | ⬜ |
 | 5 — Discount codes | ⬜ |

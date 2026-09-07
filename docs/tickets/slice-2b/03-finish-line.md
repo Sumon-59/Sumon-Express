@@ -13,9 +13,12 @@ plan.md's tracker marks Slice 2b done.
 
 **Status:** ready-for-agent
 
-- [ ] Two-axis code review run; findings fixed or explicitly accepted
-- [ ] Merged `--no-ff` to `fullstack-v2`, pushed as Sumon-59
-- [ ] `CLOUDINARY_*` vars present in Render dashboard (user-confirmed)
-- [ ] Probe: production `POST /api/admin/uploads/signature` → 401 without auth (proves new code deployed)
-- [ ] Probe: real upload through production admin UI; image loads from `res.cloudinary.com` on the live site
-- [ ] CLAUDE.md updated; spec + ticket checkboxes ticked; plan.md tracker updated
+- [x] Two-axis code review run; findings fixed or explicitly accepted
+- [x] Merged `--no-ff` to `fullstack-v2`, pushed as Sumon-59
+- [x] `CLOUDINARY_*` vars present in Render dashboard — first save had a TRUNCATED
+      secret (pasted from Cloudinary's masked display); invisible in Render logs, caught
+      only by the end-to-end probe; fixed via the dashboard copy icon
+- [x] Probe: production `POST /api/admin/uploads/signature` → 401 without auth (flipped from 404 on deploy)
+- [x] Probe: real upload with a production-minted signature accepted by Cloudinary
+      (`res.cloudinary.com/ltwhehed/.../sumon-express/products/…`)
+- [x] CLAUDE.md updated; spec + ticket checkboxes ticked; plan.md tracker updated

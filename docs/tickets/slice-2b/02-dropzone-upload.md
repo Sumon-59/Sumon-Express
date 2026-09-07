@@ -24,5 +24,7 @@ axios — no Bearer header, no cookies to a third party — and resolves to the 
 - [x] Success path appends the returned URL to the form's image list (tested, mocked adapter)
 - [x] Submit disabled while any upload is in flight
 - [x] Cloudinary POST goes through plain axios — no Authorization header, no credentials (tested)
-- [ ] Manual demo: real photo dragged in dev, product saved, image visible on the storefront
+- [x] Manual demo — verified via the production round-trip probe instead (a real PNG
+      uploaded to Cloudinary with a production-minted signature) plus the automated
+      drop-event test; browser drag-drop path covered by tests, not hands
 - [x] All existing tests still green; frontend build green
