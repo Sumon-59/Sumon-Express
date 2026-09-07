@@ -1,4 +1,5 @@
 import { Request, Response } from "express";
+import { Types } from "mongoose";
 import Order, { ORDER_STATUSES, isOrderStatus, OrderStatus } from "../models/Order.model";
 import Product from "../models/Product.model";
 import asyncHandler from "../utils/asyncHandler";
@@ -21,6 +22,14 @@ export const getAllOrders = asyncHandler(async (req: Request, res: Response) => 
   const paging = parsePagination(req);
 
   const filter: Record<string, unknown> = {};
+  // user= narrows to one customer's history (the customer detail page).
+  if (req.query.user !== undefined) {
+    const userId = String(req.query.user);
+    if (!Types.ObjectId.isValid(userId)) {
+      throw httpError("Invalid user id filter", 400);
+    }
+    filter.user = new Types.ObjectId(userId);
+  }
   if (req.query.status !== undefined) {
     const status = String(req.query.status);
     if (!isOrderStatus(status)) {

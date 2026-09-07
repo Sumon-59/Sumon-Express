@@ -14,12 +14,12 @@ admin-gated like every sibling.
 
 **Status:** ready-for-agent
 
-- [ ] Census over known fixtures: exact orderCount / totalSpent / lastOrderAt per row (multi-order customer included — the $lookup multiply-count trap)
-- [ ] Zero-order customer present with 0 / 0 / null
-- [ ] Cancelling an order through the API changes no computed column
-- [ ] Default sort spend-descending; `sort=newest` by join date; unknown sort 400
-- [ ] Admin accounts absent from the census
-- [ ] Pagination wrapper + math; 401/403 on both new endpoints
-- [ ] Detail: correct numbers; 404 unknown id
-- [ ] Orders listing `user` filter: only that customer's orders; invalid id 400
-- [ ] All existing tests still green; typecheck clean
+- [x] Census over known fixtures: exact orderCount / totalSpent / lastOrderAt per row (multi-order customer included — the $lookup multiply-count trap)
+- [x] Zero-order customer present with 0 / 0 / null
+- [x] Cancelling an order through the API changes no computed column
+- [x] Default sort spend-descending; `sort=newest` by join date; unknown sort 400
+- [x] Admin accounts absent from the census
+- [x] Pagination wrapper + math; 401/403 on both new endpoints
+- [x] Detail: correct numbers; 404 unknown id
+- [x] Orders listing `user` filter: only that customer's orders; invalid id 400
+- [x] All existing tests still green; typecheck clean
