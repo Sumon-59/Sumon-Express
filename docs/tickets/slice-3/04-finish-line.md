@@ -12,8 +12,8 @@ ticket boxes ticked; plan.md tracker marks Slice 3 done.
 
 **Status:** ready-for-agent
 
-- [ ] Two-axis code review run; findings fixed or explicitly accepted
-- [ ] Merged `--no-ff` to `fullstack-v2`, pushed as Sumon-59
-- [ ] Probe: production admin orders listing answers the wrapper shape (not a bare array)
+- [x] Two-axis code review run; findings fixed or explicitly accepted
+- [x] Merged `--no-ff` to `fullstack-v2`, pushed as Sumon-59
+- [x] Probe: production admin orders listing answers the wrapper shape (not a bare array)
 - [ ] Probe: one real status advance in the production admin UI
-- [ ] CLAUDE.md updated; spec + ticket checkboxes ticked; plan.md tracker updated
+- [x] CLAUDE.md updated; spec + ticket checkboxes ticked; plan.md tracker updated
