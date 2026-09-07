@@ -12,10 +12,10 @@ error-message helper.
 
 **Status:** ready-for-agent
 
-- [ ] Census table wired to the listing: computed columns, sort toggle, pagination
-- [ ] Zero-order customers render 0 / ৳0 / —
-- [ ] Detail page: identity + totals + order history with status pills
-- [ ] Order rows link into the Orders section
-- [ ] Sidebar Customers link live
+- [x] Census table wired to the listing: computed columns, sort toggle, pagination
+- [x] Zero-order customers render 0 / ৳0 / —
+- [x] Detail page: identity + totals + order history with status pills
+- [x] Order rows link into the Orders section
+- [x] Sidebar Customers link live
 - [ ] Manual demo in dev: place orders as two shoppers, find the bigger spender on top, open them, walk their history
-- [ ] All existing tests still green; frontend build green
+- [x] All existing tests still green; frontend build green
