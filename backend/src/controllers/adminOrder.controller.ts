@@ -14,11 +14,35 @@ interface UpdateStatusBody {
 // restores stock. Terminal states never change again.
 const PIPELINE: readonly OrderStatus[] = ["pending", "processing", "shipped", "delivered"];
 
+// Admin listing: newest first, filterable by status, paginated with the
+// same {page, pages, total, ...} wrapper the products listing answers.
 export const getAllOrders = asyncHandler(async (req: Request, res: Response) => {
-  const orders = await Order.find()
+  const page = Number(req.query.page) || 1;
+  const limit = Number(req.query.limit) || 10;
+  const skip = (page - 1) * limit;
+
+  const filter: Record<string, unknown> = {};
+  if (req.query.status !== undefined) {
+    const status = String(req.query.status);
+    if (!isOrderStatus(status)) {
+      throw httpError(`Invalid status filter. Must be one of: ${ORDER_STATUSES.join(", ")}`, 400);
+    }
+    filter.status = status;
+  }
+
+  const orders = await Order.find(filter)
     .populate("user", "name email")
-    .sort({ createdAt: -1 });
-  res.json(orders);
+    .sort({ createdAt: -1 })
+    .skip(skip)
+    .limit(limit);
+  const total = await Order.countDocuments(filter);
+
+  res.json({
+    page,
+    pages: Math.ceil(total / limit),
+    total,
+    orders,
+  });
 });
 
 export const updateOrderStatus = asyncHandler(async (req: Request, res: Response) => {

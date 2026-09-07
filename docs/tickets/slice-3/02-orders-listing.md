@@ -11,11 +11,11 @@ exactly like the products listing.
 
 **Status:** ready-for-agent
 
-- [ ] Response shape `{orders, total, page, pages}`; bare-array shape gone
-- [ ] `status` filter returns only matching orders; omitted returns all
-- [ ] Invalid `status` value refused with 400
-- [ ] Pagination math tested: `total`/`pages` correct, page 2 returns the next set
-- [ ] Newest-first ordering tested
-- [ ] Rows carry populated customer name/email and full items snapshot
-- [ ] 401 anonymous / 403 non-admin
-- [ ] All existing tests still green; typecheck clean
+- [x] Response shape `{orders, total, page, pages}`; bare-array shape gone
+- [x] `status` filter returns only matching orders; omitted returns all
+- [x] Invalid `status` value refused with 400
+- [x] Pagination math tested: `total`/`pages` correct, page 2 returns the next set
+- [x] Newest-first ordering tested
+- [x] Rows carry populated customer name/email and full items snapshot
+- [x] 401 anonymous / 403 non-admin
+- [x] All existing tests still green; typecheck clean
