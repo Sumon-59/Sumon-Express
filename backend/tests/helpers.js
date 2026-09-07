@@ -38,6 +38,22 @@ export async function registerAdmin(overrides = {}) {
   return result;
 }
 
+// Place an order through the public API, exactly like a shopper would.
+// Returns the created order body (status starts as "pending").
+export async function placeOrder(auth, product, quantity = 2) {
+  const res = await request(app)
+    .post("/api/orders")
+    .set("Authorization", auth)
+    .send({
+      items: [{ product: product._id.toString(), quantity }],
+      shippingAddress: { address: "House 1, Road 2", city: "Dhaka", phone: "01700000000" },
+    });
+  if (res.status !== 201) {
+    throw new Error(`placeOrder fixture failed: ${res.status} ${JSON.stringify(res.body)}`);
+  }
+  return res.body;
+}
+
 // Plant a product directly in the in-memory database (creating a
 // product via API needs admin auth, which isn't under test here).
 export async function plantProduct(overrides = {}) {

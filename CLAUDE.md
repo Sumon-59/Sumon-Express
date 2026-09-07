@@ -75,6 +75,16 @@ Allowlist in `app.ts` (`allowedOrigins`) + `credentials: true`. When the fronten
 - `createOrder` computes `totalPrice` server-side from DB prices (`discountPrice ?? price`) — never trust client totals.
 - Stock is decremented with a guarded atomic `findOneAndUpdate` (`stock: { $gte: qty }`, `$inc`) with manual rollback of prior decrements on failure; cancel restores stock the same way. There are no multi-document transactions.
 - Cancellation allowed for status `pending`/`processing` only.
+- **Status pipeline is a state machine (since Slice 3)**: forward-only along
+  `pending → processing → shipped → delivered` (skips allowed), terminal states
+  immutable, and the status route refuses `cancelled`/`pending` as targets —
+  cancellation's only door is the cancel endpoint, the one code path that restores
+  stock. Delivered sets `isPaid`/`paidAt`. Every rule is a 400 naming it, each with a
+  test in the pipeline test file.
+- **Admin listing**: `GET /api/admin/orders` answers `{orders, total, page, pages}`
+  (`status` filter — closed set, invalid values 400 — plus `page`/`limit`), newest
+  first, customer populated, items snapshot embedded (the UI drawer needs no second
+  request). The frontend actions component mirrors the machine: legal moves only.
 
 ### Product management (since Slice 2)
 - **Soft delete is the only delete.** `DELETE /api/products/:id` sets `isActive: false`;

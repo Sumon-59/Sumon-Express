@@ -1,5 +1,5 @@
 import { Request, Response } from "express";
-import Order, { ORDER_STATUSES, isOrderStatus } from "../models/Order.model";
+import Order, { ORDER_STATUSES, isOrderStatus, OrderStatus } from "../models/Order.model";
 import Product from "../models/Product.model";
 import asyncHandler from "../utils/asyncHandler";
 import { httpError } from "../types/http.types";
@@ -8,11 +8,43 @@ interface UpdateStatusBody {
   status?: string;
 }
 
+// The state machine (Slice 3): statuses only move FORWARD along this
+// pipeline (skips allowed). "cancelled" is deliberately absent — it is
+// reachable only through the cancel endpoints, the one code path that
+// restores stock. Terminal states never change again.
+const PIPELINE: readonly OrderStatus[] = ["pending", "processing", "shipped", "delivered"];
+
+// Admin listing: newest first, filterable by status, paginated with the
+// same {page, pages, total, ...} wrapper the products listing answers.
 export const getAllOrders = asyncHandler(async (req: Request, res: Response) => {
-  const orders = await Order.find()
-    .populate("user", "name email")
-    .sort({ createdAt: -1 });
-  res.json(orders);
+  const page = Number(req.query.page) || 1;
+  const limit = Number(req.query.limit) || 10;
+  const skip = (page - 1) * limit;
+
+  const filter: Record<string, unknown> = {};
+  if (req.query.status !== undefined) {
+    const status = String(req.query.status);
+    if (!isOrderStatus(status)) {
+      throw httpError(`Invalid status filter. Must be one of: ${ORDER_STATUSES.join(", ")}`, 400);
+    }
+    filter.status = status;
+  }
+
+  const [orders, total] = await Promise.all([
+    Order.find(filter)
+      .populate("user", "name email")
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(limit),
+    Order.countDocuments(filter),
+  ]);
+
+  res.json({
+    page,
+    pages: Math.ceil(total / limit),
+    total,
+    orders,
+  });
 });
 
 export const updateOrderStatus = asyncHandler(async (req: Request, res: Response) => {
@@ -20,6 +52,17 @@ export const updateOrderStatus = asyncHandler(async (req: Request, res: Response
 
   if (!status || !isOrderStatus(status)) {
     throw httpError(`Invalid status. Must be one of: ${ORDER_STATUSES.join(", ")}`, 400);
+  }
+
+  if (status === "cancelled") {
+    throw httpError(
+      "Orders cannot be cancelled through the status route — use the cancel endpoint, which restores stock",
+      400
+    );
+  }
+
+  if (status === "pending") {
+    throw httpError("Orders cannot return to pending", 400);
   }
 
   const order = await Order.findById(req.params.id);
@@ -34,6 +77,13 @@ export const updateOrderStatus = asyncHandler(async (req: Request, res: Response
 
   if (order.status === "cancelled") {
     throw httpError("Cancelled orders cannot be updated", 400);
+  }
+
+  if (PIPELINE.indexOf(status) <= PIPELINE.indexOf(order.status)) {
+    throw httpError(
+      `Orders only move forward: ${order.status} → ${status} is not a legal move`,
+      400
+    );
   }
 
   order.status = status;
@@ -60,6 +110,10 @@ export const cancelOrderByAdmin = asyncHandler(async (req: Request, res: Respons
 
   if (order.status === "cancelled") {
     throw httpError("Order is already cancelled", 400);
+  }
+
+  if (order.status === "shipped") {
+    throw httpError("Shipped orders cannot be cancelled — they can only be delivered", 400);
   }
 
   for (const item of order.items) {

@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { formatTaka } from "@/types/product";
+import { STATUS_STYLES, OrderStatus } from "@/types/order";
 
 type OrderItem = {
   product: string;
@@ -26,14 +27,6 @@ type Order = {
   items?: OrderItem[];
   shippingAddress?: { address?: string; city?: string; phone?: string };
   paymentMethod?: string;
-};
-
-const STATUS_STYLES: Record<string, string> = {
-  pending: "bg-amber-100 text-amber-800 border-amber-200",
-  processing: "bg-blue-100 text-blue-800 border-blue-200",
-  shipped: "bg-violet-100 text-violet-800 border-violet-200",
-  delivered: "bg-green-100 text-green-800 border-green-200",
-  cancelled: "bg-red-100 text-red-800 border-red-200",
 };
 
 export default function OrdersPage() {
@@ -145,7 +138,7 @@ export default function OrdersPage() {
                   </div>
                   <Badge
                     variant="outline"
-                    className={`capitalize ${STATUS_STYLES[o.status] ?? ""}`}
+                    className={`capitalize ${STATUS_STYLES[o.status as OrderStatus] ?? ""}`}
                   >
                     {o.status}
                   </Badge>
