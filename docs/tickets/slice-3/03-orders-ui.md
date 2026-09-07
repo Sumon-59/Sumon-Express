@@ -19,5 +19,5 @@ feeds the table).
 - [x] Actions component: exactly the legal actions per status (component-tested for all five statuses)
 - [x] Cancel asks for confirmation before firing
 - [x] Errors from refused transitions shown via the shared error helper
-- [ ] Manual demo in dev: drive one order pending → processing → shipped → delivered by mouse; cancel another and watch its stock come back
+- [x] Manual demo in dev: drive one order pending → processing → shipped → delivered by mouse; cancel another and watch its stock come back (user-confirmed)
 - [x] All existing tests still green; frontend build green
