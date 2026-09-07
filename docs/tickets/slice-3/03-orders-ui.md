@@ -14,10 +14,10 @@ feeds the table).
 
 **Status:** ready-for-agent
 
-- [ ] Table: status pills, filter, pagination wired to the new listing shape
-- [ ] Drawer renders items, address, phone, payment method, customer from the row data (no extra request)
-- [ ] Actions component: exactly the legal actions per status (component-tested for all five statuses)
-- [ ] Cancel asks for confirmation before firing
-- [ ] Errors from refused transitions shown via the shared error helper
+- [x] Table: status pills, filter, pagination wired to the new listing shape
+- [x] Drawer renders items, address, phone, payment method, customer from the row data (no extra request)
+- [x] Actions component: exactly the legal actions per status (component-tested for all five statuses)
+- [x] Cancel asks for confirmation before firing
+- [x] Errors from refused transitions shown via the shared error helper
 - [ ] Manual demo in dev: drive one order pending → processing → shipped → delivered by mouse; cancel another and watch its stock come back
-- [ ] All existing tests still green; frontend build green
+- [x] All existing tests still green; frontend build green
