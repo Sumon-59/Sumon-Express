@@ -2,6 +2,8 @@
 // The three computed columns come from the backend's aggregation —
 // the frontend only renders them.
 
+import { PageMeta } from "./api";
+
 export type CustomerSort = "spent" | "newest";
 
 export type AdminCustomer = {
@@ -14,9 +16,6 @@ export type AdminCustomer = {
   lastOrderAt: string | null; // null = never ordered (kept orders only)
 };
 
-export type CustomerListResponse = {
+export type CustomerListResponse = PageMeta & {
   customers: AdminCustomer[];
-  total: number;
-  page: number;
-  pages: number;
 };

@@ -1,5 +1,7 @@
 // Shared order shapes for the admin Orders section (Slice 3).
 
+import { PageMeta } from "./api";
+
 export type OrderStatus = "pending" | "processing" | "shipped" | "delivered" | "cancelled";
 
 export type OrderItem = {
@@ -23,11 +25,8 @@ export type AdminOrder = {
   user?: { _id: string; name?: string; email?: string };
 };
 
-export type OrderListResponse = {
+export type OrderListResponse = PageMeta & {
   orders: AdminOrder[];
-  total: number;
-  page: number;
-  pages: number;
 };
 
 // One pill palette for the whole app (same hues as the shopper's

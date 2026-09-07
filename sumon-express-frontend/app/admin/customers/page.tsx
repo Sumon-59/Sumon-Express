@@ -5,12 +5,8 @@ import Link from "next/link";
 import { api, getApiErrorMessage } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { formatTaka } from "@/types/product";
+import { formatDate } from "@/lib/format";
 import { AdminCustomer, CustomerListResponse, CustomerSort } from "@/types/customer";
-
-const formatDate = (iso?: string | null) =>
-  iso
-    ? new Date(iso).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })
-    : "—";
 
 export default function AdminCustomersPage() {
   const [sort, setSort] = React.useState<CustomerSort>("spent");
@@ -106,9 +102,7 @@ export default function AdminCustomersPage() {
                     </td>
                     <td className="p-3 whitespace-nowrap">{formatDate(c.createdAt)}</td>
                     <td className="p-3 tabular-nums">{c.orderCount}</td>
-                    <td className="p-3 tabular-nums">
-                      {c.totalSpent > 0 ? formatTaka(c.totalSpent) : "৳0"}
-                    </td>
+                    <td className="p-3 tabular-nums">{formatTaka(c.totalSpent)}</td>
                     <td className="p-3 whitespace-nowrap">{formatDate(c.lastOrderAt)}</td>
                   </tr>
                 ))}

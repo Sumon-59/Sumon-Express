@@ -6,14 +6,11 @@ import { useParams } from "next/navigation";
 import { ChevronLeft } from "lucide-react";
 import { api, getApiErrorMessage } from "@/lib/api";
 import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
 import { formatTaka } from "@/types/product";
+import { formatDate } from "@/lib/format";
 import { AdminCustomer } from "@/types/customer";
 import { OrderListResponse, STATUS_STYLES } from "@/types/order";
-
-const formatDate = (iso?: string | null) =>
-  iso
-    ? new Date(iso).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: "numeric" })
-    : "—";
 
 export default function AdminCustomerDetailPage() {
   const params = useParams<{ id: string }>();
@@ -21,6 +18,7 @@ export default function AdminCustomerDetailPage() {
 
   const [customer, setCustomer] = React.useState<AdminCustomer | null>(null);
   const [orders, setOrders] = React.useState<OrderListResponse | null>(null);
+  const [historyPage, setHistoryPage] = React.useState(1);
   const [error, setError] = React.useState<string | null>(null);
   const [loading, setLoading] = React.useState(true);
 
@@ -33,9 +31,10 @@ export default function AdminCustomerDetailPage() {
         setError(null);
         // Identity + computed totals, and the order history via the
         // user-filtered orders listing — two calls, no bespoke endpoint.
+        // The history is properly paginated: ALL orders reachable.
         const [c, o] = await Promise.all([
           api.get<AdminCustomer>(`/admin/customers/${id}`),
-          api.get<OrderListResponse>(`/admin/orders?user=${id}&limit=50`),
+          api.get<OrderListResponse>(`/admin/orders?user=${id}&page=${historyPage}&limit=10`),
         ]);
         if (!alive) return;
         setCustomer(c.data);
@@ -49,7 +48,7 @@ export default function AdminCustomerDetailPage() {
     return () => {
       alive = false;
     };
-  }, [id]);
+  }, [id, historyPage]);
 
   return (
     <div>
@@ -122,8 +121,10 @@ export default function AdminCustomerDetailPage() {
                   {orders.orders.map((o) => (
                     <tr key={o._id} className="border-b last:border-0">
                       <td className="p-3">
+                        {/* Deep link: opens the Orders page filtered to
+                            this customer with the drawer on this order. */}
                         <Link
-                          href="/admin/orders"
+                          href={`/admin/orders?user=${id}&open=${o._id}`}
                           className="font-mono text-xs text-muted-foreground hover:text-primary"
                         >
                           #{o._id.slice(-8)}
@@ -143,6 +144,30 @@ export default function AdminCustomerDetailPage() {
                   ))}
                 </tbody>
               </table>
+            </div>
+          )}
+
+          {orders && orders.pages > 1 && (
+            <div className="mt-4 flex items-center justify-center gap-3">
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={historyPage <= 1}
+                onClick={() => setHistoryPage((n) => n - 1)}
+              >
+                Prev
+              </Button>
+              <span className="text-sm tabular-nums text-muted-foreground">
+                Page {historyPage} of {orders.pages}
+              </span>
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={historyPage >= orders.pages}
+                onClick={() => setHistoryPage((n) => n + 1)}
+              >
+                Next
+              </Button>
             </div>
           )}
         </>

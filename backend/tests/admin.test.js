@@ -120,6 +120,18 @@ describe("GET /api/admin/orders — filtering and pagination (Slice 3)", () => {
     expect(pending.body.total).toBe(4);
   });
 
+  it("clamps garbage pagination instead of computing negative skips", async () => {
+    const { adminAuth } = await fiveOrders();
+
+    const res = await request(app)
+      .get("/api/admin/orders?page=-3&limit=-1")
+      .set("Authorization", adminAuth);
+
+    expect(res.status).toBe(200);
+    expect(res.body.page).toBe(1);
+    expect(res.body.orders).toHaveLength(1); // limit clamped to 1
+  });
+
   it("refuses an unknown status filter with 400", async () => {
     const { auth } = await registerAdmin();
 

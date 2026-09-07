@@ -140,6 +140,14 @@ describe("GET /api/admin/customers/:id — one customer's numbers", () => {
     expect(res.body.lastOrderAt).toBe(orders.a2.createdAt);
   });
 
+  it("answers 401 anonymous and 403 non-admin", async () => {
+    const { aAuth, ids } = await census();
+    const url = `/api/admin/customers/${ids["a@example.com"]}`;
+
+    expect((await request(app).get(url)).status).toBe(401);
+    expect((await request(app).get(url).set("Authorization", aAuth)).status).toBe(403);
+  });
+
   it("404s an unknown id and an admin id; 400s a malformed id", async () => {
     const { adminAuth } = await census();
     const adminUser = await User.findOne({ email: "admin@example.com" });

@@ -8,8 +8,12 @@ import { Request } from "express";
 export type Pagination = { page: number; limit: number; skip: number };
 
 export const parsePagination = (req: Request, defaultLimit = 10): Pagination => {
-  const page = Number(req.query.page) || 1;
-  const limit = Number(req.query.limit) || defaultLimit;
+  // Clamp garbage to sanity: page ≥ 1, 1 ≤ limit ≤ 100, whole numbers.
+  // (Negative limits used to produce negative skips — review catch.)
+  const rawPage = Math.floor(Number(req.query.page) || 1);
+  const rawLimit = Math.floor(Number(req.query.limit) || defaultLimit);
+  const page = Math.max(1, rawPage);
+  const limit = Math.min(100, Math.max(1, rawLimit));
   return { page, limit, skip: (page - 1) * limit };
 };
 

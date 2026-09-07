@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import { useSearchParams } from "next/navigation";
 import { X } from "lucide-react";
 import { api, getApiErrorMessage } from "@/lib/api";
 import { Button } from "@/components/ui/button";
@@ -26,25 +27,36 @@ const STATUS_OPTIONS: StatusFilter[] = [
   "cancelled",
 ];
 
-const formatDate = (iso?: string) =>
-  iso
-    ? new Date(iso).toLocaleDateString("en-GB", {
-        day: "numeric",
-        month: "short",
-        year: "numeric",
-      })
-    : "—";
+import { formatDate } from "@/lib/format";
 
+// Wrapped so useSearchParams (the customer-page deep link) doesn't
+// force a client-side bailout of the whole route at build time.
 export default function AdminOrdersPage() {
+  return (
+    <React.Suspense>
+      <AdminOrdersPageInner />
+    </React.Suspense>
+  );
+}
+
+function AdminOrdersPageInner() {
+  // Deep-link support: /admin/orders?user=<id>&open=<orderId> arrives
+  // from a customer's order-history row (Slice 4).
+  const searchParams = useSearchParams();
   const [status, setStatus] = React.useState<StatusFilter>("all");
   const [page, setPage] = React.useState(1);
+  const [userFilter, setUserFilter] = React.useState<string | null>(
+    () => searchParams.get("user")
+  );
 
   const [data, setData] = React.useState<OrderListResponse | null>(null);
   const [error, setError] = React.useState<string | null>(null);
   const [notice, setNotice] = React.useState<string | null>(null);
   const [loading, setLoading] = React.useState(true);
   const [busy, setBusy] = React.useState(false);
-  const [openId, setOpenId] = React.useState<string | null>(null);
+  const [openId, setOpenId] = React.useState<string | null>(
+    () => searchParams.get("open")
+  );
 
   const fetchList = React.useCallback(async () => {
     try {
@@ -52,6 +64,7 @@ export default function AdminOrdersPage() {
       setError(null);
       const params = new URLSearchParams({ page: String(page), limit: "10" });
       if (status !== "all") params.set("status", status);
+      if (userFilter) params.set("user", userFilter);
       const res = await api.get<OrderListResponse>(`/admin/orders?${params}`);
       setData(res.data);
     } catch (err) {
@@ -59,7 +72,7 @@ export default function AdminOrdersPage() {
     } finally {
       setLoading(false);
     }
-  }, [page, status]);
+  }, [page, status, userFilter]);
 
   React.useEffect(() => {
     fetchList();
@@ -136,6 +149,23 @@ export default function AdminOrdersPage() {
           ))}
         </select>
       </div>
+
+      {userFilter && (
+        <div className="mt-4 inline-flex items-center gap-2 rounded-full border bg-muted/50 px-3 py-1 text-sm">
+          Showing one customer&apos;s orders
+          <button
+            type="button"
+            aria-label="Show all orders"
+            onClick={() => {
+              setUserFilter(null);
+              setPage(1);
+            }}
+            className="text-muted-foreground transition-colors hover:text-destructive"
+          >
+            <X className="h-3.5 w-3.5" />
+          </button>
+        </div>
+      )}
 
       {error && (
         <div className="mt-4 rounded-md border border-destructive/30 bg-destructive/5 p-3 text-sm text-destructive">
