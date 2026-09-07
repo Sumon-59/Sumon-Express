@@ -3,6 +3,7 @@ import Order, { ORDER_STATUSES, isOrderStatus, OrderStatus } from "../models/Ord
 import Product from "../models/Product.model";
 import asyncHandler from "../utils/asyncHandler";
 import { httpError } from "../types/http.types";
+import { parsePagination, pageMeta } from "../utils/pagination";
 
 interface UpdateStatusBody {
   status?: string;
@@ -17,9 +18,7 @@ const PIPELINE: readonly OrderStatus[] = ["pending", "processing", "shipped", "d
 // Admin listing: newest first, filterable by status, paginated with the
 // same {page, pages, total, ...} wrapper the products listing answers.
 export const getAllOrders = asyncHandler(async (req: Request, res: Response) => {
-  const page = Number(req.query.page) || 1;
-  const limit = Number(req.query.limit) || 10;
-  const skip = (page - 1) * limit;
+  const paging = parsePagination(req);
 
   const filter: Record<string, unknown> = {};
   if (req.query.status !== undefined) {
@@ -34,17 +33,12 @@ export const getAllOrders = asyncHandler(async (req: Request, res: Response) => 
     Order.find(filter)
       .populate("user", "name email")
       .sort({ createdAt: -1 })
-      .skip(skip)
-      .limit(limit),
+      .skip(paging.skip)
+      .limit(paging.limit),
     Order.countDocuments(filter),
   ]);
 
-  res.json({
-    page,
-    pages: Math.ceil(total / limit),
-    total,
-    orders,
-  });
+  res.json({ ...pageMeta(total, paging), orders });
 });
 
 export const updateOrderStatus = asyncHandler(async (req: Request, res: Response) => {

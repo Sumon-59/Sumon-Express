@@ -11,8 +11,8 @@ the customers listing (ticket 02) is its third consumer instead of a third copy.
 
 **Status:** ready-for-agent
 
-- [ ] Shared helper owns page/limit parsing and pages math
-- [ ] Products listing adopts it; its tests pass unmodified
-- [ ] Orders listing adopts it; its tests pass unmodified
-- [ ] No response shape or behavior change anywhere
-- [ ] Typecheck clean
+- [x] Shared helper owns page/limit parsing and pages math
+- [x] Products listing adopts it; its tests pass unmodified
+- [x] Orders listing adopts it; its tests pass unmodified
+- [x] No response shape or behavior change anywhere
+- [x] Typecheck clean
