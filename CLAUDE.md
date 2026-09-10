@@ -166,6 +166,27 @@ Allowlist in `app.ts` (`allowedOrigins`) + `credentials: true`. When the fronten
   `Stars`/`StarRow` (icons + numeric text, hidden at zero), `ProductReviews`
   (load-more accumulation, eligibility-driven form).
 
+### Store settings & theming (since Slice 10)
+- **`StoreSettings` is a SINGLETON at a fixed `_id`** (`SETTINGS_ID` in
+  `settings.controller.ts`). An upsert is race-safe ONLY on a uniquely-indexed
+  filter — never upsert on `{}` (two concurrent first-touches can each insert).
+  Writes go through the `theSettings` helper; the public read is `findById`
+  first, upsert only as the not-yet-created fallback — **a read must be a
+  read** (no DB write per storefront visit, no `updatedAt` churn).
+- `GET /api/settings` is public (the brand renders for anonymous shoppers);
+  `PUT /api/admin/settings` is a partial merge through the
+  **`validateSettingsData` choke point**: hex accent (stored lowercase), trims
+  + caps, http(s)-only URL fields (empty string clears), named 400s. Defaults
+  reproduce the pre-slice hardcoded brand, so a fresh DB renders unchanged.
+- **Theming = one CSS variable**: `SettingsProvider` writes `accentColor` into
+  the document-root `--primary` — the token every shadcn `bg-primary`/
+  `text-primary` utility resolves to — so one write recolors the site. Guard
+  what reaches the DOM with `isHexColor` (`types/settings.ts`, the shared
+  rule). Frontend `DEFAULT_SETTINGS` mirrors the schema defaults and renders
+  while loading/on fetch failure — the storefront never blanks. Announcement
+  bar renders only when non-empty. Brand images ride the Slice 2b upload
+  helper (`uploadImage`).
+
 ### Search & discovery (since Slice 8)
 - Public listing: `q` runs the **text index** first (name weight 10, description 3,
   relevance-ranked unless an explicit sort) and falls back to an ESCAPED name regex
