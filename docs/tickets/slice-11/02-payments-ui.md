@@ -9,9 +9,9 @@ refetch (webhook may land seconds after the redirect).
 
 **Blocked by:** 01.
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] Checkout radio + online redirect flow (payload test extended)
-- [ ] Badges on orders list/detail from isPaid/payment.status
-- [ ] Pay-now retry wired to /payments/init
-- [ ] Return-notice + refetch on ?paid= query
+- [x] Checkout radio + online redirect flow (payload test extended)
+- [x] Badges on orders list/detail from isPaid/payment.status
+- [x] Pay-now retry wired to /payments/init
+- [x] Return-notice + refetch on ?paid= query

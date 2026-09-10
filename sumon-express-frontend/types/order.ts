@@ -32,6 +32,33 @@ export type OrderDiscount = {
   amount: number;
 };
 
+// Receipt of the latest online payment attempt (Slice 11) — mirrors
+// the backend subdoc. isPaid stays the one paid-flag.
+export type OrderPayment = {
+  provider: string;
+  tranId: string;
+  status: "initiated" | "paid" | "failed";
+  failureReason?: string;
+};
+
+// One payment badge rule for every surface: text + color, never
+// color alone. COD orders show a badge only once actually paid.
+export const paymentBadge = (o: {
+  paymentMethod?: string;
+  isPaid?: boolean;
+  payment?: OrderPayment;
+}): { label: string; className: string } | null => {
+  if (o.isPaid)
+    return { label: "Paid", className: "border-green-300 bg-green-50 text-green-700" };
+  if (o.paymentMethod !== "online") return null;
+  if (o.payment?.status === "failed")
+    return { label: "Payment failed", className: "border-red-300 bg-red-50 text-red-700" };
+  return {
+    label: "Awaiting payment",
+    className: "border-amber-300 bg-amber-50 text-amber-700",
+  };
+};
+
 export type AdminOrder = {
   _id: string;
   status: OrderStatus;

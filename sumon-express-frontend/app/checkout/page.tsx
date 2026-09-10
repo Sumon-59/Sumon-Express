@@ -3,7 +3,7 @@
 import React from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Banknote, ImageIcon } from "lucide-react";
+import { Banknote, CreditCard, ImageIcon } from "lucide-react";
 import { useCart, lineKey } from "@/context/CartContext";
 import { useAuth } from "@/context/AuthContext";
 import { api } from "@/lib/api";
@@ -30,6 +30,7 @@ export default function CheckoutPage() {
   // Server-computed preview; the displayed total is ITS total, and the
   // server re-validates the code again at order time regardless.
   const [discount, setDiscount] = React.useState<DiscountPreview | null>(null);
+  const [method, setMethod] = React.useState<"cod" | "online">("cod");
 
   const cartLines = React.useMemo(
     () =>
@@ -63,13 +64,26 @@ export default function CheckoutPage() {
       const payload = {
         items: cartLines,
         shippingAddress: { address: address.trim(), city: city.trim(), phone: phone.trim() },
-        paymentMethod: "cod",
+        paymentMethod: method,
         ...(discount ? { discountCode: discount.code } : {}),
       };
 
-      await api.post("/orders", payload);
-
+      const { data: order } = await api.post("/orders", payload);
       clearCart();
+
+      if (method === "online") {
+        // The order exists either way — if the gateway session fails,
+        // the shopper lands on My Orders with a Pay-now retry there.
+        try {
+          const { data } = await api.post("/payments/init", { orderId: order._id });
+          window.location.assign(data.redirectUrl);
+          return;
+        } catch {
+          router.push("/orders?paid=init-failed");
+          return;
+        }
+      }
+
       router.push("/orders");
     } catch (err: any) {
       setError(err?.response?.data?.message || err?.message || "Failed to place order");
@@ -140,12 +154,47 @@ export default function CheckoutPage() {
 
           <section className="rounded-lg border bg-card p-5">
             <h2 className="font-semibold">Payment Method</h2>
-            <div className="mt-4 flex items-center gap-3 rounded-md border border-primary bg-primary/5 p-3">
-              <Banknote className="h-5 w-5 text-primary" />
-              <div>
-                <p className="text-sm font-medium">Cash on Delivery</p>
-                <p className="text-xs text-muted-foreground">Pay when your order arrives</p>
-              </div>
+            <div className="mt-4 space-y-3">
+              <label
+                className={`flex cursor-pointer items-center gap-3 rounded-md border p-3 ${
+                  method === "cod" ? "border-primary bg-primary/5" : "hover:bg-muted/50"
+                }`}
+              >
+                <input
+                  type="radio"
+                  name="paymentMethod"
+                  value="cod"
+                  checked={method === "cod"}
+                  onChange={() => setMethod("cod")}
+                  className="accent-[var(--primary)]"
+                />
+                <Banknote className="h-5 w-5 text-primary" />
+                <div>
+                  <p className="text-sm font-medium">Cash on Delivery</p>
+                  <p className="text-xs text-muted-foreground">Pay when your order arrives</p>
+                </div>
+              </label>
+              <label
+                className={`flex cursor-pointer items-center gap-3 rounded-md border p-3 ${
+                  method === "online" ? "border-primary bg-primary/5" : "hover:bg-muted/50"
+                }`}
+              >
+                <input
+                  type="radio"
+                  name="paymentMethod"
+                  value="online"
+                  checked={method === "online"}
+                  onChange={() => setMethod("online")}
+                  className="accent-[var(--primary)]"
+                />
+                <CreditCard className="h-5 w-5 text-primary" />
+                <div>
+                  <p className="text-sm font-medium">Pay Online</p>
+                  <p className="text-xs text-muted-foreground">
+                    Card, bKash or Nagad — secure SSLCommerz gateway
+                  </p>
+                </div>
+              </label>
             </div>
           </section>
         </div>
@@ -208,7 +257,11 @@ export default function CheckoutPage() {
           {error && <p className="mt-3 text-sm text-destructive">{error}</p>}
 
           <Button type="submit" size="lg" className="mt-5 w-full" disabled={submitting}>
-            {submitting ? "Placing order…" : "Place Order"}
+            {submitting
+              ? "Placing order…"
+              : method === "online"
+                ? "Place Order & Pay"
+                : "Place Order"}
           </Button>
           <Button asChild variant="ghost" className="mt-2 w-full">
             <Link href="/cart">Back to cart</Link>
