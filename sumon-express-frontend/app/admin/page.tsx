@@ -6,10 +6,7 @@ import { Badge } from "@/components/ui/badge";
 import RevenueChart from "@/components/admin/RevenueChart";
 import { formatTaka } from "@/types/product";
 import { AnalyticsResponse } from "@/types/analytics";
-import { STATUS_STYLES } from "@/types/order";
-import { OrderStatus } from "@/types/order";
-
-const STATUS_ORDER: OrderStatus[] = ["pending", "processing", "shipped", "delivered", "cancelled"];
+import { ORDER_STATUS_ORDER, STATUS_STYLES } from "@/types/order";
 
 function StatTile({ label, value, hint }: { label: string; value: string; hint?: string }) {
   return (
@@ -90,7 +87,7 @@ export default function AdminDashboardPage() {
         <div className="rounded-lg border bg-card p-5">
           <h2 className="text-sm font-semibold">Orders by status</h2>
           <ul className="mt-3 space-y-2">
-            {STATUS_ORDER.map((s) => (
+            {ORDER_STATUS_ORDER.map((s) => (
               <li key={s} className="flex items-center justify-between text-sm">
                 <Badge variant="outline" className={`capitalize ${STATUS_STYLES[s]}`}>
                   {s}

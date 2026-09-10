@@ -2,6 +2,7 @@
 
 import React from "react";
 import { formatTaka } from "@/types/product";
+import { RevenueDay } from "@/types/analytics";
 
 // 30-day revenue as stacked bars: each day's money split into realized
 // (delivered) and pending (in the pipeline). Dataviz rules applied:
@@ -11,17 +12,17 @@ import { formatTaka } from "@/types/product";
 const REALIZED = "#ea580c"; // validated light+dark
 const PENDING = "#2563eb";
 
-type Day = { date: string; realized: number; pending: number };
-
-export default function RevenueChart({ days }: { days: Day[] }) {
+export default function RevenueChart({ days }: { days: RevenueDay[] }) {
   const [hover, setHover] = React.useState<number | null>(null);
 
   const W = 660;
   const H = 200;
   const PAD_LEFT = 44;
+  const PAD_TOP = 8;
+  const PAD_RIGHT = 8;
   const PAD_BOTTOM = 22;
-  const plotW = W - PAD_LEFT - 8;
-  const plotH = H - PAD_BOTTOM - 8;
+  const plotW = W - PAD_LEFT - PAD_RIGHT;
+  const plotH = H - PAD_BOTTOM - PAD_TOP;
 
   const max = Math.max(1, ...days.map((d) => d.realized + d.pending));
   const barW = plotW / days.length;
@@ -45,6 +46,13 @@ export default function RevenueChart({ days }: { days: Day[] }) {
         </span>
         <span className="flex items-center gap-1.5">
           <svg width="12" height="12" aria-hidden>
+            {/* pattern defined HERE, not in the chart svg — a same-svg
+                reference can't break if either svg unmounts alone */}
+            <defs>
+              <pattern id="pendingHatchLegend" width="4" height="4" patternTransform="rotate(45)" patternUnits="userSpaceOnUse">
+                <line x1="0" y1="0" x2="0" y2="4" stroke="rgba(255,255,255,0.55)" strokeWidth="1.2" />
+              </pattern>
+            </defs>
             <rect width="12" height="12" rx="2" fill={PENDING} />
             <rect width="12" height="12" rx="2" fill="url(#pendingHatchLegend)" />
           </svg>
@@ -62,9 +70,6 @@ export default function RevenueChart({ days }: { days: Day[] }) {
           <pattern id="pendingHatch" width="5" height="5" patternTransform="rotate(45)" patternUnits="userSpaceOnUse">
             <line x1="0" y1="0" x2="0" y2="5" stroke="rgba(255,255,255,0.55)" strokeWidth="1.5" />
           </pattern>
-          <pattern id="pendingHatchLegend" width="4" height="4" patternTransform="rotate(45)" patternUnits="userSpaceOnUse">
-            <line x1="0" y1="0" x2="0" y2="4" stroke="rgba(255,255,255,0.55)" strokeWidth="1.2" />
-          </pattern>
         </defs>
 
         {/* grid + y labels (text wears text tokens, not series color) */}
@@ -72,15 +77,15 @@ export default function RevenueChart({ days }: { days: Day[] }) {
           <g key={v}>
             <line
               x1={PAD_LEFT}
-              x2={W - 8}
-              y1={8 + plotH - y(v)}
-              y2={8 + plotH - y(v)}
+              x2={W - PAD_RIGHT}
+              y1={PAD_TOP + plotH - y(v)}
+              y2={PAD_TOP + plotH - y(v)}
               stroke="currentColor"
               strokeOpacity="0.08"
             />
             <text
               x={PAD_LEFT - 6}
-              y={8 + plotH - y(v) + 3}
+              y={PAD_TOP + plotH - y(v) + 3}
               textAnchor="end"
               fontSize="9"
               fill="currentColor"
@@ -92,9 +97,9 @@ export default function RevenueChart({ days }: { days: Day[] }) {
         ))}
         <line
           x1={PAD_LEFT}
-          x2={W - 8}
-          y1={8 + plotH}
-          y2={8 + plotH}
+          x2={W - PAD_RIGHT}
+          y1={PAD_TOP + plotH}
+          y2={PAD_TOP + plotH}
           stroke="currentColor"
           strokeOpacity="0.15"
         />
@@ -107,12 +112,12 @@ export default function RevenueChart({ days }: { days: Day[] }) {
           return (
             <g key={d.date} onMouseEnter={() => setHover(i)} onMouseLeave={() => setHover(null)}>
               {/* hit target bigger than the mark */}
-              <rect x={x} y={8} width={barW} height={plotH} fill="transparent" />
+              <rect x={x} y={PAD_TOP} width={barW} height={plotH} fill="transparent" />
               {rh > 0 && (
                 <rect
                   x={x + 1.5}
                   width={Math.max(1, barW - 3)}
-                  y={8 + plotH - rh}
+                  y={PAD_TOP + plotH - rh}
                   height={rh}
                   rx="2"
                   fill={REALIZED}
@@ -123,7 +128,7 @@ export default function RevenueChart({ days }: { days: Day[] }) {
                   <rect
                     x={x + 1.5}
                     width={Math.max(1, barW - 3)}
-                    y={8 + plotH - rh - gap - ph}
+                    y={PAD_TOP + plotH - rh - gap - ph}
                     height={ph}
                     rx="2"
                     fill={PENDING}
@@ -131,7 +136,7 @@ export default function RevenueChart({ days }: { days: Day[] }) {
                   <rect
                     x={x + 1.5}
                     width={Math.max(1, barW - 3)}
-                    y={8 + plotH - rh - gap - ph}
+                    y={PAD_TOP + plotH - rh - gap - ph}
                     height={ph}
                     rx="2"
                     fill="url(#pendingHatch)"

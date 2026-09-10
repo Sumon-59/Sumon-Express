@@ -50,7 +50,9 @@ async function world() {
   return { adminAuth };
 }
 
-const TODAY = new Date().toISOString().slice(0, 10);
+// Computed per-assertion, not at module load: a run straddling UTC
+// midnight would otherwise flake (the same-instant discipline the
+// suite learned from the JWT and sort-tie bugs).
 
 describe("GET /api/admin/analytics", () => {
   it("computes the tiles: realized vs pending, counts, floored AOV", async () => {
@@ -101,7 +103,11 @@ describe("GET /api/admin/analytics", () => {
     expect(series).toHaveLength(30);
     // Continuous calendar — empty days are zeros, not gaps:
     const today = series[series.length - 1];
-    expect(today).toEqual({ date: TODAY, realized: 200, pending: 620 });
+    expect(today).toEqual({
+      date: new Date().toISOString().slice(0, 10),
+      realized: 200,
+      pending: 620,
+    });
     expect(series[0].realized).toBe(0);
     expect(series[0].pending).toBe(0);
   });

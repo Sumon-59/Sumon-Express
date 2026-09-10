@@ -90,6 +90,11 @@ the same one-rule discipline as the census.
 
 ## Further Notes
 
+- Accepted in review: `ordersByStatus` includes the cancelled count. Story 7's
+  "excluded from every metric" governs money and performance numbers; story 5's
+  clogged-stage visibility wants churn on the board. Cancelled feeds no revenue,
+  count, average, or ranking — it is visible only as its own labeled state.
+
 - This is the Slice 4 aggregation lesson with a time axis: same $match/$group
   discipline, plus conditional accumulation (a sum that counts a document only when
   its status qualifies) and calendar bucketing.

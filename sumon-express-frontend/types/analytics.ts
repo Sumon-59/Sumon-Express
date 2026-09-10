@@ -2,6 +2,8 @@
 
 import { OrderStatus } from "./order";
 
+export type RevenueDay = { date: string; realized: number; pending: number };
+
 export type AnalyticsResponse = {
   totals: {
     realizedRevenue: number;
@@ -12,6 +14,6 @@ export type AnalyticsResponse = {
     newCustomers30d: number;
   };
   ordersByStatus: Record<OrderStatus, number>;
-  revenueByDay: { date: string; realized: number; pending: number }[];
+  revenueByDay: RevenueDay[];
   topProducts: { productId: string; name: string; quantity: number }[];
 };
