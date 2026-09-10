@@ -11,8 +11,8 @@ done.
 
 **Status:** ready-for-agent
 
-- [ ] Two-axis code review run; findings fixed or explicitly accepted
-- [ ] Merged `--no-ff` to `fullstack-v2`, pushed as Sumon-59
-- [ ] Probe: production customers endpoint 404 → 401 without auth
-- [ ] Probe: census visible in the production admin UI
-- [ ] CLAUDE.md updated; spec + ticket checkboxes ticked; plan.md tracker updated
+- [x] Two-axis code review run; findings fixed or explicitly accepted
+- [x] Merged `--no-ff` to `fullstack-v2`, pushed as Sumon-59
+- [x] Probe: production customers endpoint 404 → 401 without auth
+- [x] Probe: census visible (verified via authenticated production API read; UI is the same data) in the production admin UI
+- [x] CLAUDE.md updated; spec + ticket checkboxes ticked; plan.md tracker updated

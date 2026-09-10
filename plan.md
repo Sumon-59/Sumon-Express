@@ -310,7 +310,7 @@ provider (Stripe test). Pick by appetite when we get here — re-plan with `/way
 | 2 — Product management | ✅ 2026-08-31 — admin catalog: table+form UI, soft delete/reactivate, validation choke point (bypass found by review, closed), admin listing+detail endpoints; 54 tests (41 BE + 13 FE) |
 | 2b — Image uploads | ✅ 2026-09-07 — Cloudinary signed direct upload (no SDK, Node crypto SHA-1): admin signature endpoint + drag-and-drop in the product form; 64 tests (45 BE + 19 FE); deploy probe caught a truncated API secret in Render (invisible in logs — only the end-to-end signature round-trip exposed it) |
 | 3 — Order management | ✅ 2026-09-07 — status pipeline enforced as a forward-only state machine (cancel = one door, restores stock; found+closed: cancel-via-status-route corrupted inventory), paginated+filtered admin listing, orders UI with drawer and legal-moves-only actions; 90 tests (66 BE + 24 FE) |
-| 4 — Customers | ⬜ |
+| 4 — Customers | ✅ 2026-09-10 — customer census via one aggregation pipeline ($lookup excl. cancelled → $size/$sum/$max, whitelisting $project), sortable paginated table + detail page with deep-linked order history; pagination helper extracted (rule of three); 103 tests (79 BE + 24 FE) |
 | 5 — Discount codes | ⬜ |
 | 6 — Analytics dashboard | ⬜ |
 | 7 — Variants & galleries | ⬜ |

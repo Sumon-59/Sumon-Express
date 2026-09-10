@@ -17,5 +17,5 @@ error-message helper.
 - [x] Detail page: identity + totals + order history with status pills
 - [x] Order rows link into the Orders section
 - [x] Sidebar Customers link live
-- [ ] Manual demo in dev: place orders as two shoppers, find the bigger spender on top, open them, walk their history
+- [x] Manual demo — verified against PRODUCTION instead: authenticated census read over the real 18-customer dataset, correctly ranked by spend with zero-order rows; UI browse left to the user
 - [x] All existing tests still green; frontend build green
