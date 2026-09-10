@@ -311,7 +311,7 @@ provider (Stripe test). Pick by appetite when we get here — re-plan with `/way
 | 2b — Image uploads | ✅ 2026-09-07 — Cloudinary signed direct upload (no SDK, Node crypto SHA-1): admin signature endpoint + drag-and-drop in the product form; 64 tests (45 BE + 19 FE); deploy probe caught a truncated API secret in Render (invisible in logs — only the end-to-end signature round-trip exposed it) |
 | 3 — Order management | ✅ 2026-09-07 — status pipeline enforced as a forward-only state machine (cancel = one door, restores stock; found+closed: cancel-via-status-route corrupted inventory), paginated+filtered admin listing, orders UI with drawer and legal-moves-only actions; 90 tests (66 BE + 24 FE) |
 | 4 — Customers | ✅ 2026-09-10 — customer census via one aggregation pipeline ($lookup excl. cancelled → $size/$sum/$max, whitelisting $project), sortable paginated table + detail page with deep-linked order history; pagination helper extracted (rule of three); 103 tests (79 BE + 24 FE) |
-| 5 — Discount codes | ⬜ |
+| 5 — Discount codes | ✅ 2026-09-10 — rules engine (one choke point, named 400s, whole-taka floor both paths), atomic usage claim with full rollback chains, preview endpoint sharing the one cart→subtotal computation, admin CRUD + checkout field; review caught the unfloored fixed-cap and the claim missing expiry; 136 tests (106 BE + 30 FE) |
 | 6 — Analytics dashboard | ⬜ |
 | 7 — Variants & galleries | ⬜ |
 | 8 — Search & recommendations | ⬜ |

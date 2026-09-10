@@ -11,8 +11,8 @@ gains the discounts section; spec + tickets ticked; plan.md tracker updated.
 
 **Status:** ready-for-agent
 
-- [ ] Two-axis code review run; findings fixed or explicitly accepted
-- [ ] Merged `--no-ff` to `fullstack-v2`, pushed as Sumon-59
-- [ ] Probe: production preview endpoint 404 → 401 without auth
-- [ ] Probe: real code created + previewed against production (authenticated API)
-- [ ] CLAUDE.md updated; spec + ticket checkboxes ticked; plan.md tracker updated
+- [x] Two-axis code review run; findings fixed or explicitly accepted
+- [x] Merged `--no-ff` to `fullstack-v2`, pushed as Sumon-59
+- [x] Probe: production preview endpoint 404 → 401 without auth
+- [x] Probe: real code (PROBE1: created, previewed on a real ৳105 product → amount 10 = floor of 10.5, deactivated after) created + previewed against production (authenticated API)
+- [x] CLAUDE.md updated; spec + ticket checkboxes ticked; plan.md tracker updated
