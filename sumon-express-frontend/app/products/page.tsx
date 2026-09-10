@@ -16,6 +16,19 @@ function ProductsBrowser() {
   const category = params.get("category") ?? "";
   const sort = params.get("sort") ?? "";
   const page = Math.max(1, Number(params.get("page")) || 1);
+  // Discovery filters (Slice 8) — URL-driven like everything else, so
+  // filtered views survive reload and are shareable links.
+  const minPrice = params.get("minPrice") ?? "";
+  const maxPrice = params.get("maxPrice") ?? "";
+  const inStock = params.get("inStock") === "true";
+
+  // Local drafts for the price inputs (applied on submit, not per key).
+  const [minDraft, setMinDraft] = React.useState(minPrice);
+  const [maxDraft, setMaxDraft] = React.useState(maxPrice);
+  React.useEffect(() => {
+    setMinDraft(minPrice);
+    setMaxDraft(maxPrice);
+  }, [minPrice, maxPrice]);
 
   const [loading, setLoading] = React.useState(true);
   const [error, setError] = React.useState<string | null>(null);
@@ -41,6 +54,9 @@ function ProductsBrowser() {
         if (q) search.set("q", q);
         if (category) search.set("category", category);
         if (sort) search.set("sort", sort);
+        if (minPrice) search.set("minPrice", minPrice);
+        if (maxPrice) search.set("maxPrice", maxPrice);
+        if (inStock) search.set("inStock", "true");
 
         const res = await api.get<ProductListResponse>(`/products?${search.toString()}`);
         if (cancelled) return;
@@ -58,13 +74,31 @@ function ProductsBrowser() {
     return () => {
       cancelled = true;
     };
-  }, [q, category, sort, page]);
+  }, [q, category, sort, page, minPrice, maxPrice, inStock]);
 
   const setParam = (key: string, value: string) => {
     const next = new URLSearchParams(params.toString());
     if (value) next.set(key, value);
     else next.delete(key);
     if (key !== "page") next.delete("page");
+    router.push(`/products?${next.toString()}`);
+  };
+
+  const applyPriceRange = (e: React.FormEvent) => {
+    e.preventDefault();
+    const next = new URLSearchParams(params.toString());
+    if (minDraft.trim()) next.set("minPrice", minDraft.trim());
+    else next.delete("minPrice");
+    if (maxDraft.trim()) next.set("maxPrice", maxDraft.trim());
+    else next.delete("maxPrice");
+    next.delete("page");
+    router.push(`/products?${next.toString()}`);
+  };
+
+  const hasFilters = Boolean(minPrice || maxPrice || inStock || category);
+  const clearFilters = () => {
+    const next = new URLSearchParams(params.toString());
+    ["minPrice", "maxPrice", "inStock", "category", "page"].forEach((k) => next.delete(k));
     router.push(`/products?${next.toString()}`);
   };
 
@@ -122,6 +156,53 @@ function ProductsBrowser() {
           ))}
         </div>
       )}
+
+      {/* Price + availability filter bar (Slice 8) */}
+      <div className="mt-3 flex flex-wrap items-center gap-3">
+        <form onSubmit={applyPriceRange} className="flex items-center gap-2">
+          <input
+            type="number"
+            min="0"
+            value={minDraft}
+            onChange={(e) => setMinDraft(e.target.value)}
+            placeholder="৳ min"
+            aria-label="Minimum price"
+            className="h-9 w-24 rounded-md border bg-card px-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+          />
+          <span className="text-muted-foreground">–</span>
+          <input
+            type="number"
+            min="0"
+            value={maxDraft}
+            onChange={(e) => setMaxDraft(e.target.value)}
+            placeholder="৳ max"
+            aria-label="Maximum price"
+            className="h-9 w-24 rounded-md border bg-card px-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+          />
+          <Button type="submit" variant="outline" size="sm">
+            Apply
+          </Button>
+        </form>
+
+        <label className="flex cursor-pointer items-center gap-2 text-sm">
+          <input
+            type="checkbox"
+            checked={inStock}
+            onChange={(e) => setParam("inStock", e.target.checked ? "true" : "")}
+          />
+          In stock only
+        </label>
+
+        {hasFilters && (
+          <button
+            type="button"
+            onClick={clearFilters}
+            className="text-sm text-muted-foreground underline-offset-2 hover:text-primary hover:underline"
+          >
+            Clear filters
+          </button>
+        )}
+      </div>
 
       {loading ? (
         <div className="mt-6 grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">

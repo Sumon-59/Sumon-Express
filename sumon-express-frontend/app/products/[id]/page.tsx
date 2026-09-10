@@ -6,6 +6,7 @@ import { useParams, useRouter } from "next/navigation";
 import { ChevronRight, ImageIcon, Minus, Plus, ShoppingCart, Zap } from "lucide-react";
 import { api } from "@/lib/api";
 import { useCart } from "@/context/CartContext";
+import RelatedProducts from "@/components/RelatedProducts";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import {
@@ -276,6 +277,8 @@ export default function ProductDetailsPage() {
           </div>
         </div>
       </div>
+
+      <RelatedProducts productId={product._id} />
     </main>
   );
 }

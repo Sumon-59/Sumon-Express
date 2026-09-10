@@ -4,6 +4,7 @@ import React from "react";
 import Link from "next/link";
 import { ImageIcon, Minus, Plus, ShoppingCart, Trash2 } from "lucide-react";
 import { useCart, lineKey } from "@/context/CartContext";
+import RelatedProducts from "@/components/RelatedProducts";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { formatTaka } from "@/types/product";
@@ -134,6 +135,11 @@ export default function CartPage() {
           </Button>
         </aside>
       </div>
+
+      {/* You may also like — seeded by the first cart line (Slice 8) */}
+      {items.length > 0 && (
+        <RelatedProducts productId={items[0].productId} title="You may also like" />
+      )}
     </main>
   );
 }

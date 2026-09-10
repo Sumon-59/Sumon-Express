@@ -10,7 +10,7 @@ seeded by its first item. Both strips reuse the product card and vanish when emp
 
 **Status:** ready-for-agent
 
-- [ ] Sidebar: category, price range, in-stock — URL-driven, combined with q/sort/pagination
-- [ ] Clear-filters affordance; empty result state
-- [ ] Related strip on the product page; "You may also like" on the cart; both hidden when empty
-- [ ] All existing tests still green; frontend build green
+- [x] Filter bar (chips + price/stock row — deviation from "sidebar" recorded, matches established design): category, price range, in-stock — URL-driven, combined with q/sort/pagination
+- [x] Clear-filters affordance; empty result state
+- [x] Related strip on the product page; "You may also like" on the cart; both hidden when empty
+- [x] All existing tests still green; frontend build green
