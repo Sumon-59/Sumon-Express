@@ -11,6 +11,6 @@ Refusals and failures surface via the shared error helper.
 
 **Status:** ready-for-agent
 
-- [ ] Stars component (text + filled stars, not color-alone) on cards and product page; hidden when no reviews
-- [ ] Reviews list with Verified badge; eligibility-driven form; own-review edit/delete
-- [ ] All existing tests still green; frontend build green
+- [x] Stars component (text + filled stars, not color-alone) on cards and product page; hidden when no reviews
+- [x] Reviews list with Verified badge; eligibility-driven form; own-review edit/delete
+- [x] All existing tests still green; frontend build green
