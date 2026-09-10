@@ -19,13 +19,14 @@ import { getPaymentProvider, PaymentUrls } from "../payments/provider";
 const makeTranId = (orderId: string) =>
   `${orderId.slice(-8)}-${crypto.randomBytes(8).toString("hex")}`;
 
-// CLIENT_URL overrides; the production fallback names the deployed
-// frontend the same way app.ts's CORS allowlist already does (deploy
-// probe caught the localhost fallback leaking into gateway redirects —
-// CLIENT_URL had never been set on Render because CORS never needed it).
+// CLIENT_URL overrides; the deployed fallback names the frontend the
+// same way app.ts's CORS allowlist already does. Keyed on RENDER (set
+// by the platform itself on every service) rather than NODE_ENV —
+// deploy probes caught the localhost fallback leaking into gateway
+// redirects, and platform-set beats user-set for "are we deployed?".
 const clientUrl = () =>
   process.env.CLIENT_URL ??
-  (process.env.NODE_ENV === "production"
+  (process.env.RENDER || process.env.NODE_ENV === "production"
     ? "https://sumon-express.vercel.app"
     : "http://localhost:3000");
 
