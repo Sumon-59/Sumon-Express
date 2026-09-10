@@ -9,9 +9,9 @@ the DIFF verified after — the Slice 7/8 lesson, twice learned).
 
 **Blocked by:** 02.
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] Two-axis code review run; findings fixed or explicitly accepted
-- [ ] Merged `--no-ff` to `fullstack-v2`, pushed as Sumon-59
-- [ ] Probe: public settings GET live; admin write round-trip verified
-- [ ] CLAUDE.md updated; spec + ticket checkboxes ticked; plan.md tracker updated (diff checked)
+- [x] Two-axis code review run; findings fixed or explicitly accepted
+- [x] Merged `--no-ff` to `fullstack-v2`, pushed as Sumon-59
+- [x] Probe: public settings GET live; admin write round-trip verified
+- [x] CLAUDE.md updated; spec + ticket checkboxes ticked; plan.md tracker updated (diff checked)
