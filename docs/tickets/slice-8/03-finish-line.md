@@ -10,8 +10,8 @@ tracker.
 
 **Status:** ready-for-agent
 
-- [ ] Two-axis code review run; findings fixed or explicitly accepted
-- [ ] Merged `--no-ff` to `fullstack-v2`, pushed as Sumon-59
-- [ ] Probe: related endpoint live in production
-- [ ] Probe: production description-word search hits (text index built)
-- [ ] CLAUDE.md updated; spec + ticket checkboxes ticked; plan.md tracker updated
+- [x] Two-axis code review run; findings fixed or explicitly accepted
+- [x] Merged `--no-ff` to `fullstack-v2`, pushed as Sumon-59
+- [x] Probe: related endpoint live in production
+- [x] Probe: production description-word search hits (text index built)
+- [x] CLAUDE.md updated; spec + ticket checkboxes ticked; plan.md tracker updated
