@@ -314,7 +314,7 @@ provider (Stripe test). Pick by appetite when we get here — re-plan with `/way
 | 5 — Discount codes | ✅ 2026-09-10 — rules engine (one choke point, named 400s, whole-taka floor both paths), atomic usage claim with full rollback chains, preview endpoint sharing the one cart→subtotal computation, admin CRUD + checkout field; review caught the unfloored fixed-cap and the claim missing expiry; 136 tests (106 BE + 30 FE) |
 | 6 — Analytics dashboard | ✅ 2026-09-10 — one endpoint, parallel aggregations: realized-vs-pending vocabulary, continuous 30-day UTC series, snapshot-based top products, validated 2-hue chart (dataviz validator, hatch for CVD); 142 tests (112 BE + 30 FE) |
 | 7 — Variants & galleries | ⬜ |
-| 8 — Search & recommendations | ⬜ |
+| 8 — Search & recommendations | ✅ 2026-09-11 — weighted text index + escaped-regex fallback (index vs scan, both pinned), ONE effective-price definition for filters AND sorts via a shared listing aggregation (review caught the sort/filter disagreement, the regex-injection 500, the aggregate ObjectId-cast gotcha), related-products strips; 178 tests (144 BE + 34 FE) |
 | 9 — Reviews & ratings | ⬜ |
 | 10 — Store settings & theming | ⬜ |
 | 11 — Online payments (SSLCommerz) | ⬜ |
