@@ -5,6 +5,7 @@ import asyncHandler from "../utils/asyncHandler";
 import { sessionUser } from "../middleware/requireAuth";
 import { httpError } from "../types/http.types";
 import { parsePagination, pageMeta } from "../utils/pagination";
+import { escapeRegex } from "../utils/regex";
 
 interface VariantInput {
   name?: unknown;
@@ -171,37 +172,139 @@ export const createProduct = asyncHandler(async (req: Request, res: Response) =>
   res.status(201).json(product);
 });
 
-export const getProducts = asyncHandler(async (req: Request, res: Response) => {
-  const page = Number(req.query.page) || 1;
-  const limit = Number(req.query.limit) || 10;
-  const skip = (page - 1) * limit;
+// A price bound from the query string: absent is fine, non-numeric is
+// a named 400 (a UI bug, not a shopper choice).
+const parsePriceBound = (raw: unknown, name: string): number | undefined => {
+  if (raw === undefined) return undefined;
+  const n = Number(raw);
+  if (String(raw).trim() === "" || !Number.isFinite(n)) {
+    throw httpError(`${name} must be a number`, 400);
+  }
+  return n;
+};
 
-  let sort: Record<string, 1 | -1> = { createdAt: -1 }; // default sort by newest
-  if (req.query.sort === "price_asc") sort = { price: 1 };
-  if (req.query.sort === "price_desc") sort = { price: -1 };
+// One aggregation runs every public listing variant: search, filters,
+// and sorts all share the SAME effective-price definition (review
+// catch: filters compared the sale price while sorts used the sticker
+// price — "cheapest first" could disagree with "under ৳500").
+const runPublicListing = async (
+  match: Record<string, unknown>,
+  sort: Record<string, 1 | -1 | { $meta: "textScore" }>,
+  paging: { skip: number; limit: number }
+) => {
+  const products = await Product.aggregate([
+    { $match: match },
+    { $addFields: { effectivePrice: { $ifNull: ["$discountPrice", "$price"] } } },
+    { $sort: sort },
+    { $skip: paging.skip },
+    { $limit: paging.limit },
+    // populate("category", "name"), aggregation-style:
+    { $lookup: { from: "categories", localField: "category", foreignField: "_id", as: "_cat" } },
+    {
+      $addFields: {
+        category: { $arrayElemAt: [{ $map: { input: "$_cat", as: "c", in: { _id: "$$c._id", name: "$$c.name" } } }, 0] },
+      },
+    },
+    { $project: { _cat: 0, effectivePrice: 0, _score: 0 } },
+  ]);
+  return products;
+};
+
+export const getProducts = asyncHandler(async (req: Request, res: Response) => {
+  const paging = parsePagination(req);
+
+  // Price sorts use the EFFECTIVE price, same as the price filters —
+  // one definition of "price" across the whole listing.
+  const explicitSort: Record<string, 1 | -1> | null =
+    req.query.sort === "price_asc"
+      ? { effectivePrice: 1, _id: 1 }
+      : req.query.sort === "price_desc"
+        ? { effectivePrice: -1, _id: 1 }
+        : null;
 
   const filter: Record<string, unknown> = { isActive: true };
-
-  if (req.query.q) {
-    filter.name = { $regex: String(req.query.q).trim(), $options: "i" };
-  }
   if (req.query.category) {
-    filter.category = req.query.category;
+    // aggregate() does NOT auto-cast strings to ObjectId the way
+    // find() does — the aggregation gotcha. Cast here or match nothing.
+    const cat = String(req.query.category);
+    filter.category = Types.ObjectId.isValid(cat) ? new Types.ObjectId(cat) : cat;
+  }
+  if (req.query.inStock === "true") {
+    // Correct for variant products for free: their stock is the sum.
+    filter.stock = { $gt: 0 };
   }
 
-  const products = await Product.find(filter)
-    .populate("category", "name")
-    .sort(sort)
-    .skip(skip)
-    .limit(limit);
-  const total = await Product.countDocuments(filter);
+  // Price bounds mean the EFFECTIVE price — what the shopper pays.
+  // Filtering the sticker price silently lies the moment anything goes
+  // on sale (the slice's trap; see the boundary tests).
+  const minPrice = parsePriceBound(req.query.minPrice, "minPrice");
+  const maxPrice = parsePriceBound(req.query.maxPrice, "maxPrice");
+  const effective = { $ifNull: ["$discountPrice", "$price"] };
+  const priceExprs: unknown[] = [];
+  if (minPrice !== undefined) priceExprs.push({ $gte: [effective, minPrice] });
+  if (maxPrice !== undefined) priceExprs.push({ $lte: [effective, maxPrice] });
+  if (priceExprs.length) {
+    filter.$expr = priceExprs.length === 1 ? priceExprs[0] : { $and: priceExprs };
+  }
 
-  res.json({
-    page,
-    pages: Math.ceil(total / limit),
-    total,
-    products,
-  });
+  const q = req.query.q ? String(req.query.q).trim() : "";
+
+  // Search strategy (Slice 8): $text first — the INDEX (stemmed,
+  // weighted, relevance-ranked). If it matches nothing, fall back to
+  // the name regex — the SCAN (partials work, no ranking).
+  if (q) {
+    const textFilter = { ...filter, $text: { $search: q } };
+    // Whole-result-set gate: page 2 of a text-matched query stays on
+    // the text path even when that page is empty.
+    const total = await Product.countDocuments(textFilter);
+    if (total > 0) {
+      const products = await runPublicListing(
+        textFilter,
+        explicitSort ?? { _score: { $meta: "textScore" } as const, _id: 1 },
+        paging
+      );
+      res.json({ ...pageMeta(total, paging), products });
+      return;
+    }
+    // Fallback SCAN for partials — escaped, so punctuation never
+    // crashes the public search box (review catch: q="(" was a 500).
+    filter.name = { $regex: escapeRegex(q), $options: "i" };
+  }
+
+  const [products, total] = await Promise.all([
+    runPublicListing(filter, explicitSort ?? { createdAt: -1, _id: -1 }, paging),
+    Product.countDocuments(filter),
+  ]);
+
+  res.json({ ...pageMeta(total, paging), products });
+});
+
+/**
+ * Related products (Slice 8): up to 4 same-category active siblings,
+ * newest first, never the product itself. Uncategorized products have
+ * no siblings — an empty list, never "random products".
+ */
+export const getRelatedProducts = asyncHandler(async (req: Request, res: Response) => {
+  const id = String(req.params.id);
+  if (!Types.ObjectId.isValid(id)) {
+    throw httpError("Product not found", 404);
+  }
+  const product = await Product.findOne({ _id: id, isActive: true });
+  if (!product) {
+    throw httpError("Product not found", 404);
+  }
+  if (!product.category) {
+    res.json([]);
+    return;
+  }
+  const related = await Product.find({
+    category: product.category,
+    isActive: true,
+    _id: { $ne: product._id },
+  })
+    .sort({ createdAt: -1, _id: -1 })
+    .limit(4);
+  res.json(related);
 });
 
 /**
@@ -216,7 +319,7 @@ export const getAdminProducts = asyncHandler(async (req: Request, res: Response)
   if (req.query.status === "active") filter.isActive = true;
   if (req.query.status === "inactive") filter.isActive = false;
   if (req.query.q) {
-    filter.name = { $regex: String(req.query.q).trim(), $options: "i" };
+    filter.name = { $regex: escapeRegex(String(req.query.q).trim()), $options: "i" };
   }
 
   const [products, total] = await Promise.all([
