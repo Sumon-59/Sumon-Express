@@ -127,6 +127,19 @@ Allowlist in `app.ts` (`allowedOrigins`) + `credentials: true`. When the fronten
   numbers; the code rides the order payload as `discountCode`. Snapshot lines render
   in the shopper history and admin drawer.
 
+### Analytics (since Slice 6)
+- `GET /api/admin/analytics` answers the whole dashboard in one response: all-time
+  tiles (realized = delivered; pending value = pending/processing/shipped; floored
+  AOV over non-cancelled orders), per-status counts (cancelled visible as churn but
+  feeding no metric), a continuous 30-day UTC daily series (bucketed by creation
+  date, current status decides the line, zeros for silent days), top 5 products by
+  quantity from the item snapshots, 30-day signups. Parallel aggregations; the
+  status grouping feeds tiles AND breakdown.
+- Frontend chart (RevenueChart): stacked bars, validated 2-hue palette
+  (#ea580c/#2563eb — run the dataviz validator before changing), pending hatched so
+  the split survives CVD/print, one axis, ORDER_STATUS_ORDER is the canonical
+  status list for every surface.
+
 ### Product management (since Slice 2)
 - **Soft delete is the only delete.** `DELETE /api/products/:id` sets `isActive: false`;
   nothing is ever removed (order snapshots depend on it). Reactivate via
