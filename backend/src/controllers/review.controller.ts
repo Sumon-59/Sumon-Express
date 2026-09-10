@@ -48,11 +48,18 @@ const validateRating = (rating: unknown): number => {
 };
 
 const validateComment = (comment: unknown): string | undefined => {
-  if (comment === undefined || comment === null || comment === "") return undefined;
-  if (typeof comment !== "string" || comment.length > COMMENT_MAX) {
+  if (comment === undefined || comment === null) return undefined;
+  if (typeof comment !== "string") {
     throw httpError(`comment must be text of at most ${COMMENT_MAX} characters`, 400);
   }
-  return comment.trim();
+  // Trim FIRST, then cap and empty-check — whitespace neither counts
+  // against the cap nor stores as an empty comment (review catch).
+  const trimmed = comment.trim();
+  if (!trimmed) return undefined;
+  if (trimmed.length > COMMENT_MAX) {
+    throw httpError(`comment must be text of at most ${COMMENT_MAX} characters`, 400);
+  }
+  return trimmed;
 };
 
 const findActiveProduct = async (id: string) => {

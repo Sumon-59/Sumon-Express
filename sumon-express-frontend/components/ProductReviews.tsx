@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { formatDate } from "@/lib/format";
 import { PageMeta } from "@/types/api";
+import { StarRow } from "@/components/Stars";
 
 type Review = {
   _id: string;
@@ -57,7 +58,8 @@ export default function ProductReviews({
   onRatingChanged?: () => void;
 }) {
   const { user } = useAuth();
-  const [data, setData] = React.useState<ReviewListResponse | null>(null);
+  const [reviews, setReviews] = React.useState<Review[]>([]);
+  const [meta, setMeta] = React.useState<Pick<PageMeta, "total" | "pages"> | null>(null);
   const [page, setPage] = React.useState(1);
   const [eligibility, setEligibility] = React.useState<Eligibility | null>(null);
   const [rating, setRating] = React.useState(0);
@@ -66,20 +68,30 @@ export default function ProductReviews({
   const [error, setError] = React.useState<string | null>(null);
   const [busy, setBusy] = React.useState(false);
 
-  const fetchReviews = React.useCallback(async () => {
-    try {
-      const res = await api.get<ReviewListResponse>(
-        `/products/${productId}/reviews?page=${page}&limit=10`
-      );
-      setData(res.data);
-    } catch {
-      // a missing review list is not worth an error banner
-    }
-  }, [productId, page]);
+  // Load-more accumulation: pages APPEND (the ticket's named
+  // interaction); a write reloads from page 1 so the list, the
+  // denormalized stars, and my own review stay in sync.
+  const load = React.useCallback(
+    async (pageToLoad: number, replace: boolean) => {
+      try {
+        const res = await api.get<ReviewListResponse>(
+          `/products/${productId}/reviews?page=${pageToLoad}&limit=10`
+        );
+        setMeta({ total: res.data.total, pages: res.data.pages });
+        setReviews((prev) => (replace ? res.data.reviews : [...prev, ...res.data.reviews]));
+        setPage(pageToLoad);
+      } catch {
+        // a missing review list is not worth an error banner
+      }
+    },
+    [productId]
+  );
 
   React.useEffect(() => {
-    fetchReviews();
-  }, [fetchReviews]);
+    load(1, true);
+  }, [load]);
+
+  const fetchReviews = React.useCallback(() => load(1, true), [load]);
 
   React.useEffect(() => {
     if (!user) {
@@ -96,7 +108,7 @@ export default function ProductReviews({
     };
   }, [productId, user]);
 
-  const myReview = data?.reviews.find((r) => user && reviewUserId(r) === user._id);
+  const myReview = reviews.find((r) => user && reviewUserId(r) === user._id);
 
   const startEdit = (r: Review) => {
     setEditingId(r._id);
@@ -152,7 +164,7 @@ export default function ProductReviews({
   return (
     <section className="mt-8 rounded-lg border bg-card p-5">
       <h2 className="text-lg font-semibold">
-        Reviews{data && data.total > 0 ? ` (${data.total})` : ""}
+        Reviews{meta && meta.total > 0 ? ` (${meta.total})` : ""}
       </h2>
 
       {showForm && (
@@ -198,29 +210,19 @@ export default function ProductReviews({
         </p>
       )}
 
-      {!data || data.reviews.length === 0 ? (
+      {reviews.length === 0 ? (
         <p className="mt-4 text-sm text-muted-foreground">No reviews yet.</p>
       ) : (
         <>
           <ul className="mt-4 space-y-4">
-            {data.reviews.map((r) => (
+            {reviews.map((r) => (
               <li key={r._id} className="border-b pb-4 last:border-0">
                 <div className="flex flex-wrap items-center gap-2">
                   <span className="text-sm font-medium">
                     {typeof r.user === "object" && r.user?.name ? r.user.name : "Customer"}
                   </span>
-                  <span className="flex" aria-label={`${r.rating} out of 5`}>
-                    {[1, 2, 3, 4, 5].map((i) => (
-                      <Star
-                        key={i}
-                        aria-hidden
-                        className={`h-3.5 w-3.5 ${
-                          i <= r.rating
-                            ? "fill-amber-400 text-amber-400"
-                            : "text-muted-foreground/30"
-                        }`}
-                      />
-                    ))}
+                  <span aria-label={`${r.rating} out of 5`}>
+                    <StarRow value={r.rating} />
                   </span>
                   {r.verifiedPurchase && (
                     <Badge variant="outline" className="border-green-200 bg-green-50 text-green-700">
@@ -253,21 +255,10 @@ export default function ProductReviews({
             ))}
           </ul>
 
-          {data.pages > 1 && (
-            <div className="mt-4 flex items-center justify-center gap-3">
-              <Button variant="outline" size="sm" disabled={page <= 1} onClick={() => setPage((n) => n - 1)}>
-                Prev
-              </Button>
-              <span className="text-sm tabular-nums text-muted-foreground">
-                Page {page} of {data.pages}
-              </span>
-              <Button
-                variant="outline"
-                size="sm"
-                disabled={page >= data.pages}
-                onClick={() => setPage((n) => n + 1)}
-              >
-                Next
+          {meta && page < meta.pages && (
+            <div className="mt-4 flex justify-center">
+              <Button variant="outline" size="sm" onClick={() => load(page + 1, false)}>
+                Load more reviews
               </Button>
             </div>
           )}

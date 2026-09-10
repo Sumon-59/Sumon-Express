@@ -87,6 +87,10 @@ reviews section: the list for everyone, the form for eligible buyers.
   production (route absent in old code), and the product payload carries
   ratingAvg/ratingCount.
 
+- Review-accepted asymmetry: authors can still edit/delete their review on a
+  soft-deleted product (the listing 404s, the mutation works) — users keep control
+  of their own words even on archived listings; the recompute is harmless.
+
 ## Out of Scope
 
 - Review moderation/admin deletion, reporting, replies, photos.
