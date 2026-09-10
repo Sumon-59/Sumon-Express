@@ -10,10 +10,10 @@ redirect 303s. TDD the security matrix per the spec.
 
 **Blocked by:** nothing.
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] Provider interface + fake + SSLCommerz impl; env selection
-- [ ] init matrix green (auth/ownership/method/paid/happy/re-init)
-- [ ] IPN matrix green (verified-paid, tampered, unverified, failed,
+- [x] Provider interface + fake + SSLCommerz impl; env selection
+- [x] init matrix green (auth/ownership/method/paid/happy/re-init)
+- [x] IPN matrix green (verified-paid, tampered, unverified, failed,
       unknown, superseded, idempotent)
-- [ ] Redirect 303s green; COD regression suite untouched and green
+- [x] Redirect 303s green; COD regression suite untouched and green

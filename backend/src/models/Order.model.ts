@@ -15,7 +15,20 @@ export type OrderStatus = (typeof ORDER_STATUSES)[number];
 export const isOrderStatus = (s: string): s is OrderStatus =>
   (ORDER_STATUSES as readonly string[]).includes(s);
 
-export type PaymentMethod = "cod" | "bkash" | "nagad" | "rocket" | "card";
+// "online" is the one gateway door (SSLCommerz serves cards/bKash/Nagad
+// behind it, Slice 11); the legacy instrument values stay valid on old
+// documents. New checkouts send "cod" or "online".
+export type PaymentMethod = "cod" | "online" | "bkash" | "nagad" | "rocket" | "card";
+
+// Receipt of the LATEST online payment attempt (absent on COD orders).
+// isPaid stays the one paid-flag every surface reads — this subdoc
+// records how the attempt went, never decides paidness by itself.
+export interface IOrderPayment {
+  provider: string; // "sslcommerz" | "fake"
+  tranId: string; // gateway transaction id — only the latest is honored
+  status: "initiated" | "paid" | "failed";
+  failureReason?: string;
+}
 
 export interface IOrderItem {
   product: Types.ObjectId;
@@ -45,6 +58,7 @@ export interface IOrder {
     phone?: string;
   };
   paymentMethod: PaymentMethod;
+  payment?: IOrderPayment;
   discount?: IOrderDiscount;
   status: OrderStatus;
   isPaid: boolean;
@@ -96,8 +110,25 @@ const orderSchema = new Schema<IOrder>(
 
     paymentMethod: {
       type: String,
-      enum: ["cod", "bkash", "nagad", "rocket", "card"],
+      enum: ["cod", "online", "bkash", "nagad", "rocket", "card"],
       default: "cod",
+    },
+
+    payment: {
+      type: new Schema<IOrderPayment>(
+        {
+          provider: { type: String, required: true },
+          tranId: { type: String, required: true },
+          status: {
+            type: String,
+            enum: ["initiated", "paid", "failed"],
+            required: true,
+          },
+          failureReason: { type: String },
+        },
+        { _id: false }
+      ),
+      default: undefined, // absent unless an online attempt was made
     },
 
     discount: {
@@ -133,6 +164,10 @@ const orderSchema = new Schema<IOrder>(
   },
   { timestamps: true }
 );
+
+// The IPN handler's lookup path (Slice 11): find the order that owns a
+// gateway transaction id. Sparse — COD orders carry no payment subdoc.
+orderSchema.index({ "payment.tranId": 1 }, { sparse: true });
 
 const Order: Model<IOrder> =
   (mongoose.models.Order as Model<IOrder>) || mongoose.model<IOrder>("Order", orderSchema);
