@@ -133,3 +133,29 @@ describe("GET /api/products/:id/related", () => {
     ).toBe(404);
   });
 });
+
+describe("review fixes, pinned", () => {
+  it("price sorting uses the EFFECTIVE price, agreeing with the filters", async () => {
+    await plantProduct({ name: "Sale Item", price: 600, discountPrice: 450 });
+    await plantProduct({ name: "Cheap", price: 400 });
+    await plantProduct({ name: "Mid", price: 500 });
+
+    const asc = await list("?sort=price_asc");
+    expect(names(asc)).toEqual(["Cheap", "Sale Item", "Mid"]); // 400, 450(sale), 500
+  });
+
+  it("punctuation in search never crashes — the fallback regex is escaped", async () => {
+    await plantProduct({ name: "C++ Primer (Book)", description: "programming" });
+
+    const paren = await list("?q=(");
+    expect(paren.status).toBe(200);
+
+    const plus = await list("?q=C%2B%2B");
+    expect(plus.status).toBe(200);
+    expect(names(plus)).toEqual(["C++ Primer (Book)"]);
+  });
+
+  it("rejects Infinity as a price bound", async () => {
+    expect((await list("?maxPrice=Infinity")).status).toBe(400);
+  });
+});

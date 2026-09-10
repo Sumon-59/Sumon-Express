@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { ChevronLeft, ChevronRight, SearchX } from "lucide-react";
 import { api } from "@/lib/api";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import ProductCard from "@/components/ProductCard";
 import { Product, Category, ProductListResponse } from "@/types/product";
 
@@ -160,24 +161,24 @@ function ProductsBrowser() {
       {/* Price + availability filter bar (Slice 8) */}
       <div className="mt-3 flex flex-wrap items-center gap-3">
         <form onSubmit={applyPriceRange} className="flex items-center gap-2">
-          <input
+          <Input
             type="number"
             min="0"
             value={minDraft}
             onChange={(e) => setMinDraft(e.target.value)}
             placeholder="৳ min"
             aria-label="Minimum price"
-            className="h-9 w-24 rounded-md border bg-card px-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+            className="w-24"
           />
           <span className="text-muted-foreground">–</span>
-          <input
+          <Input
             type="number"
             min="0"
             value={maxDraft}
             onChange={(e) => setMaxDraft(e.target.value)}
             placeholder="৳ max"
             aria-label="Maximum price"
-            className="h-9 w-24 rounded-md border bg-card px-3 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+            className="w-24"
           />
           <Button type="submit" variant="outline" size="sm">
             Apply

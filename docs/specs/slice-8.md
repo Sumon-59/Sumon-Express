@@ -90,6 +90,13 @@ cart suggest related products from the same category.
 
 ## Further Notes
 
+- Review-accepted notes: the public listing now clamps `limit` to 100 via the shared
+  pagination helper (previously unclamped — an unannounced but sanctioned change);
+  price SORTING uses the effective price too (review caught the sort/filter
+  disagreement); the search fallback regex is escaped (punctuation can never 500 the
+  search box); legacy documents still carrying the historical `discoutPrice`
+  misspelling filter by sticker price — a data-cleanup item, not a code path.
+
 - The teach moment: `$text` is an INDEX (stemming, weights, relevance, fast) while
   regex is a SCAN (partial matches, no ranking, fine at small scale). The hybrid
   uses each for what it's good at, and the tests pin both behaviors so the
