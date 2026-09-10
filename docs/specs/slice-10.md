@@ -63,10 +63,10 @@ can be rebranded without touching code.
   product-update convention). No DELETE — settings can be edited back, never
   removed.
 - **Frontend theming — the CSS-variable mechanism** (`/teach` topic): the app
-  root sets `--accent` (and a derived `--accent-dark` for hover) as inline
-  style from settings; accent-colored elements use `bg-[var(--accent)]` /
-  `text-[var(--accent)]` arbitrary-value classes instead of hardcoded orange
-  utilities. One variable write recolors navbar links, buttons, badges, prices.
+  root sets the EXISTING shadcn token `--primary` from settings — components already
+  paint accents with `bg-primary`/`text-primary`, which resolve to that
+  variable (globals.css), so no new variable is needed; remaining hardcoded
+  orange utilities move onto the token. One variable write recolors navbar links, buttons, badges, prices.
   A `SettingsContext` (the AuthContext pattern) fetches once, exposes
   `{settings, loading}`, and serves the same defaults as the backend while
   loading — no flash of unbranded content, no layout shift.
@@ -91,8 +91,9 @@ can be rebranded without touching code.
     accepted (clears);
   - auth: PUT anonymous 401, non-admin 403; GET needs no auth;
   - defaults are complete: every documented field present on first GET.
-- **Frontend**: one test — the root theming wrapper sets `--accent` from
-  settings (mock context; assert the style property). Rendering (navbar, hero,
+- **Frontend**: one test — the provider sets the root `--primary` variable from
+  fetched settings (adapter-faked HTTP; assert the style property), plus the
+  fetch-failure case keeping the complete default brand. Rendering (navbar, hero,
   preview) browser-checked per the seam decision.
 - Deploy probe: `GET /api/settings` answers the defaults document in
   production (route absent in old code = version-distinguishing), then an
@@ -115,6 +116,6 @@ can be rebranded without touching code.
 - Why partial merge on PUT: the form usually saves everything, but partial
   semantics mean a future field addition can't be wiped by an old client — the
   same reasoning as product updates.
-- The accent CSS variable is the whole theming trick: Tailwind's arbitrary
-  values (`bg-[var(--accent)]`) let utility classes read a runtime value —
-  compile-time classes, runtime color.
+- The accent CSS variable is the whole theming trick: shadcn's utilities are
+  compiled against `var(--primary)`, so overriding that one custom property at
+  the document root recolors them all — compile-time classes, runtime color.
