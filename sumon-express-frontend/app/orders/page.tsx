@@ -10,14 +10,8 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { formatTaka } from "@/types/product";
-import { STATUS_STYLES, OrderStatus } from "@/types/order";
-
-type OrderItem = {
-  product: string;
-  name: string;
-  price: number;
-  quantity: number;
-};
+import { STATUS_STYLES, OrderStatus, OrderItem } from "@/types/order";
+import { lineLabel } from "@/lib/format";
 
 type Order = {
   _id: string;
@@ -152,7 +146,7 @@ export default function OrdersPage() {
                       {o.items.map((item, i) => (
                         <div key={i} className="flex justify-between gap-4 text-sm">
                           <span className="min-w-0 truncate">
-                            {item.name}{" "}
+                            {lineLabel(item.name, item.variantName)}{" "}
                             <span className="text-muted-foreground">× {item.quantity}</span>
                           </span>
                           <span className="shrink-0 tabular-nums">

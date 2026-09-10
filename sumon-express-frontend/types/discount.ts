@@ -5,8 +5,8 @@ import { PageMeta } from "./api";
 export type DiscountType = "percent" | "fixed";
 
 // A cart line as the API expects it — shared by the checkout payload
-// and the preview request.
-export type CartLine = { product: string; quantity: number };
+// and the preview request. `variant` rides along on variant products.
+export type CartLine = { product: string; quantity: number; variant?: string };
 
 export type AdminDiscount = {
   _id: string;

@@ -153,6 +153,25 @@ Allowlist in `app.ts` (`allowedOrigins`) + `credentials: true`. When the fronten
   active|inactive|all, `page`/`limit`) and `GET /api/admin/products/:id` (returns
   inactive products — the public detail 404s them by design; the edit page needs this).
 
+### Product variants (since Slice 7)
+- One optional option axis per product: `optionName` + `variants: [{name, stock,
+  price?}]` (multi-axis is out of scope, D7). Plain products are untouched. Top-level
+  `stock` on a variant product is the SUM of value stocks — the axis rules live inside
+  `validateProductData` (still THE one choke point; client stock is ignored on variant
+  products), and order-time math maintains the sum with one atomic dual-`$inc`
+  (value + sum, same document, `$elemMatch` guard).
+- **The stock engine is `claimItemStock`/`restoreItemStock`/`restoreOrderStock` in
+  `utils/orderItems.ts`** — order creation and BOTH cancel paths use it; never
+  hand-roll stock math elsewhere. Restore falls back to the top-level counter when the
+  snapshotted value no longer exists — a documented FAMILY (value renamed away; plain
+  order cancelled after the product gained an axis): aggregate stock is always
+  preserved, per-value accuracy is the cost of re-shaping with open orders.
+- Order lines: identity is product+variant (`variant` in the payload, required iff the
+  axis exists, named 400s otherwise); snapshots carry `variantName`; unit price is
+  `variant.price ?? discountPrice ?? price`. Frontend mirrors: cart `sameLine`/
+  `lineKey` in CartContext, `lineLabel` in lib/format, picker + gallery on the product
+  page, axis editor in ProductForm (full-axis replace; null/null removes the axis).
+
 ### Image uploads (since Slice 2b)
 - **Signed direct upload**: the browser asks `POST /api/admin/uploads/signature`
   (requireAuth + requireAdmin) for `{cloudName, apiKey, timestamp, folder, signature}`,

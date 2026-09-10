@@ -20,6 +20,7 @@ export type OrderItem = {
   name: string;
   price: number;
   quantity: number;
+  variantName?: string; // the chosen option value (Slice 7)
 };
 
 // A row from the admin listing: customer populated, items embedded.

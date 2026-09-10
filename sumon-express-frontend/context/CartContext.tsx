@@ -8,13 +8,25 @@ export type CartItem = {
   price: number;
   quantity: number;
   image?: string;
+  variant?: string; // chosen option value (Slice 7); absent = plain product
 };
+
+// A line's identity is product+variant: S and M of one shirt are two
+// lines. Legacy stored carts have no variant field — undefined matches
+// undefined, so they load and behave unchanged.
+const sameLine = (x: CartItem, productId: string, variant?: string) =>
+  x.productId === productId && x.variant === variant;
+
+// The render key for a cart line — the one encoding of its identity
+// (mirrors the backend's product::variant line key).
+export const lineKey = (x: Pick<CartItem, "productId" | "variant">) =>
+  `${x.productId}::${x.variant ?? ""}`;
 
 type CartContextType = {
   items: CartItem[];
   addItem: (item: Omit<CartItem, "quantity">, qty?: number) => void;
-  removeItem: (productId: string) => void;
-  updateQty: (productId: string, qty: number) => void;
+  removeItem: (productId: string, variant?: string) => void;
+  updateQty: (productId: string, qty: number, variant?: string) => void;
   clearCart: () => void;
   total: number;
 };
@@ -46,7 +58,7 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
   const addItem: CartContextType["addItem"] = (item, qty = 1) => {
     setItems((prev) => {
       const next = [...prev];
-      const existing = next.find((x) => x.productId === item.productId);
+      const existing = next.find((x) => sameLine(x, item.productId, item.variant));
       if (existing) {
         existing.quantity += qty;
       } else {
@@ -56,14 +68,14 @@ export function CartProvider({ children }: { children: React.ReactNode }) {
     });
   };
 
-  const removeItem = (productId: string) => {
-    setItems((prev) => prev.filter((x) => x.productId !== productId));
+  const removeItem = (productId: string, variant?: string) => {
+    setItems((prev) => prev.filter((x) => !sameLine(x, productId, variant)));
   };
 
-  const updateQty = (productId: string, qty: number) => {
+  const updateQty = (productId: string, qty: number, variant?: string) => {
     setItems((prev) =>
       prev.map((x) =>
-        x.productId === productId ? { ...x, quantity: Math.max(1, qty) } : x
+        sameLine(x, productId, variant) ? { ...x, quantity: Math.max(1, qty) } : x
       )
     );
   };

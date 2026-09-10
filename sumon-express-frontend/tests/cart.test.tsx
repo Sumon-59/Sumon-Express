@@ -87,6 +87,53 @@ describe("useCart", () => {
     expect(result.current.total).toBe(0);
   });
 
+  // Slice 7: a line's identity is product+variant.
+  it("keeps S and M of one product as separate lines", () => {
+    const { result } = mountCart();
+
+    act(() => result.current.addItem({ ...widget, variant: "S" }));
+    act(() => result.current.addItem({ ...widget, variant: "M" }));
+
+    expect(result.current.items).toHaveLength(2);
+  });
+
+  it("adding the same variant again bumps its quantity", () => {
+    const { result } = mountCart();
+
+    act(() => result.current.addItem({ ...widget, variant: "S" }));
+    act(() => result.current.addItem({ ...widget, variant: "S" }, 2));
+
+    expect(result.current.items).toHaveLength(1);
+    expect(result.current.items[0].quantity).toBe(3);
+  });
+
+  it("remove and updateQty target one variant line, not its siblings", () => {
+    const { result } = mountCart();
+
+    act(() => result.current.addItem({ ...widget, variant: "S" }));
+    act(() => result.current.addItem({ ...widget, variant: "M" }));
+
+    act(() => result.current.updateQty(widget.productId, 5, "M"));
+    expect(result.current.items.find((x) => x.variant === "M")?.quantity).toBe(5);
+    expect(result.current.items.find((x) => x.variant === "S")?.quantity).toBe(1);
+
+    act(() => result.current.removeItem(widget.productId, "S"));
+    expect(result.current.items).toHaveLength(1);
+    expect(result.current.items[0].variant).toBe("M");
+  });
+
+  it("legacy variant-less lines and variant lines of one product coexist", () => {
+    const { result } = mountCart();
+
+    act(() => result.current.addItem(widget)); // no variant (legacy shape)
+    act(() => result.current.addItem({ ...widget, variant: "S" }));
+
+    expect(result.current.items).toHaveLength(2);
+    act(() => result.current.removeItem(widget.productId)); // removes ONLY the plain line
+    expect(result.current.items).toHaveLength(1);
+    expect(result.current.items[0].variant).toBe("S");
+  });
+
   it("persists to localStorage so the cart survives a page refresh", () => {
     // First visit: add an item, then unmount (= close the tab)
     const first = mountCart();

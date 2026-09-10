@@ -5,6 +5,7 @@ import Product from "../models/Product.model";
 import asyncHandler from "../utils/asyncHandler";
 import { httpError } from "../types/http.types";
 import { parsePagination, pageMeta } from "../utils/pagination";
+import { restoreOrderStock } from "../utils/orderItems";
 
 interface UpdateStatusBody {
   status?: string;
@@ -119,12 +120,8 @@ export const cancelOrderByAdmin = asyncHandler(async (req: Request, res: Respons
     throw httpError("Shipped orders cannot be cancelled — they can only be delivered", 400);
   }
 
-  for (const item of order.items) {
-    await Product.updateOne(
-      { _id: item.product },
-      { $inc: { stock: item.quantity } }
-    );
-  }
+  // Restore stock via the shared variant-aware engine.
+  await restoreOrderStock(order.items);
 
   order.status = "cancelled";
   order.cancelledAt = new Date();

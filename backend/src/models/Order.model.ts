@@ -22,6 +22,7 @@ export interface IOrderItem {
   name: string;
   price: number;
   quantity: number;
+  variantName?: string; // the chosen option value, e.g. "M" (Slice 7)
 }
 
 // Snapshot of the discount applied at order time (same philosophy as
@@ -64,6 +65,7 @@ const orderItemSchema = new Schema<IOrderItem>(
     name: { type: String, required: true },
     price: { type: Number, required: true },
     quantity: { type: Number, required: true, default: 1 },
+    variantName: { type: String },
   },
   { _id: false }
 );

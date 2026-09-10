@@ -21,7 +21,7 @@ type StatusFilter = "all" | OrderStatus;
 
 const STATUS_OPTIONS: StatusFilter[] = ["all", ...ORDER_STATUS_ORDER];
 
-import { formatDate } from "@/lib/format";
+import { formatDate, lineLabel } from "@/lib/format";
 
 // Wrapped so useSearchParams (the customer-page deep link) doesn't
 // force a client-side bailout of the whole route at build time.
@@ -293,7 +293,7 @@ function AdminOrdersPageInner() {
               {selectedOrder.items.map((it, i) => (
                 <li key={i} className="flex items-center justify-between gap-2 text-sm">
                   <span className="min-w-0 truncate">
-                    {it.name} <span className="text-muted-foreground">× {it.quantity}</span>
+                    {lineLabel(it.name, it.variantName)} <span className="text-muted-foreground">× {it.quantity}</span>
                   </span>
                   <span className="tabular-nums">{formatTaka(it.price * it.quantity)}</span>
                 </li>

@@ -11,7 +11,12 @@ import {
   ResolvedDiscount,
 } from "../utils/discountRules";
 
-import { buildOrderItems, OrderItemInput } from "../utils/orderItems";
+import {
+  buildOrderItems,
+  claimItemStock,
+  restoreOrderStock,
+  OrderItemInput,
+} from "../utils/orderItems";
 
 interface CreateOrderBody {
   items?: OrderItemInput[];
@@ -47,25 +52,16 @@ export const createOrder = asyncHandler(async (req: Request, res: Response) => {
     totalPrice -= resolved.amount;
   }
 
-  // Decrement stock atomically; roll back prior decrements if any item fails
+  // Claim stock atomically per line (variant-aware — the shared
+  // engine); roll back prior claims if any line fails.
   const decremented: IOrderItem[] = [];
-  const rollbackStock = async () => {
-    for (const done of decremented) {
-      await Product.updateOne({ _id: done.product }, { $inc: { stock: done.quantity } });
-    }
-  };
+  const rollbackStock = () => restoreOrderStock(decremented);
   for (const item of orderItems) {
-    const updated = await Product.findOneAndUpdate(
-      { _id: item.product, stock: { $gte: item.quantity } },
-      { $inc: { stock: -item.quantity } },
-      { new: true }
-    );
-
-    if (!updated) {
+    const claimed = await claimItemStock(item);
+    if (!claimed) {
       await rollbackStock();
       throw httpError(`Insufficient stock for product: ${item.name}`, 400);
     }
-
     decremented.push(item);
   }
 
@@ -125,13 +121,8 @@ export const cancelOrder = asyncHandler(async (req: Request, res: Response) => {
     throw httpError("Order is already cancelled", 400);
   }
 
-  // Rollback stock from saved items
-  for (const item of order.items) {
-    await Product.updateOne(
-      { _id: item.product },
-      { $inc: { stock: item.quantity } }
-    );
-  }
+  // Restore stock via the shared variant-aware engine.
+  await restoreOrderStock(order.items);
 
   order.status = "cancelled";
   order.cancelledAt = new Date();
