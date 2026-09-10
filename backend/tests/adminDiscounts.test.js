@@ -167,6 +167,22 @@ describe("admin discount CRUD", () => {
     expect(malformed.status).toBe(400);
   });
 
+  it("fetches one discount by id (the edit page's read)", async () => {
+    const { auth } = await registerAdmin();
+    const discount = await plantDiscount();
+
+    const res = await request(app)
+      .get(`/api/admin/discounts/${discount._id}`)
+      .set("Authorization", auth);
+    expect(res.status).toBe(200);
+    expect(res.body.code).toBe("EID10");
+
+    const unknown = await request(app)
+      .get("/api/admin/discounts/64b000000000000000000000")
+      .set("Authorization", auth);
+    expect(unknown.status).toBe(404);
+  });
+
   it("lists newest first with the standard wrapper and usage counts", async () => {
     const { auth } = await registerAdmin();
     await plantDiscount({ code: "FIRST" });

@@ -12,8 +12,8 @@ snapshot line ("EID10 −৳120") on discounted orders.
 
 **Status:** ready-for-agent
 
-- [ ] Admin table + create/edit forms + deactivate/reactivate, errors via the shared helper
-- [ ] Checkout: Apply shows discount + new total; Remove resets; server messages verbatim (component-tested with mocked adapters)
-- [ ] Applied code included in the create-order payload (component-tested)
-- [ ] Order history + admin drawer render the discount snapshot line
-- [ ] All existing tests still green; frontend build green
+- [x] Admin table + create/edit forms + deactivate/reactivate, errors via the shared helper
+- [x] Checkout: Apply shows discount + new total; Remove resets; server messages verbatim (component-tested with mocked adapters)
+- [x] Applied code included in the create-order payload (component-tested)
+- [x] Order history + admin drawer render the discount snapshot line
+- [x] All existing tests still green; frontend build green

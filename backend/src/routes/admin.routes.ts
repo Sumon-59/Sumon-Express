@@ -13,6 +13,7 @@ import { getUploadSignature } from "../controllers/upload.controller";
 import { getCustomers, getCustomerById } from "../controllers/adminCustomer.controller";
 import {
   getAdminDiscounts,
+  getAdminDiscountById,
   createDiscount,
   updateDiscount,
 } from "../controllers/discount.controller";
@@ -37,6 +38,7 @@ router.get("/customers/:id", requireAuth, requireAdmin, getCustomerById);
 
 // admin: discount codes (Slice 5) — no hard delete; deactivate via update
 router.get("/discounts", requireAuth, requireAdmin, getAdminDiscounts);
+router.get("/discounts/:id", requireAuth, requireAdmin, getAdminDiscountById);
 router.post("/discounts", requireAuth, requireAdmin, createDiscount);
 router.put("/discounts/:id", requireAuth, requireAdmin, updateDiscount);
 

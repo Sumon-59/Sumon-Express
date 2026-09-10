@@ -24,6 +24,7 @@ type Order = {
   status: string;
   createdAt?: string;
   totalPrice: number;
+  discount?: { code: string; amount: number };
   items?: OrderItem[];
   shippingAddress?: { address?: string; city?: string; phone?: string };
   paymentMethod?: string;
@@ -175,6 +176,11 @@ export default function OrdersPage() {
                     <p className="uppercase">{o.paymentMethod ?? "cod"}</p>
                   </div>
                   <div className="flex items-center gap-3">
+                    {o.discount && (
+                      <span className="text-sm text-green-600">
+                        {o.discount.code} −{formatTaka(o.discount.amount)}
+                      </span>
+                    )}
                     <span className="font-semibold tabular-nums text-primary">
                       {formatTaka(o.totalPrice)}
                     </span>

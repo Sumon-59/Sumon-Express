@@ -130,10 +130,25 @@ export const previewDiscount = asyncHandler(async (req: Request, res: Response) 
 export const getAdminDiscounts = asyncHandler(async (req: Request, res: Response) => {
   const paging = parsePagination(req);
   const [discounts, total] = await Promise.all([
-    Discount.find().sort({ createdAt: -1 }).skip(paging.skip).limit(paging.limit),
+    // _id tiebreak: two codes created in the same millisecond still
+    // list deterministically (ObjectIds are monotonic) — a test caught
+    // the ambiguity.
+    Discount.find().sort({ createdAt: -1, _id: -1 }).skip(paging.skip).limit(paging.limit),
     Discount.countDocuments(),
   ]);
   res.json({ ...pageMeta(total, paging), discounts });
+});
+
+export const getAdminDiscountById = asyncHandler(async (req: Request, res: Response) => {
+  const id = String(req.params.id);
+  if (!Types.ObjectId.isValid(id)) {
+    throw httpError("Invalid discount id", 400);
+  }
+  const discount = await Discount.findById(id);
+  if (!discount) {
+    throw httpError("Discount not found", 404);
+  }
+  res.json(discount);
 });
 
 export const createDiscount = asyncHandler(async (req: Request, res: Response) => {

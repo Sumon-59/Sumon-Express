@@ -12,6 +12,8 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { formatTaka } from "@/types/product";
+import DiscountField from "@/components/checkout/DiscountField";
+import { DiscountPreview } from "@/types/discount";
 
 export default function CheckoutPage() {
   const router = useRouter();
@@ -24,6 +26,14 @@ export default function CheckoutPage() {
   const [address, setAddress] = React.useState("");
   const [city, setCity] = React.useState("");
   const [phone, setPhone] = React.useState("");
+  // Server-computed preview; the displayed total is ITS total, and the
+  // server re-validates the code again at order time regardless.
+  const [discount, setDiscount] = React.useState<DiscountPreview | null>(null);
+
+  const cartLines = React.useMemo(
+    () => items.map((x) => ({ product: x.productId, quantity: x.quantity })),
+    [items]
+  );
 
   React.useEffect(() => {
     if (!loading && !user) {
@@ -45,12 +55,10 @@ export default function CheckoutPage() {
       setError(null);
 
       const payload = {
-        items: items.map((x) => ({
-          product: x.productId,
-          quantity: x.quantity,
-        })),
+        items: cartLines,
         shippingAddress: { address: address.trim(), city: city.trim(), phone: phone.trim() },
         paymentMethod: "cod",
+        ...(discount ? { discountCode: discount.code } : {}),
       };
 
       await api.post("/orders", payload);
@@ -162,11 +170,22 @@ export default function CheckoutPage() {
           </div>
 
           <Separator className="my-4" />
+          <DiscountField items={cartLines} onApplied={setDiscount} />
+
+          <Separator className="my-4" />
           <div className="space-y-2 text-sm">
             <div className="flex justify-between">
               <span className="text-muted-foreground">Subtotal</span>
               <span className="tabular-nums">{formatTaka(total)}</span>
             </div>
+            {discount && (
+              <div className="flex justify-between">
+                <span className="text-muted-foreground">Discount ({discount.code})</span>
+                <span className="tabular-nums text-green-600">
+                  −{formatTaka(discount.discountAmount)}
+                </span>
+              </div>
+            )}
             <div className="flex justify-between">
               <span className="text-muted-foreground">Delivery</span>
               <span className="text-green-600">Free</span>
@@ -175,7 +194,9 @@ export default function CheckoutPage() {
           <Separator className="my-4" />
           <div className="flex justify-between font-semibold">
             <span>Total</span>
-            <span className="tabular-nums text-primary">{formatTaka(total)}</span>
+            <span className="tabular-nums text-primary">
+              {formatTaka(discount ? discount.total : total)}
+            </span>
           </div>
 
           {error && <p className="mt-3 text-sm text-destructive">{error}</p>}
