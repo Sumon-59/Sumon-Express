@@ -153,6 +153,19 @@ Allowlist in `app.ts` (`allowedOrigins`) + `credentials: true`. When the fronten
   active|inactive|all, `page`/`limit`) and `GET /api/admin/products/:id` (returns
   inactive products — the public detail 404s them by design; the edit page needs this).
 
+### Reviews & ratings (since Slice 9)
+- Eligibility = a DELIVERED order containing the product (pipeline/cancelled don't
+  count); named 403 otherwise. One review per user per product — the compound unique
+  index IS the rule (E11000→400 covers races). Owner-only edit/delete.
+- `ratingAvg`/`ratingCount` on Product are RECOMPUTED from the Review collection on
+  every review write, never incremented (store what you claim — usedCount; recompute
+  what you derive — ratings, the census). Corruption self-heals on the next write.
+- Endpoints: `GET/POST /api/products/:id/reviews` (list public with name-only
+  populate — never email; create auth+eligible), `GET …/reviews/eligibility` (auth →
+  {canReview, alreadyReviewed}), `PUT/DELETE /api/reviews/:id` (owner). Frontend:
+  `Stars`/`StarRow` (icons + numeric text, hidden at zero), `ProductReviews`
+  (load-more accumulation, eligibility-driven form).
+
 ### Search & discovery (since Slice 8)
 - Public listing: `q` runs the **text index** first (name weight 10, description 3,
   relevance-ranked unless an explicit sort) and falls back to an ESCAPED name regex

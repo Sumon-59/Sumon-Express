@@ -24,6 +24,9 @@ export type Product = {
   images?: string[];
   isActive?: boolean;
   category?: Category | string | null;
+  // Denormalized review numbers (Slice 9); absent on old payloads.
+  ratingAvg?: number;
+  ratingCount?: number;
 };
 
 export type ProductListResponse = PageMeta & {

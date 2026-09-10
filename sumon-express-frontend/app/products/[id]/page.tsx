@@ -7,6 +7,8 @@ import { ChevronRight, ImageIcon, Minus, Plus, ShoppingCart, Zap } from "lucide-
 import { api } from "@/lib/api";
 import { useCart } from "@/context/CartContext";
 import RelatedProducts from "@/components/RelatedProducts";
+import ProductReviews from "@/components/ProductReviews";
+import Stars from "@/components/Stars";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import {
@@ -177,6 +179,9 @@ export default function ProductDetailsPage() {
         {/* Info */}
         <div className="flex flex-col">
           <h1 className="text-balance text-2xl font-semibold">{product.name}</h1>
+          <div className="mt-1">
+            <Stars avg={product.ratingAvg ?? 0} count={product.ratingCount ?? 0} />
+          </div>
 
           <div className="mt-4 flex items-baseline gap-3">
             <span className="text-3xl font-bold text-primary">{formatTaka(unitPrice)}</span>
@@ -277,6 +282,8 @@ export default function ProductDetailsPage() {
           </div>
         </div>
       </div>
+
+      <ProductReviews productId={product._id} onRatingChanged={fetchProduct} />
 
       <RelatedProducts productId={product._id} />
     </main>

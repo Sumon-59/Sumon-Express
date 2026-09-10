@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { ImageIcon } from "lucide-react";
 import { Product, finalPrice, discountPercent, formatTaka } from "@/types/product";
+import Stars from "@/components/Stars";
 
 export default function ProductCard({ product }: { product: Product }) {
   const off = discountPercent(product);
@@ -41,6 +42,7 @@ export default function ProductCard({ product }: { product: Product }) {
 
       <div className="flex flex-1 flex-col gap-1 p-3">
         <h3 className="line-clamp-2 min-h-10 text-sm leading-5">{product.name}</h3>
+        <Stars avg={product.ratingAvg ?? 0} count={product.ratingCount ?? 0} compact />
         <div className="mt-auto flex items-baseline gap-2">
           <span className="text-base font-semibold text-primary">
             {formatTaka(finalPrice(product))}
