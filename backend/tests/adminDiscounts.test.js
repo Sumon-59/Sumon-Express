@@ -89,6 +89,7 @@ describe("admin discount CRUD", () => {
       [{ code: "X", type: "percent", value: 0 }, /value/i],
       [{ code: "X", type: "percent", value: 150 }, /value/i],
       [{ code: "X", type: "fixed", value: 0 }, /value/i],
+      [{ code: "X", type: "fixed", value: 99.5 }, /value/i],
       [{ code: "X", type: "fixed", value: 500, minOrder: -1 }, /minimum|minOrder/i],
       [{ code: "X", type: "fixed", value: 500, usageLimit: 0 }, /usage/i],
     ];
@@ -195,6 +196,15 @@ describe("admin discount CRUD", () => {
     expect(res.body.discounts[0].code).toBe("SECOND"); // newest first
     expect(res.body.discounts[0].usedCount).toBe(7);
     expect(res.body.discounts[0].usageLimit).toBe(100);
+
+    // Pagination math via the shared helper:
+    const page2 = await request(app)
+      .get("/api/admin/discounts?page=2&limit=1")
+      .set("Authorization", auth);
+    expect(page2.body.pages).toBe(2);
+    expect(page2.body.page).toBe(2);
+    expect(page2.body.discounts).toHaveLength(1);
+    expect(page2.body.discounts[0].code).toBe("FIRST");
   });
 
   it("answers 401 anonymous and 403 non-admin on every admin route", async () => {

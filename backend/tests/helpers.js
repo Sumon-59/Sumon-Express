@@ -7,6 +7,7 @@ import request from "supertest";
 import app from "../app";
 import Product from "../src/models/Product.model";
 import User from "../src/models/User.model";
+import Discount from "../src/models/Discount.model";
 
 // Register a user through the public API and keep the cookie jar (the
 // "jwt" httpOnly cookie) so later requests are authenticated — exactly
@@ -59,7 +60,6 @@ export async function placeOrder(auth, product, quantity = 2, extra = {}) {
 // Plant a discount code directly (fixture, like plantProduct). Defaults
 // to a live 10% code with no minimum, no expiry, no usage limit.
 export async function plantDiscount(overrides = {}) {
-  const { default: Discount } = await import("../src/models/Discount.model");
   return Discount.create({
     code: "EID10",
     type: "percent",

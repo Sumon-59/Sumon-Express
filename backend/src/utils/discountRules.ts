@@ -36,10 +36,14 @@ export const resolveDiscount = async (
     throw httpError("This discount code has reached its usage limit", 400);
   }
 
-  const amount =
+  // Floor BOTH paths: a fractional subtotal hitting the fixed cap would
+  // otherwise produce a fractional discount (review catch — the money
+  // rule is "whole taka, always", not "whole taka for percent").
+  const amount = Math.floor(
     discount.type === "percent"
-      ? Math.floor((subtotal * discount.value) / 100)
-      : Math.min(discount.value, subtotal); // never below a zero total
+      ? (subtotal * discount.value) / 100
+      : Math.min(discount.value, subtotal) // never below a zero total
+  );
 
   return { discount, amount };
 };
@@ -52,9 +56,11 @@ export const claimDiscountUsage = async (discountId: Types.ObjectId): Promise<bo
     {
       _id: discountId,
       isActive: true,
-      $or: [
-        { usageLimit: null }, // matches null AND missing
-        { $expr: { $lt: ["$usedCount", "$usageLimit"] } },
+      $and: [
+        // matches null AND missing:
+        { $or: [{ usageLimit: null }, { $expr: { $lt: ["$usedCount", "$usageLimit"] } }] },
+        // expiry re-checked at claim time, like the limit (spec rule):
+        { $or: [{ expiresAt: null }, { expiresAt: { $gt: new Date() } }] },
       ],
     },
     { $inc: { usedCount: 1 } },

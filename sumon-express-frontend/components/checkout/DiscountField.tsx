@@ -6,9 +6,7 @@ import { api, getApiErrorMessage } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { formatTaka } from "@/types/product";
-import { DiscountPreview } from "@/types/discount";
-
-type CartLine = { product: string; quantity: number };
+import { CartLine, DiscountPreview } from "@/types/discount";
 
 type Props = {
   items: CartLine[];

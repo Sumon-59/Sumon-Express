@@ -1,4 +1,5 @@
 import mongoose, { Schema, Model, Types } from "mongoose";
+import { DISCOUNT_TYPES, DiscountType } from "./Discount.model";
 
 export const ORDER_STATUSES = [
   "pending",
@@ -28,7 +29,7 @@ export interface IOrderItem {
 // later edits to the code can't rewrite old receipts).
 export interface IOrderDiscount {
   code: string;
-  type: "percent" | "fixed";
+  type: DiscountType;
   value: number;
   amount: number; // whole taka actually taken off
 }
@@ -101,7 +102,7 @@ const orderSchema = new Schema<IOrder>(
       type: new Schema<IOrderDiscount>(
         {
           code: { type: String, required: true },
-          type: { type: String, enum: ["percent", "fixed"], required: true },
+          type: { type: String, enum: DISCOUNT_TYPES, required: true },
           value: { type: Number, required: true },
           amount: { type: Number, required: true },
         },

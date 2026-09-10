@@ -50,8 +50,8 @@ const validateDiscountData = (data: DiscountBody, current?: IDiscount) => {
     if (effectiveType === "percent" && (value < 1 || value > 100)) {
       throw httpError("Discount value must be between 1 and 100 percent", 400);
     }
-    if (effectiveType === "fixed" && value <= 0) {
-      throw httpError("Discount value must be a positive amount", 400);
+    if (effectiveType === "fixed" && (!Number.isInteger(value) || value <= 0)) {
+      throw httpError("Discount value must be a positive whole-taka amount", 400);
     }
     out.value = value;
   } else if (data.type !== undefined && current) {

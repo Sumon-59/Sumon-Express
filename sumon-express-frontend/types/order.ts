@@ -1,6 +1,7 @@
 // Shared order shapes for the admin Orders section (Slice 3).
 
 import { PageMeta } from "./api";
+import { DiscountType } from "./discount";
 
 export type OrderStatus = "pending" | "processing" | "shipped" | "delivered" | "cancelled";
 
@@ -15,7 +16,7 @@ export type OrderItem = {
 // Discount snapshot stored on the order at creation (Slice 5).
 export type OrderDiscount = {
   code: string;
-  type: "percent" | "fixed";
+  type: DiscountType;
   value: number;
   amount: number;
 };

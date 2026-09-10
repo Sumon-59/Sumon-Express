@@ -143,6 +143,40 @@ describe("discount codes at order creation", () => {
     expect(second.body.message).toMatch(/limit/i);
   });
 
+  it("floors the fixed cap too: a fractional subtotal never yields a fractional discount", async () => {
+    const product = await plantProduct({ price: 100.5 });
+    await plantDiscount({ code: "FLAT500", type: "fixed", value: 500 });
+
+    const order = await placeOrder(auth, product, 1, { discountCode: "FLAT500" });
+
+    // Cap at subtotal (100.5) then floor → 100, not 100.5.
+    expect(order.discount.amount).toBe(100);
+    expect(order.totalPrice).toBeCloseTo(0.5);
+  });
+
+  it("rolls back stock AND the usage claim when order creation fails after both", async () => {
+    const product = await plantProduct({ price: 100 }); // stock 10
+    await plantDiscount({ usageLimit: 1 });
+
+    // Force Order.create itself to fail: invalid paymentMethod enum.
+    const res = await request(app)
+      .post("/api/orders")
+      .set("Authorization", auth)
+      .send({
+        items: [{ product: product._id.toString(), quantity: 2 }],
+        shippingAddress: { address: "H1", city: "Dhaka", phone: "01700000000" },
+        paymentMethod: "bitcoin",
+        discountCode: "EID10",
+      });
+    expect(res.status).toBeGreaterThanOrEqual(400);
+
+    // Stock rolled back:
+    expect(await stockOf(product)).toBe(10);
+    // The one usage was released — the code still works:
+    const order = await placeOrder(auth, product, 1, { discountCode: "EID10" });
+    expect(order.discount.amount).toBe(10);
+  });
+
   it("an order without a code is exactly as before (regression)", async () => {
     const product = await plantProduct({ price: 100 });
 
