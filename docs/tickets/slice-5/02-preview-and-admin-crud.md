@@ -14,9 +14,9 @@ wrapper and visible usage counts.
 
 **Status:** ready-for-agent
 
-- [ ] Preview: correct numbers for percent and fixed; named 400s; does not touch usedCount; 401 anonymous
-- [ ] Create: field-naming 400s for every invalid input; duplicate code (any casing) 400
-- [ ] Update: partial edits validated against effective values; deactivate + reactivate work
-- [ ] Listing: `{discounts, total, page, pages}` via the shared helper, newest first, usedCount visible
-- [ ] 401/403 on all admin discount routes
-- [ ] All existing tests still green; typecheck clean
+- [x] Preview: correct numbers for percent and fixed; named 400s; does not touch usedCount; 401 anonymous
+- [x] Create: field-naming 400s for every invalid input; duplicate code (any casing) 400
+- [x] Update: partial edits validated against effective values; deactivate + reactivate work
+- [x] Listing: `{discounts, total, page, pages}` via the shared helper, newest first, usedCount visible
+- [x] 401/403 on all admin discount routes
+- [x] All existing tests still green; typecheck clean

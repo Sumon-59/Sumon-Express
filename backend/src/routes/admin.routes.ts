@@ -11,6 +11,11 @@ import {
 import { getAdminProducts, getAdminProductById } from "../controllers/product.controller";
 import { getUploadSignature } from "../controllers/upload.controller";
 import { getCustomers, getCustomerById } from "../controllers/adminCustomer.controller";
+import {
+  getAdminDiscounts,
+  createDiscount,
+  updateDiscount,
+} from "../controllers/discount.controller";
 
 const router = express.Router();
 
@@ -29,6 +34,11 @@ router.post("/uploads/signature", requireAuth, requireAdmin, getUploadSignature)
 // admin: the customer census (Slice 4)
 router.get("/customers", requireAuth, requireAdmin, getCustomers);
 router.get("/customers/:id", requireAuth, requireAdmin, getCustomerById);
+
+// admin: discount codes (Slice 5) — no hard delete; deactivate via update
+router.get("/discounts", requireAuth, requireAdmin, getAdminDiscounts);
+router.post("/discounts", requireAuth, requireAdmin, createDiscount);
+router.put("/discounts/:id", requireAuth, requireAdmin, updateDiscount);
 
 // admin: get all orders
 router.get("/orders", requireAuth, requireAdmin, getAllOrders);

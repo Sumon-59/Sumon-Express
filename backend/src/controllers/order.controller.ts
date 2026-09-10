@@ -11,10 +11,7 @@ import {
   ResolvedDiscount,
 } from "../utils/discountRules";
 
-interface OrderItemInput {
-  product: string;
-  quantity: number;
-}
+import { buildOrderItems, OrderItemInput } from "../utils/orderItems";
 
 interface CreateOrderBody {
   items?: OrderItemInput[];
@@ -32,50 +29,8 @@ export const createOrder = asyncHandler(async (req: Request, res: Response) => {
   const { items, shippingAddress, paymentMethod, discountCode } =
     req.body as CreateOrderBody;
 
-  if (!items || !Array.isArray(items) || items.length === 0) {
-    throw httpError("Order must contain at least one item", 400);
-  }
-
-  const productIds = [...new Set(items.map((i) => String(i.product)))];
-  if (productIds.length !== items.length) {
-    throw httpError("Duplicate products in order items", 400);
-  }
-
-  const products = await Product.find({ _id: { $in: productIds }, isActive: true });
-
-  if (products.length !== productIds.length) {
-    throw httpError("One or more products not found", 404);
-  }
-
-  let totalPrice = 0;
-
-  const orderItems: IOrderItem[] = items.map((i) => {
-    const p = products.find((x) => x._id.toString() === i.product);
-
-    if (!p) {
-      throw httpError(`Product not found: ${i.product}`, 404);
-    }
-
-    const quantity = Number(i.quantity);
-    if (!Number.isInteger(quantity) || quantity < 1) {
-      throw httpError(`Invalid quantity for product: ${p.name}`, 400);
-    }
-
-    if (p.stock < quantity) {
-      throw httpError(`Insufficient stock for product: ${p.name}`, 400);
-    }
-
-    const unitPrice = p.discountPrice ?? p.price;
-
-    totalPrice += unitPrice * quantity;
-
-    return {
-      product: p._id,
-      name: p.name,
-      price: unitPrice,
-      quantity,
-    };
-  });
+  const { orderItems, subtotal } = await buildOrderItems(items);
+  let totalPrice = subtotal;
 
   // Discount rules run BEFORE stock moves: a bad code is a cheap 400
   // with nothing to roll back. `totalPrice` so far is the subtotal.
