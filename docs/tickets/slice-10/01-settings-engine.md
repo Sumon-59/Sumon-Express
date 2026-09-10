@@ -9,9 +9,9 @@ merge. TDD at the HTTP seam per the spec's test list.
 
 **Blocked by:** nothing.
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] Model + defaults reproduce the current hardcoded brand
-- [ ] Singleton pinned: one document after GET + concurrent/serial PUTs
-- [ ] `validateSettingsData` matrix green (accent, caps, URLs, empties)
-- [ ] Public GET / admin-only PUT with partial merge; auth matrix green
+- [x] Model + defaults reproduce the current hardcoded brand
+- [x] Singleton pinned: one document after GET + concurrent/serial PUTs
+- [x] `validateSettingsData` matrix green (accent, caps, URLs, empties)
+- [x] Public GET / admin-only PUT with partial merge; auth matrix green
