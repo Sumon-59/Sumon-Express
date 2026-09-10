@@ -8,9 +8,9 @@ against plan.md before the sed).
 
 **Blocked by:** 02.
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] Two-axis code review run; findings fixed or explicitly accepted
-- [ ] Merged `--no-ff` to `fullstack-v2`, pushed as Sumon-59
-- [ ] Probe: production reviews listing live; product payload carries rating fields
-- [ ] CLAUDE.md updated; spec + ticket checkboxes ticked; plan.md tracker updated
+- [x] Two-axis code review run; findings fixed or explicitly accepted
+- [x] Merged `--no-ff` to `fullstack-v2`, pushed as Sumon-59
+- [x] Probe: production reviews listing live; product payload carries rating fields
+- [x] CLAUDE.md updated; spec + ticket checkboxes ticked; plan.md tracker updated
