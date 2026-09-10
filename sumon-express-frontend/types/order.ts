@@ -5,6 +5,16 @@ import { DiscountType } from "./discount";
 
 export type OrderStatus = "pending" | "processing" | "shipped" | "delivered" | "cancelled";
 
+// The canonical display order — pipeline first, terminal last. Every
+// surface that lists statuses derives from this (never hand-list).
+export const ORDER_STATUS_ORDER: readonly OrderStatus[] = [
+  "pending",
+  "processing",
+  "shipped",
+  "delivered",
+  "cancelled",
+];
+
 export type OrderItem = {
   product: string;
   name: string;

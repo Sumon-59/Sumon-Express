@@ -11,6 +11,7 @@ import {
 import { getAdminProducts, getAdminProductById } from "../controllers/product.controller";
 import { getUploadSignature } from "../controllers/upload.controller";
 import { getCustomers, getCustomerById } from "../controllers/adminCustomer.controller";
+import { getAnalytics } from "../controllers/adminAnalytics.controller";
 import {
   getAdminDiscounts,
   getAdminDiscountById,
@@ -31,6 +32,9 @@ router.get("/products/:id", requireAuth, requireAdmin, getAdminProductById);
 
 // admin: sign a Cloudinary direct upload (Slice 2b)
 router.post("/uploads/signature", requireAuth, requireAdmin, getUploadSignature);
+
+// admin: the dashboard numbers (Slice 6)
+router.get("/analytics", requireAuth, requireAdmin, getAnalytics);
 
 // admin: the customer census (Slice 4)
 router.get("/customers", requireAuth, requireAdmin, getCustomers);

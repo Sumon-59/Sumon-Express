@@ -11,6 +11,7 @@ import OrderStatusActions from "@/components/admin/OrderStatusActions";
 import { formatTaka } from "@/types/product";
 import {
   AdminOrder,
+  ORDER_STATUS_ORDER,
   OrderListResponse,
   OrderStatus,
   STATUS_STYLES,
@@ -18,14 +19,7 @@ import {
 
 type StatusFilter = "all" | OrderStatus;
 
-const STATUS_OPTIONS: StatusFilter[] = [
-  "all",
-  "pending",
-  "processing",
-  "shipped",
-  "delivered",
-  "cancelled",
-];
+const STATUS_OPTIONS: StatusFilter[] = ["all", ...ORDER_STATUS_ORDER];
 
 import { formatDate } from "@/lib/format";
 
