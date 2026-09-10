@@ -11,8 +11,8 @@ to the chart.
 
 **Status:** ready-for-agent
 
-- [ ] Stat tiles with honest labels ("Pending value" ≠ revenue)
-- [ ] 30-day chart: realized vs pending distinguishable without color alone; empty days render as zero, not gaps
-- [ ] Status breakdown + top-products list
-- [ ] Loading and error states via the established patterns
-- [ ] All existing tests still green; frontend build green
+- [x] Stat tiles with honest labels ("Pending value" ≠ revenue)
+- [x] 30-day chart: realized vs pending distinguishable without color alone; empty days render as zero, not gaps
+- [x] Status breakdown + top-products list
+- [x] Loading and error states via the established patterns
+- [x] All existing tests still green; frontend build green
