@@ -305,6 +305,16 @@ function AdminOrdersPageInner() {
                 </li>
               ))}
             </ul>
+            {selectedOrder.discount && (
+              <div className="mt-2 flex items-center justify-between text-sm">
+                <span className="text-muted-foreground">
+                  Discount ({selectedOrder.discount.code})
+                </span>
+                <span className="tabular-nums text-green-600">
+                  −{formatTaka(selectedOrder.discount.amount)}
+                </span>
+              </div>
+            )}
             <div className="mt-3 flex items-center justify-between border-t pt-3 text-sm font-medium">
               <span>Total</span>
               <span className="tabular-nums">{formatTaka(selectedOrder.totalPrice)}</span>

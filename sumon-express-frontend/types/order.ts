@@ -1,6 +1,7 @@
 // Shared order shapes for the admin Orders section (Slice 3).
 
 import { PageMeta } from "./api";
+import { DiscountType } from "./discount";
 
 export type OrderStatus = "pending" | "processing" | "shipped" | "delivered" | "cancelled";
 
@@ -12,6 +13,14 @@ export type OrderItem = {
 };
 
 // A row from the admin listing: customer populated, items embedded.
+// Discount snapshot stored on the order at creation (Slice 5).
+export type OrderDiscount = {
+  code: string;
+  type: DiscountType;
+  value: number;
+  amount: number;
+};
+
 export type AdminOrder = {
   _id: string;
   status: OrderStatus;
@@ -19,6 +28,7 @@ export type AdminOrder = {
   totalPrice: number;
   isPaid?: boolean;
   paidAt?: string;
+  discount?: OrderDiscount;
   items: OrderItem[];
   shippingAddress?: { address?: string; city?: string; phone?: string };
   paymentMethod?: string;

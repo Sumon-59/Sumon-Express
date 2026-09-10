@@ -9,7 +9,14 @@ const errorHandler = (
   res: Response,
   next: NextFunction
 ): void => {
-  const statusCode = err.statusCode || 500;
+  let statusCode = err.statusCode || 500;
+
+  // Mongo duplicate-key (unique index) — a client mistake, not a server
+  // fault. Covers check-then-create races the pre-checks can't.
+  if ((err as { code?: number }).code === 11000) {
+    statusCode = 400;
+    err.message = "A record with this value already exists";
+  }
 
   res.status(statusCode).json({
     message: err.message || "Internal Server Error",
