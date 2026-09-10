@@ -36,7 +36,7 @@ export default function CartPage() {
         {/* Items */}
         <div className="space-y-3">
           {items.map((x) => (
-            <div key={x.productId} className="flex gap-4 rounded-lg border bg-card p-4">
+            <div key={`${x.productId}::${x.variant ?? ""}`} className="flex gap-4 rounded-lg border bg-card p-4">
               <Link
                 href={`/products/${x.productId}`}
                 className="relative h-20 w-20 shrink-0 overflow-hidden rounded-md bg-muted"
@@ -56,7 +56,7 @@ export default function CartPage() {
                   href={`/products/${x.productId}`}
                   className="line-clamp-2 text-sm font-medium hover:text-primary"
                 >
-                  {x.name}
+                  {x.name}{x.variant ? ` · ${x.variant}` : ""}
                 </Link>
                 <span className="mt-1 text-sm font-semibold text-primary">
                   {formatTaka(x.price)}
@@ -65,7 +65,7 @@ export default function CartPage() {
                 <div className="mt-auto flex items-center justify-between pt-2">
                   <div className="flex items-center rounded-md border">
                     <button
-                      onClick={() => updateQty(x.productId, x.quantity - 1)}
+                      onClick={() => updateQty(x.productId, x.quantity - 1, x.variant)}
                       disabled={x.quantity <= 1}
                       aria-label="Decrease quantity"
                       className="flex h-8 w-8 items-center justify-center transition-colors hover:bg-muted disabled:opacity-40"
@@ -74,7 +74,7 @@ export default function CartPage() {
                     </button>
                     <span className="w-9 text-center text-sm tabular-nums">{x.quantity}</span>
                     <button
-                      onClick={() => updateQty(x.productId, x.quantity + 1)}
+                      onClick={() => updateQty(x.productId, x.quantity + 1, x.variant)}
                       aria-label="Increase quantity"
                       className="flex h-8 w-8 items-center justify-center transition-colors hover:bg-muted"
                     >
@@ -83,7 +83,7 @@ export default function CartPage() {
                   </div>
 
                   <button
-                    onClick={() => removeItem(x.productId)}
+                    onClick={() => removeItem(x.productId, x.variant)}
                     aria-label={`Remove ${x.name}`}
                     className="flex items-center gap-1 text-sm text-muted-foreground transition-colors hover:text-destructive"
                   >

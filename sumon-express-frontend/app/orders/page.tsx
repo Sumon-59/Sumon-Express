@@ -17,6 +17,7 @@ type OrderItem = {
   name: string;
   price: number;
   quantity: number;
+  variantName?: string;
 };
 
 type Order = {
@@ -152,7 +153,7 @@ export default function OrdersPage() {
                       {o.items.map((item, i) => (
                         <div key={i} className="flex justify-between gap-4 text-sm">
                           <span className="min-w-0 truncate">
-                            {item.name}{" "}
+                            {item.name}{item.variantName ? ` · ${item.variantName}` : ""}{" "}
                             <span className="text-muted-foreground">× {item.quantity}</span>
                           </span>
                           <span className="shrink-0 tabular-nums">

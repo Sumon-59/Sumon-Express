@@ -18,6 +18,8 @@ export type ProductPayload = {
   stock: number;
   category?: string;
   images: string[];
+  optionName?: string | null; // null = remove the axis
+  variants?: { name: string; stock: number; price?: number | null }[] | null;
 };
 
 type Props = {
@@ -56,6 +58,22 @@ export default function ProductForm({ initial, submitLabel, onSubmit }: Props) {
   );
   const fileInputRef = React.useRef<HTMLInputElement>(null);
   const uploadsInFlight = images.some((r) => r.uploading);
+
+  // Option axis (Slice 7). While on, per-value stocks replace the
+  // single stock input (the server computes the sum regardless).
+  type VariantRow = { id: number; name: string; stock: string; price: string };
+  const nextVariantId = React.useRef(0);
+  const newVariantRow = (v?: { name: string; stock: number; price?: number | null }): VariantRow => ({
+    id: nextVariantId.current++,
+    name: v?.name ?? "",
+    stock: v ? String(v.stock) : "",
+    price: v?.price != null ? String(v.price) : "",
+  });
+  const [axisOn, setAxisOn] = React.useState(Boolean(initial?.optionName));
+  const [optionName, setOptionName] = React.useState(initial?.optionName ?? "");
+  const [variantRows, setVariantRows] = React.useState<VariantRow[]>(() =>
+    initial?.variants?.length ? initial.variants.map((v) => newVariantRow(v)) : [newVariantRow()]
+  );
 
   const patchRow = (id: number, patch: Partial<ImageRow>) =>
     setImages((prev) => prev.map((r) => (r.id === id ? { ...r, ...patch } : r)));
@@ -102,9 +120,24 @@ export default function ProductForm({ initial, submitLabel, onSubmit }: Props) {
     const priceNum = Number(price);
     if (price === "" || Number.isNaN(priceNum) || priceNum < 0)
       return "Price must be a non-negative number";
-    const stockNum = Number(stock);
-    if (stock === "" || !Number.isInteger(stockNum) || stockNum < 0)
-      return "Stock must be a non-negative whole number";
+    if (!axisOn) {
+      const stockNum = Number(stock);
+      if (stock === "" || !Number.isInteger(stockNum) || stockNum < 0)
+        return "Stock must be a non-negative whole number";
+    } else {
+      if (!optionName.trim()) return "Option name is required (e.g. Size)";
+      const filled = variantRows.filter((r) => r.name.trim());
+      if (filled.length === 0) return "Add at least one option value";
+      const names = filled.map((r) => r.name.trim());
+      if (new Set(names).size !== names.length) return "Option values must be unique";
+      for (const r of filled) {
+        const s = Number(r.stock);
+        if (r.stock === "" || !Number.isInteger(s) || s < 0)
+          return `Stock for "${r.name}" must be a non-negative whole number`;
+        if (r.price !== "" && (Number.isNaN(Number(r.price)) || Number(r.price) < 0))
+          return `Price override for "${r.name}" must be a non-negative number`;
+      }
+    }
     if (discountPrice !== "") {
       const discountNum = Number(discountPrice);
       if (Number.isNaN(discountNum) || discountNum < 0)
@@ -130,9 +163,23 @@ export default function ProductForm({ initial, submitLabel, onSubmit }: Props) {
         description: description.trim(),
         price: Number(price),
         discountPrice: discountPrice === "" ? null : Number(discountPrice),
-        stock: Number(stock),
+        stock: axisOn ? 0 : Number(stock), // server computes the sum when axis on
         category: category || undefined,
         images: images.map((row) => row.url.trim()).filter(Boolean),
+        ...(axisOn
+          ? {
+              optionName: optionName.trim(),
+              variants: variantRows
+                .filter((r) => r.name.trim())
+                .map((r) => ({
+                  name: r.name.trim(),
+                  stock: Number(r.stock),
+                  price: r.price === "" ? null : Number(r.price),
+                })),
+            }
+          : initial?.optionName
+            ? { optionName: null, variants: null } // axis switched off on edit
+            : {}),
       });
     } catch (err) {
       setError(getApiErrorMessage(err, "Failed to save product"));
@@ -182,17 +229,114 @@ export default function ProductForm({ initial, submitLabel, onSubmit }: Props) {
             placeholder="none"
           />
         </div>
-        <div className="space-y-2">
-          <Label htmlFor="stock">Stock</Label>
-          <Input
-            id="stock"
-            type="number"
-            min="0"
-            step="1"
-            value={stock}
-            onChange={(e) => setStock(e.target.value)}
+        {!axisOn && (
+          <div className="space-y-2">
+            <Label htmlFor="stock">Stock</Label>
+            <Input
+              id="stock"
+              type="number"
+              min="0"
+              step="1"
+              value={stock}
+              onChange={(e) => setStock(e.target.value)}
+            />
+          </div>
+        )}
+      </div>
+
+      {/* Option axis (Slice 7): per-value stock replaces the single
+          stock input; the server computes the total. */}
+      <div className="rounded-md border p-4">
+        <label className="flex items-center gap-2 text-sm font-medium">
+          <input
+            type="checkbox"
+            checked={axisOn}
+            onChange={(e) => setAxisOn(e.target.checked)}
           />
-        </div>
+          This product comes in options (sizes, colors…)
+        </label>
+
+        {axisOn && (
+          <div className="mt-3 space-y-3">
+            <div className="space-y-2">
+              <Label htmlFor="optionName">Option name</Label>
+              <Input
+                id="optionName"
+                value={optionName}
+                onChange={(e) => setOptionName(e.target.value)}
+                placeholder="e.g. Size"
+                className="max-w-48"
+              />
+            </div>
+
+            <div className="space-y-2">
+              {variantRows.map((row) => (
+                <div key={row.id} className="flex items-center gap-2">
+                  <Input
+                    value={row.name}
+                    onChange={(e) =>
+                      setVariantRows((prev) =>
+                        prev.map((r) => (r.id === row.id ? { ...r, name: e.target.value } : r))
+                      )
+                    }
+                    placeholder="Value (e.g. M)"
+                    aria-label="Option value name"
+                  />
+                  <Input
+                    type="number"
+                    min="0"
+                    step="1"
+                    value={row.stock}
+                    onChange={(e) =>
+                      setVariantRows((prev) =>
+                        prev.map((r) => (r.id === row.id ? { ...r, stock: e.target.value } : r))
+                      )
+                    }
+                    placeholder="Stock"
+                    aria-label="Option value stock"
+                    className="w-24"
+                  />
+                  <Input
+                    type="number"
+                    min="0"
+                    step="any"
+                    value={row.price}
+                    onChange={(e) =>
+                      setVariantRows((prev) =>
+                        prev.map((r) => (r.id === row.id ? { ...r, price: e.target.value } : r))
+                      )
+                    }
+                    placeholder="৳ override"
+                    aria-label="Option value price override"
+                    className="w-28"
+                  />
+                  <button
+                    type="button"
+                    aria-label="Remove option value"
+                    onClick={() =>
+                      setVariantRows((prev) => prev.filter((r) => r.id !== row.id))
+                    }
+                    className="text-muted-foreground transition-colors hover:text-destructive"
+                  >
+                    <Trash2 className="h-4 w-4" />
+                  </button>
+                </div>
+              ))}
+            </div>
+            <Button
+              type="button"
+              variant="outline"
+              size="sm"
+              onClick={() => setVariantRows((prev) => [...prev, newVariantRow()])}
+            >
+              <Plus className="mr-1 h-4 w-4" /> Add value
+            </Button>
+            <p className="text-xs text-muted-foreground">
+              Total stock is the sum of value stocks — computed automatically. Price override
+              is optional; empty means the product price (or its discount) applies.
+            </p>
+          </div>
+        )}
       </div>
 
       <div className="space-y-2">

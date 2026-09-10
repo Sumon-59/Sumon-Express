@@ -12,10 +12,10 @@ input while on). Order views everywhere show "Name · Value".
 
 **Status:** ready-for-agent
 
-- [ ] Picker: selection drives price/stock; sold-out values disabled; add-to-cart gated
-- [ ] Gallery: thumbnails switch the main image; first image default
-- [ ] Cart-hook tests: product+variant identity, quantity bump on same value, legacy lines unaffected
-- [ ] Checkout payload carries variant per line
-- [ ] Admin form axis editor with validation mirror; products table shows summed stock
-- [ ] Order views (shopper history, admin drawer, checkout summary) show the value
-- [ ] All existing tests still green; frontend build green
+- [x] Picker: selection drives price/stock; sold-out values disabled; add-to-cart gated
+- [x] Gallery: thumbnails switch the main image; first image default
+- [x] Cart-hook tests: product+variant identity, quantity bump on same value, legacy lines unaffected
+- [x] Checkout payload carries variant per line
+- [x] Admin form axis editor with validation mirror; products table shows summed stock
+- [x] Order views (shopper history, admin drawer, checkout summary) show the value
+- [x] All existing tests still green; frontend build green

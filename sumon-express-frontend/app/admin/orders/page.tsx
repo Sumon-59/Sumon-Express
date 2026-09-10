@@ -293,7 +293,7 @@ function AdminOrdersPageInner() {
               {selectedOrder.items.map((it, i) => (
                 <li key={i} className="flex items-center justify-between gap-2 text-sm">
                   <span className="min-w-0 truncate">
-                    {it.name} <span className="text-muted-foreground">× {it.quantity}</span>
+                    {it.name}{it.variantName ? ` · ${it.variantName}` : ""} <span className="text-muted-foreground">× {it.quantity}</span>
                   </span>
                   <span className="tabular-nums">{formatTaka(it.price * it.quantity)}</span>
                 </li>

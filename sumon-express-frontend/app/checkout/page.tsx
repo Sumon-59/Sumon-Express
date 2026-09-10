@@ -31,7 +31,12 @@ export default function CheckoutPage() {
   const [discount, setDiscount] = React.useState<DiscountPreview | null>(null);
 
   const cartLines = React.useMemo(
-    () => items.map((x) => ({ product: x.productId, quantity: x.quantity })),
+    () =>
+      items.map((x) => ({
+        product: x.productId,
+        quantity: x.quantity,
+        ...(x.variant ? { variant: x.variant } : {}),
+      })),
     [items]
   );
 
@@ -149,7 +154,7 @@ export default function CheckoutPage() {
           <h2 className="font-semibold">Your Order</h2>
           <div className="mt-4 space-y-3">
             {items.map((x) => (
-              <div key={x.productId} className="flex items-center gap-3">
+              <div key={`${x.productId}::${x.variant ?? ""}`} className="flex items-center gap-3">
                 <div className="relative h-12 w-12 shrink-0 overflow-hidden rounded-md bg-muted">
                   {x.image ? (
                     // eslint-disable-next-line @next/next/no-img-element
@@ -161,7 +166,7 @@ export default function CheckoutPage() {
                   )}
                 </div>
                 <div className="min-w-0 flex-1">
-                  <p className="truncate text-sm">{x.name}</p>
+                  <p className="truncate text-sm">{x.name}{x.variant ? ` · ${x.variant}` : ""}</p>
                   <p className="text-xs text-muted-foreground">× {x.quantity}</p>
                 </div>
                 <span className="text-sm tabular-nums">{formatTaka(x.price * x.quantity)}</span>
