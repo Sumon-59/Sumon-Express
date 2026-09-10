@@ -9,9 +9,9 @@ logo/hero uploads reuse `lib/uploads.ts`.
 
 **Blocked by:** 01.
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] SettingsContext + root `--accent` variable (test green)
-- [ ] Navbar, hero, announcement bar, footer render from settings
-- [ ] Hardcoded orange accents replaced with the variable
-- [ ] Admin Settings form + live preview + color input; saves via PUT
+- [x] SettingsContext + root `--accent` variable (test green)
+- [x] Navbar, hero, announcement bar, footer render from settings
+- [x] Hardcoded orange accents replaced with the variable
+- [x] Admin Settings form + live preview + color input; saves via PUT

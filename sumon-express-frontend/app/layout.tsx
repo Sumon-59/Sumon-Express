@@ -1,10 +1,13 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
-import { CartProvider } from "@/context/CartContext"; // ✅ ADD THIS
+import { CartProvider } from "@/context/CartContext";
 
-import { AuthProvider } from "@/context/AuthContext"; // ✅ ADD THIS
-import Navbar from "@/components/Navbar"; // ✅ ADD THIS
+import { AuthProvider } from "@/context/AuthContext";
+import { SettingsProvider } from "@/context/SettingsContext";
+import Navbar from "@/components/Navbar";
+import AnnouncementBar from "@/components/AnnouncementBar";
+import SiteFooter from "@/components/SiteFooter";
 const geistSans = Geist({
   variable: "--font-geist-sans",
   subsets: ["latin"],
@@ -31,18 +34,16 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} flex min-h-screen flex-col antialiased`}
       >
-        <AuthProvider>
-          <CartProvider>
-            <Navbar />
-            <div className="flex-1">{children}</div>
-            <footer className="border-t bg-card">
-              <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-2 px-4 py-6 text-sm text-muted-foreground">
-                <span>© {new Date().getFullYear()} Sumon Express</span>
-                <span>Cash on delivery across Bangladesh</span>
-              </div>
-            </footer>
-          </CartProvider>
-        </AuthProvider>
+        <SettingsProvider>
+          <AuthProvider>
+            <CartProvider>
+              <AnnouncementBar />
+              <Navbar />
+              <div className="flex-1">{children}</div>
+              <SiteFooter />
+            </CartProvider>
+          </AuthProvider>
+        </SettingsProvider>
       </body>
     </html>
   );
