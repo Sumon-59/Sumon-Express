@@ -86,6 +86,25 @@ Allowlist in `app.ts` (`allowedOrigins`) + `credentials: true`. When the fronten
   first, customer populated, items snapshot embedded (the UI drawer needs no second
   request). The frontend actions component mirrors the machine: legal moves only.
 
+### Customers (since Slice 4)
+- **The census is one aggregation pipeline** in `adminCustomer.controller.ts`: role-user
+  `$match` → `$lookup` of that user's orders with an inner `$match` excluding
+  `cancelled` (one rule feeding all three columns) → `$addFields` collapsing the join to
+  `orderCount` (`$size`), `totalSpent` (`$sum`), `lastOrderAt` (`$max`; null = never
+  ordered) → whitelisting `$project` (password/refreshToken can never leak). Sort, skip,
+  and limit run inside the pipeline. No `$unwind` — that's the multiply-count trap.
+- `GET /api/admin/customers` (`sort` = `spent` default | `newest` — closed set, 400
+  otherwise; `page`/`limit`) answers `{customers, total, page, pages}`. Admins are
+  excluded. `GET /api/admin/customers/:id` = identity + the same numbers (400 malformed
+  id, 404 unknown/admin). A customer's order history is the orders listing with its
+  `user` filter — there is deliberately no separate history endpoint.
+- **Pagination lives in `utils/pagination.ts`** (`parsePagination` clamps page ≥ 1,
+  1 ≤ limit ≤ 100; `pageMeta` builds the wrapper) — all three admin listings use it; new
+  listings must too. Frontend mirror: `PageMeta` in `types/api.ts`, `formatDate` in
+  `lib/format.ts`.
+- Deep link: `/admin/orders?user=<id>&open=<orderId>` filters the Orders page to one
+  customer and opens the drawer on that order (used by customer detail rows).
+
 ### Product management (since Slice 2)
 - **Soft delete is the only delete.** `DELETE /api/products/:id` sets `isActive: false`;
   nothing is ever removed (order snapshots depend on it). Reactivate via

@@ -1,8 +1,10 @@
 import { Request, Response } from "express";
+import { Types } from "mongoose";
 import Order, { ORDER_STATUSES, isOrderStatus, OrderStatus } from "../models/Order.model";
 import Product from "../models/Product.model";
 import asyncHandler from "../utils/asyncHandler";
 import { httpError } from "../types/http.types";
+import { parsePagination, pageMeta } from "../utils/pagination";
 
 interface UpdateStatusBody {
   status?: string;
@@ -17,11 +19,17 @@ const PIPELINE: readonly OrderStatus[] = ["pending", "processing", "shipped", "d
 // Admin listing: newest first, filterable by status, paginated with the
 // same {page, pages, total, ...} wrapper the products listing answers.
 export const getAllOrders = asyncHandler(async (req: Request, res: Response) => {
-  const page = Number(req.query.page) || 1;
-  const limit = Number(req.query.limit) || 10;
-  const skip = (page - 1) * limit;
+  const paging = parsePagination(req);
 
   const filter: Record<string, unknown> = {};
+  // user= narrows to one customer's history (the customer detail page).
+  if (req.query.user !== undefined) {
+    const userId = String(req.query.user);
+    if (!Types.ObjectId.isValid(userId)) {
+      throw httpError("Invalid user id filter", 400);
+    }
+    filter.user = new Types.ObjectId(userId);
+  }
   if (req.query.status !== undefined) {
     const status = String(req.query.status);
     if (!isOrderStatus(status)) {
@@ -34,17 +42,12 @@ export const getAllOrders = asyncHandler(async (req: Request, res: Response) => 
     Order.find(filter)
       .populate("user", "name email")
       .sort({ createdAt: -1 })
-      .skip(skip)
-      .limit(limit),
+      .skip(paging.skip)
+      .limit(paging.limit),
     Order.countDocuments(filter),
   ]);
 
-  res.json({
-    page,
-    pages: Math.ceil(total / limit),
-    total,
-    orders,
-  });
+  res.json({ ...pageMeta(total, paging), orders });
 });
 
 export const updateOrderStatus = asyncHandler(async (req: Request, res: Response) => {

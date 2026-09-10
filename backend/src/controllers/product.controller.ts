@@ -4,6 +4,7 @@ import Product from "../models/Product.model";
 import asyncHandler from "../utils/asyncHandler";
 import { sessionUser } from "../middleware/requireAuth";
 import { httpError } from "../types/http.types";
+import { parsePagination, pageMeta } from "../utils/pagination";
 
 interface ProductBody {
   name?: string;
@@ -123,9 +124,7 @@ export const getProducts = asyncHandler(async (req: Request, res: Response) => {
  * status filter (active | inactive | all, default all).
  */
 export const getAdminProducts = asyncHandler(async (req: Request, res: Response) => {
-  const page = Number(req.query.page) || 1;
-  const limit = Number(req.query.limit) || 10;
-  const skip = (page - 1) * limit;
+  const paging = parsePagination(req);
 
   const filter: Record<string, unknown> = {};
   if (req.query.status === "active") filter.isActive = true;
@@ -134,19 +133,16 @@ export const getAdminProducts = asyncHandler(async (req: Request, res: Response)
     filter.name = { $regex: String(req.query.q).trim(), $options: "i" };
   }
 
-  const products = await Product.find(filter)
-    .populate("category", "name")
-    .sort({ createdAt: -1 })
-    .skip(skip)
-    .limit(limit);
-  const total = await Product.countDocuments(filter);
+  const [products, total] = await Promise.all([
+    Product.find(filter)
+      .populate("category", "name")
+      .sort({ createdAt: -1 })
+      .skip(paging.skip)
+      .limit(paging.limit),
+    Product.countDocuments(filter),
+  ]);
 
-  res.json({
-    page,
-    pages: Math.ceil(total / limit),
-    total,
-    products,
-  });
+  res.json({ ...pageMeta(total, paging), products });
 });
 
 /**

@@ -10,6 +10,7 @@ import {
 } from "../controllers/adminOrder.controller";
 import { getAdminProducts, getAdminProductById } from "../controllers/product.controller";
 import { getUploadSignature } from "../controllers/upload.controller";
+import { getCustomers, getCustomerById } from "../controllers/adminCustomer.controller";
 
 const router = express.Router();
 
@@ -24,6 +25,10 @@ router.get("/products/:id", requireAuth, requireAdmin, getAdminProductById);
 
 // admin: sign a Cloudinary direct upload (Slice 2b)
 router.post("/uploads/signature", requireAuth, requireAdmin, getUploadSignature);
+
+// admin: the customer census (Slice 4)
+router.get("/customers", requireAuth, requireAdmin, getCustomers);
+router.get("/customers/:id", requireAuth, requireAdmin, getCustomerById);
 
 // admin: get all orders
 router.get("/orders", requireAuth, requireAdmin, getAllOrders);

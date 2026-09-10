@@ -1,3 +1,5 @@
+import { PageMeta } from "./api";
+
 export type Category = {
   _id: string;
   name: string;
@@ -15,10 +17,7 @@ export type Product = {
   category?: Category | string | null;
 };
 
-export type ProductListResponse = {
-  page: number;
-  pages: number;
-  total: number;
+export type ProductListResponse = PageMeta & {
   products: Product[];
 };
 
