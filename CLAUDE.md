@@ -105,6 +105,28 @@ Allowlist in `app.ts` (`allowedOrigins`) + `credentials: true`. When the fronten
 - Deep link: `/admin/orders?user=<id>&open=<orderId>` filters the Orders page to one
   customer and opens the drawer on that order (used by customer detail rows).
 
+### Discount codes (since Slice 5)
+- **`resolveDiscount` in `utils/discountRules.ts` is THE rules choke point** — preview
+  and order creation both call it, nowhere else. One named 400 per refusal: unknown /
+  inactive / expired / below-minimum (names the minimum) / usage-limit. Amount always
+  **floors to whole taka** (percent AND the fixed-cap path); fixed values must be whole
+  taka at creation. Codes stored uppercase + unique; lookup uppercases input.
+- **Usage is claimed, never counted**: `claimDiscountUsage` is a guarded atomic
+  findOneAndUpdate (re-checks isActive, expiry, and limit inside the update — one
+  winner per last slot, the stock pattern). Order creation order: rules → stock
+  decrement → usage claim → create; every later failure rolls back every earlier side
+  effect (`releaseDiscountUsage` + stock restore). Orders store a
+  `{code, type, value, amount}` **snapshot** — receipts never re-read the Discount.
+- `POST /api/discounts/preview` (requireAuth) recomputes the subtotal via
+  `utils/orderItems.ts` `buildOrderItems` — the ONE cart→subtotal computation shared
+  with createOrder — and consumes nothing. Admin CRUD under `/api/admin/discounts`
+  (list/get/create/update; **no hard delete** — deactivate via update); validation
+  choke point `validateDiscountData` mirrors the product one. Mongo E11000 maps to 400
+  in the error middleware.
+- Frontend: `components/checkout/DiscountField.tsx` displays only server-computed
+  numbers; the code rides the order payload as `discountCode`. Snapshot lines render
+  in the shopper history and admin drawer.
+
 ### Product management (since Slice 2)
 - **Soft delete is the only delete.** `DELETE /api/products/:id` sets `isActive: false`;
   nothing is ever removed (order snapshots depend on it). Reactivate via
