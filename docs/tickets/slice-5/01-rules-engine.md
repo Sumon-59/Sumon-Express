@@ -14,9 +14,9 @@ an order with EID10 and watch the total drop.
 
 **Status:** ready-for-agent
 
-- [ ] Matrix tests, one per cell: valid percent (floor proven on an odd subtotal), valid fixed, fixed capped at subtotal, unknown, inactive, expired-yesterday, valid-until-tomorrow, below minimum (message names it), exhausted, case-insensitive lookup
-- [ ] Order with a valid code: discounted totalPrice, snapshot stored, usage consumed (proven by exhausting a limit-1 code with a second order)
-- [ ] Order with a rejected code: 400, no order created, stock untouched (rollback path)
-- [ ] Order without a code: unchanged (regression)
-- [ ] Fixture dates only — no sleeps, no global Date mocks
-- [ ] All existing tests still green; typecheck clean
+- [x] Matrix tests, one per cell: valid percent (floor proven on an odd subtotal), valid fixed, fixed capped at subtotal, unknown, inactive, expired-yesterday, valid-until-tomorrow, below minimum (message names it), exhausted, case-insensitive lookup
+- [x] Order with a valid code: discounted totalPrice, snapshot stored, usage consumed (proven by exhausting a limit-1 code with a second order)
+- [x] Order with a rejected code: 400, no order created, stock untouched (rollback path)
+- [x] Order without a code: unchanged (regression)
+- [x] Fixture dates only — no sleeps, no global Date mocks
+- [x] All existing tests still green; typecheck clean

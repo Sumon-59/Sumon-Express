@@ -23,6 +23,16 @@ export interface IOrderItem {
   quantity: number;
 }
 
+// Snapshot of the discount applied at order time (same philosophy as
+// the items snapshot: history renders without a Discount lookup, and
+// later edits to the code can't rewrite old receipts).
+export interface IOrderDiscount {
+  code: string;
+  type: "percent" | "fixed";
+  value: number;
+  amount: number; // whole taka actually taken off
+}
+
 export interface IOrder {
   user: Types.ObjectId;
   items: IOrderItem[];
@@ -33,6 +43,7 @@ export interface IOrder {
     phone?: string;
   };
   paymentMethod: PaymentMethod;
+  discount?: IOrderDiscount;
   status: OrderStatus;
   isPaid: boolean;
   paidAt?: Date;
@@ -84,6 +95,19 @@ const orderSchema = new Schema<IOrder>(
       type: String,
       enum: ["cod", "bkash", "nagad", "rocket", "card"],
       default: "cod",
+    },
+
+    discount: {
+      type: new Schema<IOrderDiscount>(
+        {
+          code: { type: String, required: true },
+          type: { type: String, enum: ["percent", "fixed"], required: true },
+          value: { type: Number, required: true },
+          amount: { type: Number, required: true },
+        },
+        { _id: false }
+      ),
+      default: undefined, // absent unless a code was applied
     },
 
     status: {

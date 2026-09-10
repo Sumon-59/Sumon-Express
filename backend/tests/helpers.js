@@ -40,18 +40,32 @@ export async function registerAdmin(overrides = {}) {
 
 // Place an order through the public API, exactly like a shopper would.
 // Returns the created order body (status starts as "pending").
-export async function placeOrder(auth, product, quantity = 2) {
+// `extra` merges into the payload (e.g. { discountCode: "EID10" }).
+export async function placeOrder(auth, product, quantity = 2, extra = {}) {
   const res = await request(app)
     .post("/api/orders")
     .set("Authorization", auth)
     .send({
       items: [{ product: product._id.toString(), quantity }],
       shippingAddress: { address: "House 1, Road 2", city: "Dhaka", phone: "01700000000" },
+      ...extra,
     });
   if (res.status !== 201) {
     throw new Error(`placeOrder fixture failed: ${res.status} ${JSON.stringify(res.body)}`);
   }
   return res.body;
+}
+
+// Plant a discount code directly (fixture, like plantProduct). Defaults
+// to a live 10% code with no minimum, no expiry, no usage limit.
+export async function plantDiscount(overrides = {}) {
+  const { default: Discount } = await import("../src/models/Discount.model");
+  return Discount.create({
+    code: "EID10",
+    type: "percent",
+    value: 10,
+    ...overrides,
+  });
 }
 
 // Plant a product directly in the in-memory database (creating a
