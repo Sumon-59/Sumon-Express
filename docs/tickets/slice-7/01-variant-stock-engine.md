@@ -14,13 +14,13 @@ item snapshot stores variantName.
 
 **Status:** ready-for-agent
 
-- [ ] Ordering a value decrements it AND the sum (public API proof); siblings untouched
-- [ ] S and M of one shirt in one order; duplicate product+value pair still refused
-- [ ] Named 400s: missing value, unknown value, value on a plain product, insufficient value stock (all stock untouched)
-- [ ] Price override charged; discountPrice interplay pinned both ways
-- [ ] Mixed order (variant + plain) failing on the LAST line rolls back every earlier decrement
-- [ ] User cancel and admin cancel restore the exact value and the sum
-- [ ] Axis-replaced-then-cancel restores the top-level counter (documented fallback)
-- [ ] Validation: every new rule a named 400; plain-product create/update regression green
-- [ ] Snapshot carries variantName; my-orders and admin listing expose it
-- [ ] All existing tests still green; typecheck clean
+- [x] Ordering a value decrements it AND the sum (public API proof); siblings untouched
+- [x] S and M of one shirt in one order; duplicate product+value pair still refused
+- [x] Named 400s: missing value, unknown value, value on a plain product, insufficient value stock (all stock untouched)
+- [x] Price override charged; discountPrice interplay pinned both ways
+- [x] Mixed order (variant + plain) failing on the LAST line rolls back every earlier decrement
+- [x] User cancel and admin cancel restore the exact value and the sum
+- [x] Axis-replaced-then-cancel restores the top-level counter (documented fallback)
+- [x] Validation: every new rule a named 400; plain-product create/update regression green
+- [x] Snapshot carries variantName; my-orders and admin listing expose it
+- [x] All existing tests still green; typecheck clean

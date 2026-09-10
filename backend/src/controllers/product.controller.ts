@@ -6,6 +6,12 @@ import { sessionUser } from "../middleware/requireAuth";
 import { httpError } from "../types/http.types";
 import { parsePagination, pageMeta } from "../utils/pagination";
 
+interface VariantInput {
+  name?: unknown;
+  stock?: unknown;
+  price?: unknown;
+}
+
 interface ProductBody {
   name?: string;
   description?: string;
@@ -15,6 +21,8 @@ interface ProductBody {
   category?: string;
   images?: string[];
   isActive?: boolean;
+  optionName?: string | null; // null = remove the axis
+  variants?: VariantInput[] | null;
 }
 
 /**
@@ -61,6 +69,65 @@ const validateProductData = (
   }
 };
 
+/**
+ * The option-axis rules (Slice 7). The axis is all-or-nothing: an
+ * optionName with at least one value, or neither field. Editing is
+ * full-axis replace. Returns the fields to persist — for a variant
+ * product, top-level stock is the SERVER-computed sum (client stock
+ * ignored); null optionName+variants removes the axis.
+ */
+const validateVariantAxis = (
+  data: ProductBody
+): { optionName?: string | null; variants?: { name: string; stock: number; price?: number | null }[] | null; stock?: number } => {
+  const wantsAxis = data.optionName != null || (data.variants != null && data.variants.length > 0);
+  if (!wantsAxis) {
+    // Explicit removal: both null.
+    if (data.optionName === null || data.variants === null) {
+      return { optionName: null, variants: null };
+    }
+    return {};
+  }
+
+  if (typeof data.optionName !== "string" || !data.optionName.trim()) {
+    throw httpError("optionName is required when variants are set", 400);
+  }
+  if (!Array.isArray(data.variants) || data.variants.length === 0) {
+    throw httpError("variants must include at least one value", 400);
+  }
+
+  const seen = new Set<string>();
+  const variants = data.variants.map((v) => {
+    if (typeof v.name !== "string" || !v.name.trim()) {
+      throw httpError("every variant needs a non-empty name", 400);
+    }
+    const name = v.name.trim();
+    if (seen.has(name)) {
+      throw httpError(`variant names must be unique (duplicate: ${name})`, 400);
+    }
+    seen.add(name);
+
+    const stock = Number(v.stock);
+    if (!Number.isInteger(stock) || stock < 0) {
+      throw httpError(`variant "${name}": stock must be a non-negative whole number`, 400);
+    }
+
+    let price: number | null = null;
+    if (v.price !== undefined && v.price !== null) {
+      price = Number(v.price);
+      if (Number.isNaN(price) || price < 0) {
+        throw httpError(`variant "${name}": price must be a non-negative number`, 400);
+      }
+    }
+    return { name, stock, price };
+  });
+
+  return {
+    optionName: data.optionName.trim(),
+    variants,
+    stock: variants.reduce((sum, v) => sum + v.stock, 0),
+  };
+};
+
 export const createProduct = asyncHandler(async (req: Request, res: Response) => {
   const { name, description, price, discountPrice, stock, category, images } =
     req.body as ProductBody;
@@ -71,13 +138,17 @@ export const createProduct = asyncHandler(async (req: Request, res: Response) =>
   if (stock === undefined) throw httpError("stock is required", 400);
 
   validateProductData(req.body as ProductBody);
+  const axis = validateVariantAxis(req.body as ProductBody);
 
   const product = await Product.create({
     name,
     description,
     price,
     discountPrice: discountPrice ?? undefined,
-    stock,
+    // Variant products: stock is the server-computed sum of values.
+    stock: axis.stock ?? stock,
+    optionName: axis.optionName ?? undefined,
+    variants: axis.variants ?? undefined,
     category,
     images,
     createdBy: sessionUser(req)._id,
@@ -177,12 +248,22 @@ export const updateProduct = asyncHandler(async (req: Request, res: Response) =>
     price: product.price,
     discountPrice: product.discountPrice,
   });
+  const axis = validateVariantAxis(req.body as ProductBody);
 
   if (name !== undefined) product.name = name;
   if (description !== undefined) product.description = description;
   if (price !== undefined) product.price = price;
   if (discountPrice !== undefined) product.discountPrice = discountPrice ?? undefined;
   if (stock !== undefined) product.stock = stock;
+  // Axis writes are full-replace; they also own the stock sum.
+  if (axis.optionName !== undefined) {
+    product.optionName = axis.optionName ?? undefined;
+    product.variants = axis.variants ?? undefined;
+    if (axis.stock !== undefined) product.stock = axis.stock;
+  } else if (product.variants?.length && stock !== undefined) {
+    // Client-sent stock cannot desync a variant product's sum.
+    product.stock = product.variants.reduce((s, v) => s + v.stock, 0);
+  }
   if (category !== undefined) product.category = category;
   if (images !== undefined) product.images = images;
   if (isActive !== undefined) product.isActive = isActive;
