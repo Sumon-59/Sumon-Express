@@ -153,6 +153,20 @@ Allowlist in `app.ts` (`allowedOrigins`) + `credentials: true`. When the fronten
   active|inactive|all, `page`/`limit`) and `GET /api/admin/products/:id` (returns
   inactive products — the public detail 404s them by design; the edit page needs this).
 
+### Search & discovery (since Slice 8)
+- Public listing: `q` runs the **text index** first (name weight 10, description 3,
+  relevance-ranked unless an explicit sort) and falls back to an ESCAPED name regex
+  when the index matches nothing (partials). Never interpolate raw user input into
+  `$regex` — use `escapeRegex` in `utils/regex.ts`.
+- **One definition of price**: filters (`minPrice`/`maxPrice`, inclusive, named 400s,
+  Infinity rejected) AND `price_asc`/`price_desc` sorts both use the effective price
+  (`discountPrice ?? price`) via the shared listing aggregation. `inStock=true` rides
+  the variant stock sum. Aggregation gotcha: `aggregate()` does not auto-cast
+  ObjectId strings — cast category ids explicitly.
+- `GET /api/products/:id/related`: ≤4 same-category active siblings, self excluded,
+  empty for uncategorized, 404 unknown/inactive. Frontend `RelatedProducts` strip
+  renders nothing when empty (product page + cart).
+
 ### Product variants (since Slice 7)
 - One optional option axis per product: `optionName` + `variants: [{name, stock,
   price?}]` (multi-axis is out of scope, D7). Plain products are untouched. Top-level
