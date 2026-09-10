@@ -118,5 +118,41 @@ describe("checkout order payload", () => {
       expect(bodies["/orders"]).toBeTruthy();
     });
     expect(bodies["/orders"]).not.toHaveProperty("discountCode");
+    expect(bodies["/orders"]).toMatchObject({ paymentMethod: "cod" });
+  });
+
+  it("online: posts the order, initiates payment, navigates to the gateway (Slice 11)", async () => {
+    const bodies: Record<string, unknown> = {};
+    api.defaults.adapter = async (config: Config) => {
+      const url = config.url ?? "";
+      bodies[url] = config.data ? JSON.parse(String(config.data)) : null;
+      if (url.endsWith("/orders")) return respond(config, 201, { _id: "o1" });
+      if (url.endsWith("/payments/init"))
+        return respond(config, 200, { redirectUrl: "https://fake.gateway.test/pay/t1" });
+      return respond(config, 404, { message: "not found" });
+    };
+
+    const assign = vi.fn();
+    vi.stubGlobal("location", { ...window.location, assign });
+
+    try {
+      render(
+        <CartProvider>
+          <CheckoutPage />
+        </CartProvider>
+      );
+
+      fillAddress();
+      fireEvent.click(screen.getByLabelText(/pay online/i));
+      fireEvent.click(screen.getByRole("button", { name: /place order & pay/i }));
+
+      await waitFor(() => {
+        expect(assign).toHaveBeenCalledWith("https://fake.gateway.test/pay/t1");
+      });
+      expect(bodies["/orders"]).toMatchObject({ paymentMethod: "online" });
+      expect(bodies["/payments/init"]).toMatchObject({ orderId: "o1" });
+    } finally {
+      vi.unstubAllGlobals();
+    }
   });
 });

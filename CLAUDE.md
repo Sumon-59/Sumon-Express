@@ -166,6 +166,36 @@ Allowlist in `app.ts` (`allowedOrigins`) + `credentials: true`. When the fronten
   `Stars`/`StarRow` (icons + numeric text, hidden at zero), `ProductReviews`
   (load-more accumulation, eligibility-driven form).
 
+### Online payments (since Slice 11)
+- **The trust boundary**: the PROVIDER (`src/payments/`) answers "what does
+  the gateway say happened"; the CONTROLLER (`payment.controller.ts`) judges
+  "does that match MY order". The IPN body is UNTRUSTED (anyone can POST a
+  webhook) — only the server-to-server validator answer counts, and paid
+  requires ALL of: verified, status VALID/VALIDATED, **validator tran_id ===
+  the order's stored attempt** (the cross-transaction-replay check — never
+  remove it), amount === totalPrice exactly.
+- **`isPaid` has exactly two writers**: the admin delivered rule (ANY
+  method — delivery implies collection, the deliberate cash-on-handover
+  fallback) and the verified IPN. Redirect endpoints are 303 UX that write
+  NOTHING. Paid/failed transitions are GUARDED atomic findOneAndUpdates
+  (isPaid false + live tranId + not cancelled — the stock/discount
+  doctrine); duplicate IPNs are idempotent; a re-init mints a fresh tranId
+  and only the latest is honored (`payment.tranId` unique+sparse index).
+- New orders accept only `cod`/`online` (named 400; legacy instrument enum
+  values stay readable on old docs). SSLCommerz sandbox needs
+  `SSLCOMMERZ_STORE_ID`/`SSLCOMMERZ_STORE_PASSWD` (+`SSLCOMMERZ_SANDBOX`
+  default true); without them init answers a named 503. Outbound gateway
+  fetches carry 10s timeouts. Tests drive the FAKE provider
+  (`payments/fake.ts` — its documented body-field dials include
+  `fake_validator_tran_id` for replay tests); never point tests at the
+  real gateway.
+- Frontend: checkout radio (cod default), online = order → `/payments/init`
+  → `window.location.assign(redirectUrl)`; cart clears at order creation
+  (Pay Now on /orders recovers an abandoned gateway visit); one
+  `paymentBadge` rule (Paid / Awaiting payment / Payment failed — text,
+  never color alone); `?paid=` return notice is honest about webhook
+  timing.
+
 ### Store settings & theming (since Slice 10)
 - **`StoreSettings` is a SINGLETON at a fixed `_id`** (`SETTINGS_ID` in
   `settings.controller.ts`). An upsert is race-safe ONLY on a uniquely-indexed

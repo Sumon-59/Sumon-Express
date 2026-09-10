@@ -15,6 +15,7 @@ import orderRoutes from "./src/routes/order.routes";
 import discountRoutes from "./src/routes/discount.routes";
 import reviewRoutes from "./src/routes/review.routes";
 import settingsRoutes from "./src/routes/settings.routes";
+import paymentRoutes from "./src/routes/payment.routes";
 
 import errorHandler from "./src/middleware/error.middleware";
 
@@ -63,6 +64,8 @@ app.use(helmet());
 app.use(cors(corsOptions));
 
 app.use(express.json());
+// SSLCommerz posts its IPN and browser redirects form-encoded (Slice 11).
+app.use(express.urlencoded({ extended: true }));
 
 // Cookie parser is REQUIRED for req.cookies (refresh/logout/me)
 app.use(cookieParser());
@@ -81,6 +84,7 @@ app.use("/api/orders", orderRoutes);
 app.use("/api/discounts", discountRoutes);
 app.use("/api/reviews", reviewRoutes);
 app.use("/api/settings", settingsRoutes);
+app.use("/api/payments", paymentRoutes);
 
 app.get("/healthz", (req, res) => {
   res.status(200).json({ status: "ok" });

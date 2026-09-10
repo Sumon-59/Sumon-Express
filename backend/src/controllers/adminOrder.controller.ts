@@ -92,6 +92,10 @@ export const updateOrderStatus = asyncHandler(async (req: Request, res: Response
 
   order.status = status;
 
+  // Delivery implies collection, for ANY method: COD collects cash at
+  // the door, and delivering an unpaid ONLINE order is the admin's
+  // deliberate cash-on-handover call (documented Slice 11 decision —
+  // this and the verified IPN are the only two isPaid writers).
   if (status === "delivered") {
     order.isPaid = true;
     order.paidAt = new Date();

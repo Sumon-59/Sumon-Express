@@ -34,6 +34,15 @@ export const createOrder = asyncHandler(async (req: Request, res: Response) => {
   const { items, shippingAddress, paymentMethod, discountCode } =
     req.body as CreateOrderBody;
 
+  // NEW orders take exactly two methods (Slice 11): cod or online (the
+  // gateway serves every instrument behind one door). The schema enum
+  // keeps legacy values only so OLD documents stay readable. Checked
+  // first — cheap validation before any side effect.
+  const method = paymentMethod ?? "cod";
+  if (method !== "cod" && method !== "online") {
+    throw httpError("Payment method must be cod or online", 400);
+  }
+
   const { orderItems, subtotal } = await buildOrderItems(items);
   let totalPrice = subtotal;
 
@@ -81,7 +90,7 @@ export const createOrder = asyncHandler(async (req: Request, res: Response) => {
       user: user._id,
       items: orderItems,
       shippingAddress,
-      paymentMethod: paymentMethod || "cod",
+      paymentMethod: method,
       totalPrice,
       discount: discountSnapshot,
     });
