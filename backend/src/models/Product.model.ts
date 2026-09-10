@@ -93,6 +93,15 @@ const productSchema = new Schema<IProduct>(
   { timestamps: true }
 );
 
+// Text INDEX for search (Slice 8): stemmed, weighted, relevance-ranked.
+// Name matches outrank description matches by weight. (Partial-word
+// queries fall back to a name regex in the controller — an index can't
+// match "shir"; a scan can.)
+productSchema.index(
+  { name: "text", description: "text" },
+  { weights: { name: 10, description: 3 } }
+);
+
 const Product: Model<IProduct> =
   (mongoose.models.Product as Model<IProduct>) ||
   mongoose.model<IProduct>("Product", productSchema);

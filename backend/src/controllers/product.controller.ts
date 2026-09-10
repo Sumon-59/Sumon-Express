@@ -171,37 +171,107 @@ export const createProduct = asyncHandler(async (req: Request, res: Response) =>
   res.status(201).json(product);
 });
 
-export const getProducts = asyncHandler(async (req: Request, res: Response) => {
-  const page = Number(req.query.page) || 1;
-  const limit = Number(req.query.limit) || 10;
-  const skip = (page - 1) * limit;
+// A price bound from the query string: absent is fine, non-numeric is
+// a named 400 (a UI bug, not a shopper choice).
+const parsePriceBound = (raw: unknown, name: string): number | undefined => {
+  if (raw === undefined) return undefined;
+  const n = Number(raw);
+  if (String(raw).trim() === "" || Number.isNaN(n)) {
+    throw httpError(`${name} must be a number`, 400);
+  }
+  return n;
+};
 
-  let sort: Record<string, 1 | -1> = { createdAt: -1 }; // default sort by newest
-  if (req.query.sort === "price_asc") sort = { price: 1 };
-  if (req.query.sort === "price_desc") sort = { price: -1 };
+export const getProducts = asyncHandler(async (req: Request, res: Response) => {
+  const paging = parsePagination(req);
+
+  const explicitSort =
+    req.query.sort === "price_asc"
+      ? ({ price: 1 } as const)
+      : req.query.sort === "price_desc"
+        ? ({ price: -1 } as const)
+        : null;
 
   const filter: Record<string, unknown> = { isActive: true };
-
-  if (req.query.q) {
-    filter.name = { $regex: String(req.query.q).trim(), $options: "i" };
-  }
   if (req.query.category) {
     filter.category = req.query.category;
   }
+  if (req.query.inStock === "true") {
+    // Correct for variant products for free: their stock is the sum.
+    filter.stock = { $gt: 0 };
+  }
 
-  const products = await Product.find(filter)
-    .populate("category", "name")
-    .sort(sort)
-    .skip(skip)
-    .limit(limit);
-  const total = await Product.countDocuments(filter);
+  // Price bounds mean the EFFECTIVE price — what the shopper pays.
+  // Filtering the sticker price silently lies the moment anything goes
+  // on sale (the slice's trap; see the boundary tests).
+  const minPrice = parsePriceBound(req.query.minPrice, "minPrice");
+  const maxPrice = parsePriceBound(req.query.maxPrice, "maxPrice");
+  const effective = { $ifNull: ["$discountPrice", "$price"] };
+  const priceExprs: unknown[] = [];
+  if (minPrice !== undefined) priceExprs.push({ $gte: [effective, minPrice] });
+  if (maxPrice !== undefined) priceExprs.push({ $lte: [effective, maxPrice] });
+  if (priceExprs.length) {
+    filter.$expr = priceExprs.length === 1 ? priceExprs[0] : { $and: priceExprs };
+  }
 
-  res.json({
-    page,
-    pages: Math.ceil(total / limit),
-    total,
-    products,
-  });
+  const q = req.query.q ? String(req.query.q).trim() : "";
+
+  // Search strategy (Slice 8): $text first — the INDEX (stemmed,
+  // weighted, relevance-ranked). If it matches nothing, fall back to
+  // the name regex — the SCAN (partials work, no ranking).
+  if (q) {
+    const textFilter = { ...filter, $text: { $search: q } };
+    const total = await Product.countDocuments(textFilter);
+    if (total > 0) {
+      const products = await Product.find(textFilter, { score: { $meta: "textScore" } })
+        .populate("category", "name")
+        .sort(explicitSort ?? { score: { $meta: "textScore" } })
+        .skip(paging.skip)
+        .limit(paging.limit);
+      res.json({ ...pageMeta(total, paging), products });
+      return;
+    }
+    filter.name = { $regex: q, $options: "i" };
+  }
+
+  const [products, total] = await Promise.all([
+    Product.find(filter)
+      .populate("category", "name")
+      .sort(explicitSort ?? { createdAt: -1 })
+      .skip(paging.skip)
+      .limit(paging.limit),
+    Product.countDocuments(filter),
+  ]);
+
+  res.json({ ...pageMeta(total, paging), products });
+});
+
+/**
+ * Related products (Slice 8): up to 4 same-category active siblings,
+ * newest first, never the product itself. Uncategorized products have
+ * no siblings — an empty list, never "random products".
+ */
+export const getRelatedProducts = asyncHandler(async (req: Request, res: Response) => {
+  const id = String(req.params.id);
+  if (!Types.ObjectId.isValid(id)) {
+    throw httpError("Product not found", 404);
+  }
+  const product = await Product.findOne({ _id: id, isActive: true });
+  if (!product) {
+    throw httpError("Product not found", 404);
+  }
+  if (!product.category) {
+    res.json([]);
+    return;
+  }
+  const related = await Product.find({
+    category: product.category,
+    isActive: true,
+    _id: { $ne: product._id },
+  })
+    .sort({ createdAt: -1, _id: -1 })
+    .limit(4);
+  res.json(related);
 });
 
 /**

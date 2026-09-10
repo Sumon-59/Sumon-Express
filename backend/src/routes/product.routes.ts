@@ -5,6 +5,7 @@ import { requireAuth, requireAdmin } from "../middleware/requireAuth";
 import {
   createProduct,
   getProductById,
+  getRelatedProducts,
   getProducts,
   updateProduct,
   deleteProduct,
@@ -12,6 +13,8 @@ import {
 
 const router = express.Router();
 
+// related BEFORE the catch-all detail route
+router.get("/:id/related", getRelatedProducts);
 router.get("/:id", getProductById);
 router.get("/", getProducts);
 

@@ -12,11 +12,11 @@ uncategorized, 404 unknown). Inactive products surface nowhere.
 
 **Status:** ready-for-agent
 
-- [ ] Description-only word finds the product; name match outranks description match
-- [ ] Partial prefix falls back to name regex and still finds
-- [ ] Effective-price boundaries inclusive on the SALE price (both edges tested)
-- [ ] Bad bounds 400; min > max answers an empty page
-- [ ] inStock excludes zero-stock, keeps variant products with any value in stock
-- [ ] Combined query (q + category + price + inStock) works in one request
-- [ ] Related: same category, self/inactive excluded, cap 4, empty for uncategorized, 404 unknown
-- [ ] All existing tests still green; typecheck clean
+- [x] Description-only word finds the product; name match outranks description match
+- [x] Partial prefix falls back to name regex and still finds
+- [x] Effective-price boundaries inclusive on the SALE price (both edges tested)
+- [x] Bad bounds 400; min > max answers an empty page
+- [x] inStock excludes zero-stock, keeps variant products with any value in stock
+- [x] Combined query (q + category + price + inStock) works in one request
+- [x] Related: same category, self/inactive excluded, cap 4, empty for uncategorized, 404 unknown
+- [x] All existing tests still green; typecheck clean
