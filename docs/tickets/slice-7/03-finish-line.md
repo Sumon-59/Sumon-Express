@@ -10,7 +10,7 @@ as a real catalog item. CLAUDE.md variants section; boxes ticked; tracker update
 
 **Status:** ready-for-agent
 
-- [ ] Two-axis code review run; findings fixed or explicitly accepted
-- [ ] Merged `--no-ff` to `fullstack-v2`, pushed as Sumon-59
-- [ ] Probe: variant product created in production; public API serves the axis
-- [ ] CLAUDE.md updated; spec + ticket checkboxes ticked; plan.md tracker updated
+- [x] Two-axis code review run; findings fixed or explicitly accepted
+- [x] Merged `--no-ff` to `fullstack-v2`, pushed as Sumon-59
+- [x] Probe: variant product (Probe Tee S/M created in production, axis + computed sum 5 served back publicly, then soft-deleted) created in production; public API serves the axis
+- [x] CLAUDE.md updated; spec + ticket checkboxes ticked; plan.md tracker updated
