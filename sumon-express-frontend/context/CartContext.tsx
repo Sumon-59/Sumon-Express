@@ -17,6 +17,11 @@ export type CartItem = {
 const sameLine = (x: CartItem, productId: string, variant?: string) =>
   x.productId === productId && x.variant === variant;
 
+// The render key for a cart line — the one encoding of its identity
+// (mirrors the backend's product::variant line key).
+export const lineKey = (x: Pick<CartItem, "productId" | "variant">) =>
+  `${x.productId}::${x.variant ?? ""}`;
+
 type CartContextType = {
   items: CartItem[];
   addItem: (item: Omit<CartItem, "quantity">, qty?: number) => void;

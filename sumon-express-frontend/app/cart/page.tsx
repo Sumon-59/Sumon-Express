@@ -3,10 +3,11 @@
 import React from "react";
 import Link from "next/link";
 import { ImageIcon, Minus, Plus, ShoppingCart, Trash2 } from "lucide-react";
-import { useCart } from "@/context/CartContext";
+import { useCart, lineKey } from "@/context/CartContext";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { formatTaka } from "@/types/product";
+import { lineLabel } from "@/lib/format";
 
 export default function CartPage() {
   const { items, total, removeItem, updateQty, clearCart } = useCart();
@@ -36,7 +37,7 @@ export default function CartPage() {
         {/* Items */}
         <div className="space-y-3">
           {items.map((x) => (
-            <div key={`${x.productId}::${x.variant ?? ""}`} className="flex gap-4 rounded-lg border bg-card p-4">
+            <div key={lineKey(x)} className="flex gap-4 rounded-lg border bg-card p-4">
               <Link
                 href={`/products/${x.productId}`}
                 className="relative h-20 w-20 shrink-0 overflow-hidden rounded-md bg-muted"
@@ -56,7 +57,7 @@ export default function CartPage() {
                   href={`/products/${x.productId}`}
                   className="line-clamp-2 text-sm font-medium hover:text-primary"
                 >
-                  {x.name}{x.variant ? ` · ${x.variant}` : ""}
+                  {lineLabel(x.name, x.variant)}
                 </Link>
                 <span className="mt-1 text-sm font-semibold text-primary">
                   {formatTaka(x.price)}

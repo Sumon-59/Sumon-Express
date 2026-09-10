@@ -4,7 +4,7 @@ import React from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Banknote, ImageIcon } from "lucide-react";
-import { useCart } from "@/context/CartContext";
+import { useCart, lineKey } from "@/context/CartContext";
 import { useAuth } from "@/context/AuthContext";
 import { api } from "@/lib/api";
 import { Button } from "@/components/ui/button";
@@ -12,6 +12,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { formatTaka } from "@/types/product";
+import { lineLabel } from "@/lib/format";
 import DiscountField from "@/components/checkout/DiscountField";
 import { DiscountPreview } from "@/types/discount";
 
@@ -154,7 +155,7 @@ export default function CheckoutPage() {
           <h2 className="font-semibold">Your Order</h2>
           <div className="mt-4 space-y-3">
             {items.map((x) => (
-              <div key={`${x.productId}::${x.variant ?? ""}`} className="flex items-center gap-3">
+              <div key={lineKey(x)} className="flex items-center gap-3">
                 <div className="relative h-12 w-12 shrink-0 overflow-hidden rounded-md bg-muted">
                   {x.image ? (
                     // eslint-disable-next-line @next/next/no-img-element
@@ -166,7 +167,7 @@ export default function CheckoutPage() {
                   )}
                 </div>
                 <div className="min-w-0 flex-1">
-                  <p className="truncate text-sm">{x.name}{x.variant ? ` · ${x.variant}` : ""}</p>
+                  <p className="truncate text-sm">{lineLabel(x.name, x.variant)}</p>
                   <p className="text-xs text-muted-foreground">× {x.quantity}</p>
                 </div>
                 <span className="text-sm tabular-nums">{formatTaka(x.price * x.quantity)}</span>

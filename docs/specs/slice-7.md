@@ -120,6 +120,13 @@ they always have.
 
 ## Further Notes
 
+- Review-accepted addendum: the restore fallback is a FAMILY, both directions
+  pinned by tests — (a) value renamed away → restore lands top-level; (b) a plain
+  order cancelled after the product GAINED an axis → restore lands top-level and
+  the value split diverges from the sum. Re-shaping a product with open orders
+  costs per-value accuracy, never aggregate stock. Axis REMOVAL (null/null → plain
+  product keeping its summed stock) is likewise review-accepted and tested.
+
 - The riskiest surface is the stock engine touching three call sites (create,
   user cancel, admin cancel). The whole point of the shared helper is that the
   variant logic exists once; the mixed-order rollback test is the tripwire.

@@ -34,7 +34,7 @@ interface ProductBody {
 const validateProductData = (
   data: ProductBody,
   current?: { price: number; discountPrice?: number }
-): void => {
+) => {
   if (data.name !== undefined && (typeof data.name !== "string" || !data.name.trim())) {
     throw httpError("name must be a non-empty string", 400);
   }
@@ -67,18 +67,31 @@ const validateProductData = (
       throw httpError("discountPrice must be less than price", 400);
     }
   }
+
+  // The option axis (Slice 7) is part of THE choke point — its rules
+  // live here, nowhere else (review restored the documented rule).
+  return validateVariantAxis(data);
 };
 
+export const sumVariantStock = (variants: { stock: number }[]): number =>
+  variants.reduce((sum, v) => sum + v.stock, 0);
+
 /**
- * The option-axis rules (Slice 7). The axis is all-or-nothing: an
- * optionName with at least one value, or neither field. Editing is
- * full-axis replace. Returns the fields to persist — for a variant
- * product, top-level stock is the SERVER-computed sum (client stock
- * ignored); null optionName+variants removes the axis.
+ * The option-axis rules (called ONLY from validateProductData). The
+ * axis is all-or-nothing: an optionName with at least one value, or
+ * neither field. Editing is full-axis replace. Returns the fields to
+ * persist — for a variant product, top-level stock is the
+ * SERVER-computed sum (client stock ignored); null optionName+variants
+ * removes the axis.
  */
 const validateVariantAxis = (
   data: ProductBody
 ): { optionName?: string | null; variants?: { name: string; stock: number; price?: number | null }[] | null; stock?: number } => {
+  // An explicit empty array is an attempted axis with no values — a
+  // client bug, not a silent no-op (review catch).
+  if (Array.isArray(data.variants) && data.variants.length === 0 && data.variants !== null) {
+    throw httpError("variants must include at least one value", 400);
+  }
   const wantsAxis = data.optionName != null || (data.variants != null && data.variants.length > 0);
   if (!wantsAxis) {
     // Explicit removal: both null.
@@ -124,7 +137,7 @@ const validateVariantAxis = (
   return {
     optionName: data.optionName.trim(),
     variants,
-    stock: variants.reduce((sum, v) => sum + v.stock, 0),
+    stock: sumVariantStock(variants),
   };
 };
 
@@ -135,10 +148,12 @@ export const createProduct = asyncHandler(async (req: Request, res: Response) =>
   if (!name) throw httpError("name is required", 400);
   if (!description) throw httpError("description is required", 400);
   if (price === undefined) throw httpError("price is required", 400);
-  if (stock === undefined) throw httpError("stock is required", 400);
 
-  validateProductData(req.body as ProductBody);
-  const axis = validateVariantAxis(req.body as ProductBody);
+  const axis = validateProductData(req.body as ProductBody);
+  // Plain products need a stock; variant products get the computed sum.
+  if (stock === undefined && axis.stock === undefined) {
+    throw httpError("stock is required", 400);
+  }
 
   const product = await Product.create({
     name,
@@ -244,11 +259,10 @@ export const updateProduct = asyncHandler(async (req: Request, res: Response) =>
   const { name, description, price, discountPrice, stock, category, images, isActive } =
     req.body as ProductBody;
 
-  validateProductData(req.body as ProductBody, {
+  const axis = validateProductData(req.body as ProductBody, {
     price: product.price,
     discountPrice: product.discountPrice,
   });
-  const axis = validateVariantAxis(req.body as ProductBody);
 
   if (name !== undefined) product.name = name;
   if (description !== undefined) product.description = description;
@@ -262,7 +276,7 @@ export const updateProduct = asyncHandler(async (req: Request, res: Response) =>
     if (axis.stock !== undefined) product.stock = axis.stock;
   } else if (product.variants?.length && stock !== undefined) {
     // Client-sent stock cannot desync a variant product's sum.
-    product.stock = product.variants.reduce((s, v) => s + v.stock, 0);
+    product.stock = sumVariantStock(product.variants);
   }
   if (category !== undefined) product.category = category;
   if (images !== undefined) product.images = images;

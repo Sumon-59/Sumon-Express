@@ -117,7 +117,22 @@ describe("ordering variant products", () => {
     ]);
     expect(res.status).toBe(400);
     expect(res.body.message).toMatch(/stock/i);
-    expect((await publicView(shirt)).stock).toBe(10);
+    const view = await publicView(shirt);
+    expect(view.stock).toBe(10);
+    // Every sibling untouched too, not just the sum:
+    expect(view.variants.map((v) => v.stock)).toEqual([5, 3, 2]);
+  });
+
+  it("exposes variantName in my-orders and the admin listing", async () => {
+    const { auth: adminAuth } = await registerAdmin();
+    const shirt = await plantShirt();
+    await postOrder(auth, [{ product: shirt._id.toString(), quantity: 1, variant: "M" }]);
+
+    const mine = await request(app).get("/api/orders/my-orders").set("Authorization", auth);
+    expect(mine.body.orders[0].items[0].variantName).toBe("M");
+
+    const admin = await request(app).get("/api/admin/orders").set("Authorization", adminAuth);
+    expect(admin.body.orders[0].items[0].variantName).toBe("M");
   });
 
   it("rolls back variant AND plain decrements when a later line fails", async () => {
@@ -193,6 +208,30 @@ describe("cancelling variant orders restores the right value", () => {
   });
 });
 
+describe("the divergence family (documented fallbacks, pinned)", () => {
+  it("plain order → admin adds an axis → cancel restores the top-level counter only", async () => {
+    const { auth } = await registerUser();
+    const { auth: adminAuth } = await registerAdmin();
+    const plain = await plantProduct({ name: "Mug", price: 50, stock: 10 });
+    const order = (await postOrder(auth, [{ product: plain._id.toString(), quantity: 2 }])).body;
+
+    // The product grows an axis while the order is open:
+    await request(app)
+      .put(`/api/products/${plain._id}`)
+      .set("Authorization", adminAuth)
+      .send({ optionName: "Color", variants: [{ name: "Red", stock: 8 }] });
+
+    await request(app).put(`/api/orders/${order._id}/cancel`).set("Authorization", auth);
+
+    const view = await publicView(plain);
+    // The 2 returned to the top-level counter; the value split diverges
+    // (10 ≠ 8) — the documented cost of re-shaping a product with open
+    // orders, same family as the renamed-value fallback.
+    expect(view.stock).toBe(10);
+    expect(view.variants.find((v) => v.name === "Red").stock).toBe(8);
+  });
+});
+
 describe("variant validation at the choke point", () => {
   let adminAuth;
   beforeEach(async () => {
@@ -227,6 +266,27 @@ describe("variant validation at the choke point", () => {
       expect(res.status).toBe(400);
       expect(res.body.message).toMatch(pattern);
     }
+  });
+
+  it("refuses a bare empty variants array (attempted axis with no values)", async () => {
+    const res = await create({ variants: [] });
+    expect(res.status).toBe(400);
+    expect(res.body.message).toMatch(/value/i);
+  });
+
+  it("removes the axis via null/null; the product keeps its summed stock", async () => {
+    const created = await create(shirtVariants());
+    expect(created.body.stock).toBe(10);
+
+    const removed = await request(app)
+      .put(`/api/products/${created.body._id}`)
+      .set("Authorization", adminAuth)
+      .send({ optionName: null, variants: null });
+
+    expect(removed.status).toBe(200);
+    expect(removed.body.optionName).toBeUndefined();
+    expect(removed.body.variants ?? []).toHaveLength(0);
+    expect(removed.body.stock).toBe(10); // the sum survives as plain stock
   });
 
   it("plain products create and update exactly as before (regression)", async () => {
