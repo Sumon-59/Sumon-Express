@@ -27,8 +27,10 @@ export const validateImageFile = (file: File): string | null => {
   return null;
 };
 
-// Upload one image; resolves to its permanent https URL.
-export const uploadProductImage = async (
+// Upload one image; resolves to its permanent https URL. Used for
+// product photos AND brand assets (Slice 10 logo/hero) — all land in
+// the one server-chosen folder; mixing accepted on the free tier.
+export const uploadImage = async (
   file: File,
   onProgress?: (percent: number) => void
 ): Promise<string> => {

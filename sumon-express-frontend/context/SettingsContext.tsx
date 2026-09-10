@@ -2,7 +2,7 @@
 
 import React, { createContext, useContext, useEffect, useMemo, useState } from "react";
 import { api } from "@/lib/api";
-import { StoreSettings, DEFAULT_SETTINGS } from "@/types/settings";
+import { StoreSettings, DEFAULT_SETTINGS, isHexColor } from "@/types/settings";
 
 // The whole theming trick lives here: shadcn components already paint
 // their accents with `bg-primary`/`text-primary`, which resolve to the
@@ -10,7 +10,12 @@ import { StoreSettings, DEFAULT_SETTINGS } from "@/types/settings";
 // the document root recolors every accent on the site — compile-time
 // utility classes, runtime color.
 export const applyAccent = (accentColor: string) => {
-  document.documentElement.style.setProperty("--primary", accentColor);
+  // Only a validated hex ever reaches the DOM — server data should
+  // already be clean, but a custom property is not a place to find out.
+  document.documentElement.style.setProperty(
+    "--primary",
+    isHexColor(accentColor) ? accentColor : DEFAULT_SETTINGS.accentColor
+  );
 };
 
 type SettingsContextType = {

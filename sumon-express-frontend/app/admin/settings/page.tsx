@@ -2,9 +2,9 @@
 
 import React from "react";
 import { api, getApiErrorMessage } from "@/lib/api";
-import { uploadProductImage, validateImageFile } from "@/lib/uploads";
+import { uploadImage, validateImageFile } from "@/lib/uploads";
 import { useSettings } from "@/context/SettingsContext";
-import { StoreSettings } from "@/types/settings";
+import { StoreSettings, isHexColor } from "@/types/settings";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -37,7 +37,7 @@ function ImageField({
     try {
       setProblem(null);
       setUploading(true);
-      onChange(await uploadProductImage(file));
+      onChange(await uploadImage(file));
     } catch (err) {
       setProblem(getApiErrorMessage(err, "Upload failed"));
     } finally {
@@ -83,7 +83,7 @@ export default function AdminSettingsPage() {
   const set = <K extends keyof StoreSettings>(key: K, value: StoreSettings[K]) =>
     setDraft((d) => ({ ...d, [key]: value }));
 
-  const accentIsHex = /^#(?:[0-9a-f]{3}|[0-9a-f]{6})$/i.test(draft.accentColor);
+  const accentIsHex = isHexColor(draft.accentColor);
 
   const onSave = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -110,7 +110,11 @@ export default function AdminSettingsPage() {
       </p>
 
       <div className="mt-6 grid gap-8 lg:grid-cols-2">
-        <form onSubmit={onSave} className="space-y-5">
+        <form onSubmit={onSave}>
+          {/* Disabled until the saved values arrive: typing into the
+              defaults during a cold-start fetch would be clobbered when
+              the adopt-effect fires (review finding). */}
+          <fieldset disabled={loading} className="space-y-5">
           <div className="space-y-2">
             <Label htmlFor="storeName">Store name</Label>
             <Input
@@ -201,6 +205,7 @@ export default function AdminSettingsPage() {
           <Button type="submit" disabled={submitting || loading}>
             {submitting ? "Saving…" : "Save settings"}
           </Button>
+          </fieldset>
         </form>
 
         {/* Live preview — driven by the DRAFT, not the saved values.

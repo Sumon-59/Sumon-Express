@@ -3,7 +3,7 @@
 import React from "react";
 import { ImageIcon, Loader2, Plus, Trash2, UploadCloud } from "lucide-react";
 import { api, getApiErrorMessage } from "@/lib/api";
-import { uploadProductImage, validateImageFile } from "@/lib/uploads";
+import { uploadImage, validateImageFile } from "@/lib/uploads";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -88,7 +88,7 @@ export default function ProductForm({ initial, submitLabel, onSubmit }: Props) {
         continue;
       }
       setImages((prev) => [...prev, { ...row, uploading: true, progress: 0 }]);
-      uploadProductImage(file, (percent) => patchRow(row.id, { progress: percent }))
+      uploadImage(file, (percent) => patchRow(row.id, { progress: percent }))
         .then((url) =>
           patchRow(row.id, { url, uploading: false, progress: undefined, fileName: undefined })
         )

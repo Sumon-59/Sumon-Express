@@ -1,4 +1,9 @@
 // Mirror of the backend StoreSettings singleton (Slice 10).
+
+// Mirror of the backend HEX_COLOR rule — the server gates writes; this
+// guards what actually reaches the DOM (defense in depth for legacy or
+// hand-edited documents).
+export const isHexColor = (value: string) => /^#(?:[0-9a-f]{3}|[0-9a-f]{6})$/i.test(value);
 export type StoreSettings = {
   storeName: string;
   logoUrl: string; // empty = text logo

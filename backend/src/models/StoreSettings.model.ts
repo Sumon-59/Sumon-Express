@@ -1,11 +1,12 @@
 import mongoose, { Schema, Model } from "mongoose";
 
 // The store's brand — a SINGLETON: this collection holds exactly one
-// document, ever. Nothing queries it by key; the empty filter {} IS the
-// key. All access goes through the controller's `theSettings` helper
-// (findOneAndUpdate({}, …, upsert) — first touch creates, every later
-// touch finds). Defaults reproduce the storefront's pre-Slice-10
-// hardcoded look, so a fresh database renders unchanged.
+// document, ever, at the controller's fixed SETTINGS_ID (upserts are
+// only race-safe on uniquely-indexed filter fields, and _id is the
+// index that makes the guarantee real). All access goes through the
+// controller — writes via `theSettings`, reads via findById first.
+// Defaults reproduce the storefront's pre-Slice-10 hardcoded look, so
+// a fresh database renders unchanged.
 export interface IStoreSettings {
   storeName: string;
   logoUrl: string; // empty = text logo

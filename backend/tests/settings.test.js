@@ -56,6 +56,26 @@ describe("settings singleton lifecycle", () => {
     const { default: StoreSettings } = await import("../src/models/StoreSettings.model");
     expect(await StoreSettings.countDocuments()).toBe(1);
   });
+
+  it("CONCURRENT first touches still produce one document (the fixed-_id guarantee)", async () => {
+    // The race the review caught: an upsert is race-safe only on a
+    // uniquely-indexed filter — the fixed _id, not the old {} filter.
+    const { auth } = await registerAdmin({ email: "admin@example.com" });
+    await Promise.all([
+      ...Array.from({ length: 5 }, () => getSettings()),
+      ...Array.from({ length: 5 }, (_, i) => putSettings(auth, { footerText: `w${i}` })),
+    ]);
+
+    const { default: StoreSettings } = await import("../src/models/StoreSettings.model");
+    expect(await StoreSettings.countDocuments()).toBe(1);
+  });
+
+  it("a read is a READ: repeated GETs never bump updatedAt", async () => {
+    const first = (await getSettings()).body; // creates the doc
+    await getSettings();
+    const third = (await getSettings()).body;
+    expect(third.updatedAt).toBe(first.updatedAt);
+  });
 });
 
 describe("settings validation (the choke point)", () => {
@@ -87,12 +107,31 @@ describe("settings validation (the choke point)", () => {
     expect(empty.body.message).toMatch(/name/i);
   });
 
+  it("caps the 300-char fields and refuses non-strings, naming each field", async () => {
+    const { auth } = await registerAdmin({ email: "admin@example.com" });
+
+    for (const [field, pattern] of [
+      ["heroSubtitle", /subtitle/i],
+      ["announcement", /announcement/i],
+      ["footerText", /footer/i],
+    ]) {
+      const res = await putSettings(auth, { [field]: "x".repeat(301) });
+      expect(res.status, field).toBe(400);
+      expect(res.body.message).toMatch(pattern);
+    }
+    expect((await putSettings(auth, { storeName: 42 })).status).toBe(400);
+  });
+
   it("URL fields must be http(s) when non-empty; empty string clears", async () => {
     const { auth } = await registerAdmin({ email: "admin@example.com" });
 
     const bad = await putSettings(auth, { logoUrl: "not a url" });
     expect(bad.status).toBe(400);
     expect(bad.body.message).toMatch(/logo/i);
+
+    const badHero = await putSettings(auth, { heroImageUrl: "javascript:alert(1)" });
+    expect(badHero.status).toBe(400);
+    expect(badHero.body.message).toMatch(/hero image/i);
 
     expect(
       (await putSettings(auth, { logoUrl: "https://cdn.example.com/logo.png" })).status

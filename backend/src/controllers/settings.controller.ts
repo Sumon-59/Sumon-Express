@@ -1,19 +1,23 @@
 import { Request, Response } from "express";
+import { Types } from "mongoose";
 import StoreSettings, { IStoreSettings } from "../models/StoreSettings.model";
 import asyncHandler from "../utils/asyncHandler";
 import { httpError } from "../types/http.types";
 
 // ---------------------------------------------------------------
-// The singleton accessor — the ONLY way settings are read or
-// written. The empty filter {} is the identity: upsert creates the
-// document on first touch and finds it forever after; Mongo
-// serializes the upsert race, so two concurrent first-touches still
-// produce ONE document. setDefaultsOnInsert fills every schema
-// default at creation.
+// The singleton accessor — the ONLY way settings are written (and
+// created). The identity is a FIXED _id, not an empty filter: an
+// upsert is only race-safe when its filter fields carry a unique
+// index (Mongo retries the duplicate-key loser since 4.2) — {} has
+// none, so two concurrent first-touches could each insert. The _id
+// index is what makes "one document, ever" a real guarantee.
+// setDefaultsOnInsert fills every schema default at creation.
 // ---------------------------------------------------------------
+export const SETTINGS_ID = new Types.ObjectId("000000000000000000000001");
+
 const theSettings = (patch: Partial<IStoreSettings> = {}) =>
   StoreSettings.findOneAndUpdate(
-    {},
+    { _id: SETTINGS_ID },
     Object.keys(patch).length ? { $set: patch } : {},
     { upsert: true, new: true, setDefaultsOnInsert: true }
   );
@@ -97,9 +101,13 @@ export const validateSettingsData = (data: SettingsBody): Partial<IStoreSettings
 };
 
 // GET /api/settings — PUBLIC: the storefront brands itself before any
-// auth exists; nothing secret lives here. First read creates the doc.
+// auth exists; nothing secret lives here. A read must BE a read — the
+// upsert runs only when the document doesn't exist yet (otherwise
+// every storefront visit would be a DB write, and timestamps would
+// bump updatedAt into meaning "last page view").
 export const getSettings = asyncHandler(async (_req: Request, res: Response) => {
-  res.json(await theSettings());
+  const existing = await StoreSettings.findById(SETTINGS_ID);
+  res.json(existing ?? (await theSettings()));
 });
 
 // PUT /api/admin/settings — partial merge: only sent fields change.

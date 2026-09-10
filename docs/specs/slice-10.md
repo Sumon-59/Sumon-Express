@@ -35,15 +35,18 @@ can be rebranded without touching code.
 
 ## Implementation Decisions
 
-- **The singleton pattern**: `StoreSettings` has NO meaningful query key — the
-  document IS the collection. Reads and writes both go through
-  `findOneAndUpdate({}, …, {upsert: true, new: true, setDefaultsOnInsert: true})`
-  — the empty filter `{}` plus upsert means the first touch creates it and every
-  later touch finds it; concurrent first-writes cannot create two (the upsert
-  race resolves to one document; a unique index is unnecessary because there is
-  no key to collide on — Mongo serializes the upsert on the same `{}` match).
-  Contrast with everything we've built: this is the first model where "which
-  document?" has exactly one answer by design.
+- **The singleton pattern**: `StoreSettings` lives at a FIXED, well-known `_id`
+  (`SETTINGS_ID`). Writes go through
+  `findOneAndUpdate({_id: SETTINGS_ID}, …, {upsert: true, new: true,
+  setDefaultsOnInsert: true})`; reads are `findById` with the upsert only as
+  the not-yet-created fallback (a read must be a read — no write per page
+  view, no `updatedAt` churn). Review-corrected: an upsert is race-safe ONLY
+  when its filter fields carry a unique index (Mongo retries the
+  duplicate-key loser since 4.2) — the original empty-filter `{}` design had
+  no index to collide on, so two concurrent first-touches could each insert;
+  the fixed `_id` is what makes "one document, ever" a real guarantee (pinned
+  by a concurrent test). Contrast with everything we've built: this is the
+  first model where "which document?" has exactly one answer by design.
 - **Fields** (all strings unless noted): `storeName`, `logoUrl`, `accentColor`
   (hex), `heroHeadline`, `heroSubtitle`, `heroImageUrl`, `announcement`
   (empty = no bar), `footerText`. Defaults reproduce today's hardcoded brand
