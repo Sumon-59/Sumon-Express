@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { Search, ShoppingCart, User, Package, LogOut, LayoutDashboard } from "lucide-react";
 import { useAuth } from "@/context/AuthContext";
 import { useCart } from "@/context/CartContext";
+import { useSettings } from "@/context/SettingsContext";
 import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
@@ -20,6 +21,7 @@ export default function Navbar() {
   const router = useRouter();
   const { user, logout } = useAuth();
   const { items } = useCart();
+  const { settings } = useSettings();
   const [q, setQ] = React.useState("");
 
   const cartCount = items.reduce((sum, x) => sum + x.quantity, 0);
@@ -37,8 +39,13 @@ export default function Navbar() {
   return (
     <header className="sticky top-0 z-50 bg-primary shadow-sm">
       <div className="mx-auto flex max-w-6xl flex-wrap items-center gap-x-6 gap-y-2 px-4 py-3">
-        <Link href="/" className="shrink-0 text-xl font-bold tracking-tight text-primary-foreground">
-          Sumon<span className="font-light">Express</span>
+        <Link href="/" className="flex shrink-0 items-center gap-2 text-xl font-bold tracking-tight text-primary-foreground">
+          {settings.logoUrl ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={settings.logoUrl} alt={settings.storeName} className="h-8 w-auto" />
+          ) : (
+            settings.storeName
+          )}
         </Link>
 
         <form onSubmit={onSearch} className="order-last flex w-full min-w-0 md:order-none md:flex-1 md:basis-0">
@@ -52,7 +59,7 @@ export default function Navbar() {
           <button
             type="submit"
             aria-label="Search"
-            className="flex h-10 w-12 items-center justify-center rounded-r-md bg-orange-200 text-orange-900 transition-colors hover:bg-orange-300"
+            className="flex h-10 w-12 items-center justify-center rounded-r-md bg-white/80 text-primary transition-colors hover:bg-white"
           >
             <Search className="h-5 w-5" />
           </button>

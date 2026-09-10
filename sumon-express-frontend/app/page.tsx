@@ -4,11 +4,13 @@ import React from "react";
 import Link from "next/link";
 import { Truck, ShieldCheck, RotateCcw, ArrowRight } from "lucide-react";
 import { api } from "@/lib/api";
+import { useSettings } from "@/context/SettingsContext";
 import { Button } from "@/components/ui/button";
 import ProductCard from "@/components/ProductCard";
 import { Product, Category, ProductListResponse } from "@/types/product";
 
 export default function HomePage() {
+  const { settings } = useSettings();
   const [products, setProducts] = React.useState<Product[]>([]);
   const [categories, setCategories] = React.useState<Category[]>([]);
   const [loading, setLoading] = React.useState(true);
@@ -34,15 +36,23 @@ export default function HomePage() {
 
   return (
     <main>
-      {/* Hero */}
-      <section className="bg-gradient-to-r from-primary to-orange-500">
-        <div className="mx-auto flex max-w-6xl flex-col items-start gap-4 px-4 py-14 md:py-20">
+      {/* Hero — settings-driven (Slice 10). An uploaded image sits under a
+          dark scrim so the copy stays readable on any photo; without one,
+          the accent gradient carries the brand. */}
+      <section
+        className="relative bg-gradient-to-r from-primary to-primary/75 bg-cover bg-center"
+        style={
+          settings.heroImageUrl
+            ? { backgroundImage: `url(${settings.heroImageUrl})` }
+            : undefined
+        }
+      >
+        {settings.heroImageUrl && <div className="absolute inset-0 bg-black/50" />}
+        <div className="relative mx-auto flex max-w-6xl flex-col items-start gap-4 px-4 py-14 md:py-20">
           <h1 className="max-w-xl text-balance text-3xl font-bold text-white md:text-5xl">
-            Everything you need, delivered express.
+            {settings.heroHeadline}
           </h1>
-          <p className="max-w-lg text-white/85 md:text-lg">
-            Shop electronics, accessories and more — with cash on delivery across Bangladesh.
-          </p>
+          <p className="max-w-lg text-white/85 md:text-lg">{settings.heroSubtitle}</p>
           <Button asChild size="lg" variant="secondary" className="mt-2 font-semibold">
             <Link href="/products">
               Shop Now <ArrowRight className="ml-1 h-4 w-4" />

@@ -18,6 +18,7 @@ import {
   createDiscount,
   updateDiscount,
 } from "../controllers/discount.controller";
+import { updateSettings } from "../controllers/settings.controller";
 
 const router = express.Router();
 
@@ -45,6 +46,9 @@ router.get("/discounts", requireAuth, requireAdmin, getAdminDiscounts);
 router.get("/discounts/:id", requireAuth, requireAdmin, getAdminDiscountById);
 router.post("/discounts", requireAuth, requireAdmin, createDiscount);
 router.put("/discounts/:id", requireAuth, requireAdmin, updateDiscount);
+
+// admin: store settings (Slice 10) — the public read lives at /api/settings
+router.put("/settings", requireAuth, requireAdmin, updateSettings);
 
 // admin: get all orders
 router.get("/orders", requireAuth, requireAdmin, getAllOrders);
