@@ -42,10 +42,18 @@ its own stored total.
 - **The trust boundary is the design**: the PROVIDER answers "what does the
   gateway say happened" (`verifyIpn` → `{verified, tranId, amount, status}`
   by asking the gateway's validator API server-to-server); the CONTROLLER
-  decides "does that match MY order" (amount === totalPrice, tranId known,
-  not already paid). Redirects style the UX; the webhook decides the money.
-  `isPaid` has exactly two writers: delivered-COD (Slice 3) and the verified
-  IPN handler — nothing else, ever.
+  decides "does that match MY order" (amount === totalPrice, the VALIDATOR's
+  tran_id === the order's stored attempt, not already paid, not cancelled).
+  Redirects style the UX; the webhook decides the money. `isPaid` has exactly
+  two writers: the admin delivered rule (Slice 3 — ANY method: delivery
+  implies collection, the deliberate cash-on-handover fallback even for
+  unpaid online orders) and the verified IPN handler — nothing else, ever.
+  Review-hardened: the validator-tranId identity check (without it, one
+  genuinely paid val_id could mark any equal-priced order paid — the
+  cross-transaction replay both reviewers caught), GUARDED atomic paid/failed
+  transitions (the stock/discount doctrine), and new orders accept ONLY
+  `cod`/`online` (named 400; legacy instrument values stay readable, not
+  writable).
 - **`PaymentProvider` interface** (`src/payments/provider.ts`):
   `createSession(order, urls)` → `{redirectUrl}`;
   `verifyIpn(ipnBody)` → `{verified: boolean, tranId, amount, status}`.
@@ -79,8 +87,9 @@ its own stored total.
     look up the order by `payment.tranId`, `verifyIpn`, then the controller
     verdict: verified + amount matches → `isPaid`, `paidAt`,
     `payment.status: "paid"` (idempotent — a duplicate IPN changes nothing);
-    verified but amount mismatch → `payment.status: "failed"` with reason
-    `amount-mismatch`, order stays payable, 400 answered; unverified/failed
+    verified but amount mismatch → `payment.status: "failed"` with a named
+    amount-mismatch reason, order stays payable, 400 answered; validator
+    tranId ≠ stored tranId → failed + 400 (replay refused); unverified/failed
     gateway status → failed + reason; unknown tranId → 404. Never throws at
     the gateway: every outcome is an explicit response.
   - `POST /redirect/:outcome(success|fail|cancel)` (PUBLIC): SSLCommerz POSTs
@@ -110,8 +119,13 @@ its own stored total.
     → NOT paid, failed + amount-mismatch, 400;
   - unverified IPN (validator says invalid) → NOT paid;
   - gateway status FAILED/CANCELLED → payment.status failed, order payable;
-  - unknown tranId → 404; **superseded tranId** (re-init then IPN for the
-    old attempt) → refused, order not paid;
+  - unknown tranId → 404 with nothing changed; **superseded tranId**
+    (re-init then IPN for the old attempt) → refused, order not paid;
+  - **cross-transaction replay**: a VALID attestation whose validator
+    tran_id belongs to a different transaction → 400, not paid (the fake's
+    `fake_validator_tran_id` dial exists for exactly this);
+  - IPN for a cancelled order → receipted failed, never paid;
+  - init on a non-pending order → named 400;
   - idempotency: duplicate valid IPN → paidAt unchanged, still one payment;
   - redirect endpoints: 303 with Location on CLIENT_URL for each outcome;
   - COD regression: the Slice 3 delivered-sets-isPaid test keeps passing.

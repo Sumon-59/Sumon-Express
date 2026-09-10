@@ -1,13 +1,14 @@
 // Slice 11 — online payments: the trust boundary at the HTTP seam.
 // The PROVIDER (faked here, mirroring the real contract) answers "what
 // does the gateway say happened"; the CONTROLLER decides "does that
-// match MY order". isPaid has exactly two writers: delivered-COD and
-// the verified IPN below — these tests pin the second.
+// match MY order". isPaid has exactly two writers: the admin delivered
+// rule (any method — delivery implies collection) and the verified IPN
+// below — these tests pin the second.
 
 import { describe, it, expect } from "vitest";
 import request from "supertest";
 import app from "../app";
-import { registerUser, plantProduct, placeOrder } from "./helpers";
+import { registerUser, registerAdmin, plantProduct, placeOrder } from "./helpers";
 
 const initPay = (auth, orderId) =>
   request(app).post("/api/payments/init").set("Authorization", auth).send({ orderId });
@@ -16,10 +17,18 @@ const initPay = (auth, orderId) =>
 // IPN body carries — fake_verdict decides verification, amount/status
 // are echoed as the gateway's answer. The controller must not care
 // whether the attestation came from the fake or from SSLCommerz.
-const sendIpn = (tranId, { verdict = "valid", amount, status = "VALID" }) =>
+const sendIpn = (tranId, { verdict = "valid", amount, status = "VALID", validatorTranId }) =>
   request(app)
     .post("/api/payments/ipn")
-    .send({ tran_id: tranId, fake_verdict: verdict, amount: String(amount), status });
+    .send({
+      tran_id: tranId,
+      fake_verdict: verdict,
+      amount: String(amount),
+      status,
+      // What the VALIDATOR attests the transaction to be (defaults to
+      // the body's tran_id in the fake) — the replay-attack dial.
+      ...(validatorTranId ? { fake_validator_tran_id: validatorTranId } : {}),
+    });
 
 // Shoppers read orders through the my-orders listing (there is
 // deliberately no single-order endpoint) — assert through that seam.
@@ -136,8 +145,56 @@ describe("the verified IPN (the ONLY online path to paid)", () => {
   });
 
   it("unknown tranId → 404 and nothing changes", async () => {
-    await initiated();
+    const { auth, order } = await initiated();
     expect((await sendIpn("no-such-attempt", { amount: 1000 })).status).toBe(404);
+
+    const view = await orderView(auth, order._id);
+    expect(view.isPaid).toBe(false);
+    expect(view.payment.status).toBe("initiated");
+  });
+
+  it("CROSS-TRANSACTION REPLAY: a genuine payment for another transaction cannot pay this order", async () => {
+    // The attack the review caught: attacker holds a real val_id whose
+    // validator record is VALID for the right AMOUNT — but for a
+    // different transaction. The body's tran_id picks the victim
+    // order; only the validator's tran_id ties the money to it.
+    const { auth, order, tranId } = await initiated();
+
+    const res = await sendIpn(tranId, {
+      amount: order.totalPrice, // amount matches perfectly
+      validatorTranId: "someone-elses-transaction",
+    });
+    expect(res.status).toBe(400);
+    expect(res.body.message).toMatch(/transaction/i);
+
+    const view = await orderView(auth, order._id);
+    expect(view.isPaid).toBe(false);
+    expect(view.payment.status).toBe("failed");
+    expect(view.payment.failureReason).toMatch(/transaction id mismatch/i);
+  });
+
+  it("an IPN for a CANCELLED order is receipted as failed, never paid", async () => {
+    const { auth, order, tranId } = await initiated();
+    await request(app).put(`/api/orders/${order._id}/cancel`).set("Authorization", auth);
+
+    expect((await sendIpn(tranId, { amount: order.totalPrice })).status).toBe(200);
+    const view = await orderView(auth, order._id);
+    expect(view.isPaid).toBe(false);
+    expect(view.payment.status).toBe("failed");
+    expect(view.payment.failureReason).toMatch(/cancelled/i);
+  });
+
+  it("init refuses a non-pending order with a named 400", async () => {
+    const { auth, order } = await initiated();
+    const { auth: adminAuth } = await registerAdmin({ email: "ops@example.com" });
+    await request(app)
+      .put(`/api/admin/orders/${order._id}`)
+      .set("Authorization", adminAuth)
+      .send({ status: "processing" });
+
+    const res = await initPay(auth, order._id);
+    expect(res.status).toBe(400);
+    expect(res.body.message).toMatch(/pending/i);
   });
 });
 
@@ -150,6 +207,8 @@ describe("browser redirects (UX only — they decide nothing)", () => {
         `/api/payments/redirect/${outcome}?order=${order._id}`
       );
       expect(res.status).toBe(303);
+      // The host is CLIENT_URL's — no user input can steer it.
+      expect(res.headers.location).toMatch(/^http:\/\/localhost:3000\/orders\?/);
       expect(res.headers.location).toContain(`paid=${outcome}`);
       expect(res.headers.location).toContain(String(order._id));
     }

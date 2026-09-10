@@ -158,14 +158,17 @@ describe("discount codes at order creation", () => {
     const product = await plantProduct({ price: 100 }); // stock 10
     await plantDiscount({ usageLimit: 1 });
 
-    // Force Order.create itself to fail: invalid paymentMethod enum.
+    // Force Order.create ITSELF to fail — after the stock and usage
+    // claims. (The old lever, an invalid paymentMethod, is now refused
+    // by cheap validation BEFORE any side effect — Slice 11 — which
+    // would have made this test hollow. A plain OBJECT where the phone
+    // STRING belongs fails Mongoose's cast at document creation.)
     const res = await request(app)
       .post("/api/orders")
       .set("Authorization", auth)
       .send({
         items: [{ product: product._id.toString(), quantity: 2 }],
-        shippingAddress: { address: "H1", city: "Dhaka", phone: "01700000000" },
-        paymentMethod: "bitcoin",
+        shippingAddress: { address: "H1", city: "Dhaka", phone: { evil: true } },
         discountCode: "EID10",
       });
     expect(res.status).toBeGreaterThanOrEqual(400);

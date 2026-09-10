@@ -37,7 +37,7 @@ type Order = {
 // after the browser does — the refetch shows whatever is true now.
 const RETURN_NOTICES: Record<string, { text: string; tone: "ok" | "warn" }> = {
   success: {
-    text: "Payment received — confirming with the gateway. Your order will show as Paid within moments.",
+    text: "Confirming your payment with the gateway — your order will show as Paid within moments.",
     tone: "ok",
   },
   fail: { text: "The payment didn't go through. You can try again below.", tone: "warn" },
@@ -63,11 +63,14 @@ export default function OrdersPage() {
 
   // Read the gateway return query straight off the URL (no Suspense
   // dance) and clean it up so a refresh doesn't repeat the notice.
+  const [highlightId, setHighlightId] = React.useState<string | null>(null);
+
   React.useEffect(() => {
     const params = new URLSearchParams(window.location.search);
     const outcome = params.get("paid");
     if (outcome && RETURN_NOTICES[outcome]) {
       setReturnNotice(RETURN_NOTICES[outcome]);
+      setHighlightId(params.get("order"));
       window.history.replaceState(null, "", "/orders");
     }
   }, []);
@@ -178,7 +181,12 @@ export default function OrdersPage() {
           {orders.map((o) => {
             const canCancel = ["pending", "processing"].includes(o.status);
             return (
-              <div key={o._id} className="rounded-lg border bg-card p-5">
+              <div
+                key={o._id}
+                className={`rounded-lg border bg-card p-5 ${
+                  highlightId === o._id ? "ring-2 ring-primary" : ""
+                }`}
+              >
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <div>
                     <p className="font-mono text-xs text-muted-foreground">#{o._id}</p>

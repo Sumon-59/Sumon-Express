@@ -44,6 +44,7 @@ export const sslcommerzProvider: PaymentProvider = {
       method: "POST",
       headers: { "Content-Type": "application/x-www-form-urlencoded" },
       body: params.toString(),
+      signal: AbortSignal.timeout(10_000), // a hung gateway must not pin our request
     });
     const data = (await res.json()) as {
       status?: string;
@@ -75,7 +76,8 @@ export const sslcommerzProvider: PaymentProvider = {
       format: "json",
     });
     const res = await fetch(
-      `${baseUrl()}/validator/api/validationserverAPI.php?${query.toString()}`
+      `${baseUrl()}/validator/api/validationserverAPI.php?${query.toString()}`,
+      { signal: AbortSignal.timeout(10_000) }
     );
     const data = (await res.json()) as {
       status?: string;

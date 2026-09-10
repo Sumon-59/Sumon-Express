@@ -165,9 +165,11 @@ const orderSchema = new Schema<IOrder>(
   { timestamps: true }
 );
 
-// The IPN handler's lookup path (Slice 11): find the order that owns a
-// gateway transaction id. Sparse — COD orders carry no payment subdoc.
-orderSchema.index({ "payment.tranId": 1 }, { sparse: true });
+// The IPN handler's lookup path (Slice 11): find THE order that owns a
+// gateway transaction id. Unique turns "one order per tranId" from
+// probabilistic (random bytes) into enforced; sparse — COD orders
+// carry no payment subdoc.
+orderSchema.index({ "payment.tranId": 1 }, { unique: true, sparse: true });
 
 const Order: Model<IOrder> =
   (mongoose.models.Order as Model<IOrder>) || mongoose.model<IOrder>("Order", orderSchema);
