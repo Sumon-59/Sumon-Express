@@ -19,6 +19,10 @@ export interface IProduct {
   stock: number;
   optionName?: string; // e.g. "Size"; absent = plain product
   variants?: IProductVariant[];
+  // Denormalized from the Review collection — recomputed on every
+  // review write (Slice 9), never incremented. Reviews stay the truth.
+  ratingAvg: number;
+  ratingCount: number;
   // ObjectId in the database; controllers may assign the incoming id
   // string and Mongoose casts it — the union keeps both sides honest.
   category?: Types.ObjectId | string;
@@ -69,6 +73,8 @@ const productSchema = new Schema<IProduct>(
       ],
       default: undefined, // absent on plain products
     },
+    ratingAvg: { type: Number, default: 0 },
+    ratingCount: { type: Number, default: 0 },
     category: {
       type: Schema.Types.ObjectId,
       ref: "Category",

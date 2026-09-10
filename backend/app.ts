@@ -13,6 +13,7 @@ import productRoutes from "./src/routes/product.routes";
 import categoryRoutes from "./src/routes/category.routes";
 import orderRoutes from "./src/routes/order.routes";
 import discountRoutes from "./src/routes/discount.routes";
+import reviewRoutes from "./src/routes/review.routes";
 
 import errorHandler from "./src/middleware/error.middleware";
 
@@ -77,6 +78,7 @@ app.use("/api/products", productRoutes);
 app.use("/api/categories", categoryRoutes);
 app.use("/api/orders", orderRoutes);
 app.use("/api/discounts", discountRoutes);
+app.use("/api/reviews", reviewRoutes);
 
 app.get("/healthz", (req, res) => {
   res.status(200).json({ status: "ok" });
