@@ -12,11 +12,11 @@ appear in nothing. Computed by parallel aggregations; admin-gated.
 
 **Status:** ready-for-agent
 
-- [ ] Fixture world driven through real routes: realized counts only delivered; pending value sums exactly the in-pipeline statuses
-- [ ] An API-cancelled order appears in no metric
-- [ ] Discounted orders contribute their discounted totals (Slice 5 regression tie)
-- [ ] Status counts exact; top products by quantity with snapshot names
-- [ ] Today's bucket in the daily series carries the right realized/pending split
-- [ ] Customers total and 30-day signups exact; average order value floored
-- [ ] 401 anonymous / 403 non-admin
-- [ ] All existing tests still green; typecheck clean
+- [x] Fixture world driven through real routes: realized counts only delivered; pending value sums exactly the in-pipeline statuses
+- [x] An API-cancelled order appears in no metric
+- [x] Discounted orders contribute their discounted totals (Slice 5 regression tie)
+- [x] Status counts exact; top products by quantity with snapshot names
+- [x] Today's bucket in the daily series carries the right realized/pending split
+- [x] Customers total and 30-day signups exact; average order value floored
+- [x] 401 anonymous / 403 non-admin
+- [x] All existing tests still green; typecheck clean
