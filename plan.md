@@ -312,7 +312,7 @@ provider (Stripe test). Pick by appetite when we get here — re-plan with `/way
 | 3 — Order management | ✅ 2026-09-07 — status pipeline enforced as a forward-only state machine (cancel = one door, restores stock; found+closed: cancel-via-status-route corrupted inventory), paginated+filtered admin listing, orders UI with drawer and legal-moves-only actions; 90 tests (66 BE + 24 FE) |
 | 4 — Customers | ✅ 2026-09-10 — customer census via one aggregation pipeline ($lookup excl. cancelled → $size/$sum/$max, whitelisting $project), sortable paginated table + detail page with deep-linked order history; pagination helper extracted (rule of three); 103 tests (79 BE + 24 FE) |
 | 5 — Discount codes | ✅ 2026-09-10 — rules engine (one choke point, named 400s, whole-taka floor both paths), atomic usage claim with full rollback chains, preview endpoint sharing the one cart→subtotal computation, admin CRUD + checkout field; review caught the unfloored fixed-cap and the claim missing expiry; 136 tests (106 BE + 30 FE) |
-| 6 — Analytics dashboard | ⬜ |
+| 6 — Analytics dashboard | ✅ 2026-09-10 — one endpoint, parallel aggregations: realized-vs-pending vocabulary, continuous 30-day UTC series, snapshot-based top products, validated 2-hue chart (dataviz validator, hatch for CVD); 142 tests (112 BE + 30 FE) |
 | 7 — Variants & galleries | ⬜ |
 | 8 — Search & recommendations | ⬜ |
 | 9 — Reviews & ratings | ⬜ |

@@ -10,8 +10,8 @@ tickets ticked; plan.md tracker updated.
 
 **Status:** ready-for-agent
 
-- [ ] Two-axis code review run; findings fixed or explicitly accepted
-- [ ] Merged `--no-ff` to `fullstack-v2`, pushed as Sumon-59
-- [ ] Probe: production analytics endpoint 404 → 401 without auth
-- [ ] Probe: authenticated production read with believable totals
-- [ ] CLAUDE.md updated; spec + ticket checkboxes ticked; plan.md tracker updated
+- [x] Two-axis code review run; findings fixed or explicitly accepted
+- [x] Merged `--no-ff` to `fullstack-v2`, pushed as Sumon-59
+- [x] Probe: production analytics endpoint 404 → 401 without auth
+- [x] Probe: authenticated (4 pending orders ৳25,594, 0 realized — honest; empty topProducts = the pre-Slice-0 no-items orders, a true artifact) production read with believable totals
+- [x] CLAUDE.md updated; spec + ticket checkboxes ticked; plan.md tracker updated
