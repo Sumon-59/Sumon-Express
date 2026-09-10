@@ -194,7 +194,15 @@ const runPublicListing = async (
 ) => {
   const products = await Product.aggregate([
     { $match: match },
-    { $addFields: { effectivePrice: { $ifNull: ["$discountPrice", "$price"] } } },
+    {
+      $addFields: {
+        effectivePrice: { $ifNull: ["$discountPrice", "$price"] },
+        // aggregate() applies no schema defaults — legacy documents
+        // predate the rating fields; keep the listing shape honest.
+        ratingAvg: { $ifNull: ["$ratingAvg", 0] },
+        ratingCount: { $ifNull: ["$ratingCount", 0] },
+      },
+    },
     { $sort: sort },
     { $skip: paging.skip },
     { $limit: paging.limit },

@@ -124,6 +124,23 @@ describe("denormalized average (recomputed, never incremented)", () => {
     expect(view.ratingCount).toBe(1);
   });
 
+  it("legacy documents without rating fields still answer zeros in the listing", async () => {
+    // Pre-Slice-9 documents lack ratingAvg/ratingCount entirely, and the
+    // public listing is an aggregation — aggregate() applies NO schema
+    // defaults (the Slice 8 ObjectId gotcha's sibling). Plant one raw.
+    const { default: Product } = await import("../src/models/Product.model");
+    const planted = await plantProduct({ stock: 5 });
+    await Product.collection.updateOne(
+      { _id: new (await import("mongoose")).default.Types.ObjectId(planted._id) },
+      { $unset: { ratingAvg: "", ratingCount: "" } }
+    );
+
+    const res = await request(app).get("/api/products?limit=100");
+    const row = res.body.products.find((p) => p._id === String(planted._id));
+    expect(row.ratingAvg).toBe(0);
+    expect(row.ratingCount).toBe(0);
+  });
+
   it("deleting the last review returns the product to the zero state", async () => {
     const product = await plantProduct({ stock: 50 });
     const alice = await buyerAt("delivered", product, "a@example.com");
