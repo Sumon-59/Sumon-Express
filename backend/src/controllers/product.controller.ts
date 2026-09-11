@@ -339,12 +339,18 @@ export const getLowStockProducts = asyncHandler(async (req: Request, res: Respon
     return;
   }
 
+  // A plain SUPERSET filter — "the top-level counter is low, OR some
+  // variant value is low" — with no attempt to also encode "is this a
+  // plain product" in the query. That axis check has exactly one
+  // definition, the same one buildOrderItems uses (utils/orderItems.ts):
+  // the in-memory `hasAxis` below. Duplicating it into the Mongo filter
+  // (as an earlier version of this query did, via `optionName: {$exists:
+  // false}`) let the two silently disagree for a product with optionName
+  // set but an empty/missing variants array — this filter can never
+  // under-match relative to that check, whatever shape a document is in.
   const products = await Product.find({
     isActive: true,
-    $or: [
-      { optionName: { $exists: false }, stock: { $lte: threshold } },
-      { "variants.stock": { $lte: threshold } },
-    ],
+    $or: [{ stock: { $lte: threshold } }, { "variants.stock": { $lte: threshold } }],
   }).select("name stock optionName variants");
 
   const items: { productId: string; name: string; variantName?: string; stock: number }[] = [];

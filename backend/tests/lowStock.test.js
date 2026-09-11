@@ -29,6 +29,9 @@ beforeEach(() => {
 // out so these assertions read the low-stock alert specifically.
 const lowStockMails = () => outbox.filter((m) => m.subject.startsWith("Low stock:"));
 
+const stockOf = async (product) =>
+  (await request(app).get(`/api/products/${product._id}`)).body.stock;
+
 async function setThreshold(admin, threshold) {
   await ensureShipping();
   const res = await request(app)
@@ -121,13 +124,29 @@ describe("edge-triggered low-stock email on order creation", () => {
 
     expect(lowStockMails()).toHaveLength(1);
     expect(lowStockMails()[0].text).toContain("Shirt · M");
+    expect(lowStockMails()[0].text).toContain("4 left"); // the VALUE's own stock, 6 - 2
     expect(lowStockMails()[0].text).not.toMatch(/Shirt · L/);
+  });
+
+  it("lands exactly on the boundary: a single-unit order dropping stock to == threshold alerts", async () => {
+    // The tightest edge the crossing formula (`stock <= threshold &&
+    // stock + quantity > threshold`) implies: pre-claim 6 > 5, one unit
+    // claimed lands post-claim stock at EXACTLY 5 — still a crossing.
+    const { auth: admin } = await registerAdmin();
+    await setThreshold(admin, 5);
+    const product = await plantProduct({ name: "Mug", price: 100, stock: 6 });
+    const { auth } = await registerUser({ email: "buyer@example.com" });
+
+    await placeOrder(auth, product, 1); // 6 -> 5
+
+    expect(lowStockMails()).toHaveLength(1);
+    expect(lowStockMails()[0].text).toContain("5 left");
   });
 
   it("one order crossing two lines sends ONE email per admin, not two", async () => {
     const { auth: admin1, user: adminUser1 } = await registerAdmin({ email: "admin1@example.com" });
     await setThreshold(admin1, 5);
-    await registerAdmin({ email: "admin2@example.com" });
+    const { user: adminUser2 } = await registerAdmin({ email: "admin2@example.com" });
     const mug = await plantProduct({ name: "Mug", price: 50, stock: 6 });
     const plate = await plantProduct({ name: "Plate", price: 30, stock: 6 });
     const { auth } = await registerUser({ email: "buyer@example.com" });
@@ -140,26 +159,34 @@ describe("edge-triggered low-stock email on order creation", () => {
     });
 
     expect(lowStockMails()).toHaveLength(2); // one per admin
-    const toAdmin1 = lowStockMails().find((m) => m.to === adminUser1.email);
-    expect(toAdmin1.text).toContain("Mug");
-    expect(toAdmin1.text).toContain("Plate");
-    expect(toAdmin1.subject).toContain("2 items");
+    for (const email of [adminUser1.email, adminUser2.email]) {
+      const mail = lowStockMails().find((m) => m.to === email);
+      expect(mail, `expected an alert addressed to ${email}`).toBeTruthy();
+      expect(mail.text).toContain("Mug");
+      expect(mail.text).toContain("Plate");
+      expect(mail.subject).toContain("2 items");
+    }
   });
 
   it("staff and plain users are never recipients (admin-only)", async () => {
-    const { auth: admin } = await registerAdmin();
+    const { auth: admin, user: adminUser } = await registerAdmin();
     await setThreshold(admin, 5);
-    const { auth: staffAuth, user: staffUser } = await registerUser({ email: "staff@example.com" });
+    const { user: staffUser } = await registerUser({ email: "staff@example.com" });
     await request(app)
       .put(`/api/admin/customers/${staffUser._id}/role`)
       .set("Authorization", admin)
       .send({ role: "staff" });
     const product = await plantProduct({ name: "Mug", price: 50, stock: 6 });
-    const { auth: buyerAuth } = await registerUser({ email: "buyer@example.com" });
+    const { auth: buyerAuth, user: buyerUser } = await registerUser({ email: "buyer@example.com" });
 
     await placeOrder(buyerAuth, product, 2);
 
-    expect(lowStockMails().every((m) => m.to !== staffUser.email)).toBe(true);
+    // Not just "staff wasn't included" — the recipient set is EXACTLY
+    // the admins, nothing more and nothing less.
+    expect(lowStockMails().map((m) => m.to)).toEqual([adminUser.email]);
+    expect(lowStockMails().every((m) => m.to !== staffUser.email && m.to !== buyerUser.email)).toBe(
+      true
+    );
     expect(outbox.some((m) => m.to === staffUser.email)).toBe(false);
   });
 
@@ -174,7 +201,11 @@ describe("edge-triggered low-stock email on order creation", () => {
     expect(lowStockMails()).toHaveLength(0);
   });
 
-  it("a crossing that is later rolled back (discount limit hit) sends NO email", async () => {
+  it("a crossing whose order fails BEFORE any stock claim (discount already exhausted) sends NO email", async () => {
+    // resolveDiscount runs before the claim loop (order.controller.ts) —
+    // an already-exhausted code refuses cheaply, with nothing to roll
+    // back. This pins the cheap-refusal path; the genuine ROLLBACK path
+    // (stock claimed, a LATER step fails) is the next test.
     const { auth: admin } = await registerAdmin();
     await setThreshold(admin, 5);
     await plantDiscount({ code: "ONCE", type: "percent", value: 10, usageLimit: 1, usedCount: 1 });
@@ -185,14 +216,40 @@ describe("edge-triggered low-stock email on order creation", () => {
       .post("/api/orders")
       .set("Authorization", auth)
       .send({
-        items: [{ product: product._id.toString(), quantity: 3 }], // 6 -> 3, crosses 5
+        items: [{ product: product._id.toString(), quantity: 3 }], // would cross 5, but never claimed
         shippingAddress: { address: "House 1, Road 2", city: "Dhaka", phone: "01700000000" },
         shippingMethod: "standard",
-        discountCode: "ONCE", // already exhausted — order creation fails AFTER the stock claim
+        discountCode: "ONCE", // already exhausted — refused before the claim loop even runs
       });
 
-    expect(res.status).toBe(400); // the order never actually happened
-    expect(outbox).toHaveLength(0); // and neither did the alert
+    expect(res.status).toBe(400);
+    expect(await stockOf(product)).toBe(6); // untouched — there was nothing to roll back
+    expect(outbox).toHaveLength(0);
+  });
+
+  it("a crossing that IS claimed, then rolled back by a later save failure, sends NO email", async () => {
+    // The Slice 5 rollback lever, reused: a plain OBJECT where the phone
+    // STRING belongs fails Mongoose's cast at order.save() — AFTER the
+    // stock claim loop has already run and recorded a crossing. This is
+    // the genuine "claimed, then undone" path the earlier test (above)
+    // does not exercise, since that one never reaches the claim loop.
+    const { auth: admin } = await registerAdmin();
+    await setThreshold(admin, 5);
+    const product = await plantProduct({ name: "Mug", price: 100, stock: 6 });
+    const { auth } = await registerUser({ email: "buyer@example.com" });
+
+    const res = await request(app)
+      .post("/api/orders")
+      .set("Authorization", auth)
+      .send({
+        items: [{ product: product._id.toString(), quantity: 3 }], // 6 -> 3, crosses 5 — claimed
+        shippingAddress: { address: "H1", city: "Dhaka", phone: { evil: true } }, // save() throws
+        shippingMethod: "standard",
+      });
+
+    expect(res.status).toBeGreaterThanOrEqual(400);
+    expect(await stockOf(product)).toBe(6); // claimed, THEN restored
+    expect(outbox).toHaveLength(0); // the crossing never survived to a committed order
   });
 });
 

@@ -81,12 +81,12 @@ A global, admin-configurable low-stock threshold on the settings singleton
   therefore only ever handed to the mailer AFTER `order.save()` succeeds,
   alongside the existing `notifyOrderPlaced` call — never inside the claim
   loop itself.
-- **One email per order, not one per line**: `notifyLowStock(crossings)`
-  (new file `mail/inventoryEmails.ts`, same `dispatch()` door as every
-  other mail trigger) batches every crossing from one order into a single
-  email per admin — a big order that empties three products sends three
-  admins one email each, not nine. No-op on an empty crossings array (the
-  common case — most orders cross nothing).
+- **One email per order, not one per line**: `notifyLowStock(crossings,
+  adminEmails)` (new file `mail/inventoryEmails.ts`, same `dispatch()`
+  door as every other mail trigger) batches every crossing from one
+  order into a single email per admin — a big order that empties three
+  products sends three admins one email each, not nine. No-op on an
+  empty crossings array (the common case — most orders cross nothing).
 - **Recipients are looked up, not configured**: every `User` with
   `role: "admin"` gets the email — no separate "alert email" setting to
   keep in sync with who's actually an admin. Staff are excluded (RBAC
@@ -108,11 +108,21 @@ A global, admin-configurable low-stock threshold on the settings singleton
   one row when `stock <= threshold`; variant products contribute one row
   PER variant value at or below threshold (never a product-level row for
   variant products — the restockable unit is the value, not the sum).
-  `threshold === 0` short-circuits to `{threshold: 0, items: []}` — the
-  disabled state is unambiguous, not "empty because nothing's low."
+  Only ACTIVE products are surveyed (soft-deleted products, same as
+  everywhere else in the catalog, don't need restocking). `threshold <= 0`
+  short-circuits to `{threshold: 0, items: []}` — the disabled state is
+  unambiguous, not "empty because nothing's low."
   **Route-ordering gotcha**: this route must be registered BEFORE the
   existing `/admin/products/:id`, or Express's param route would swallow
   `/admin/products/low-stock` as `:id = "low-stock"`.
+  **Review fix**: the query originally re-derived "does this product have
+  an option axis" as a SECOND, separately-maintained rule inside the Mongo
+  filter (`optionName: {$exists:false}` alongside the variants clause) —
+  which could silently disagree with the one true definition (the
+  in-memory `hasAxis` check `buildOrderItems` also uses) for a corrupted
+  document with `optionName` set but no variant values. The query is now
+  a plain superset — `stock <= threshold OR variants.stock <= threshold`
+  — with `hasAxis` staying the ONLY place that decides row shape.
 - **Frontend**: a "Low-stock threshold" number field on the existing admin
   settings form (same `draft`/`set` pattern as every other field; 0 =
   disabled, labeled as such). A "Low stock" panel on the admin dashboard,
@@ -132,24 +142,42 @@ A global, admin-configurable low-stock threshold on the settings singleton
     to 10000; rejects negative, non-integer, and out-of-range values
     (named 400); omitted in a PUT leaves the stored value untouched
     (partial-merge convention).
-  - `claimItemStock` returns the post-claim `stock` for both a plain
-    product and a variant value; insufficient-stock still returns
-    `{claimed: false}` with no `stock`.
+  - `claimItemStock`'s new return shape has no dedicated unit test — this
+    project's tests assert only through the public HTTP seam (see
+    CLAUDE.md's testing conventions), and the shape has no independent
+    HTTP-observable behavior of its own beyond what the alert/order tests
+    below already cover: a successful claim's `stock` value is verified
+    indirectly, by asserting the exact remaining count named in the
+    resulting alert email (including landing exactly on the threshold,
+    below); the insufficient-claim branch never reads `stock` at all (the
+    controller throws before touching it), so "no `stock` key" is a
+    TypeScript-enforced contract, not a runtime assertion, and the 400
+    itself is already covered by the pre-existing stock/variant test
+    files.
   - Order creation: a claim that drops a plain product from above to at/
     below threshold sends exactly one admin email naming the product and
-    remaining count; a claim that drops it from below to further-below
-    sends nothing (edge-triggered, not level-triggered); a variant claim
-    crossing the threshold names the variant, not just the product; an
-    order crossing two lines sends ONE email per admin, not two; multiple
-    admins each get their own copy; a staff or plain user account gets
-    nothing (admin-only recipients); `lowStockThreshold: 0` sends nothing
-    regardless of resulting stock.
-  - Rollback correctness: a stock claim that crosses the threshold,
-    followed by a LATER failure in the same request (discount claim
-    limit hit, or the save itself failing) that triggers
-    `restoreOrderStock`, sends NO low-stock email — the crossing never
-    happened as far as the shopper's actual, committed order is
-    concerned.
+    remaining count; the same claim landing EXACTLY on the threshold (the
+    tightest edge the crossing formula implies) still alerts; a claim
+    that drops it from below to further-below sends nothing
+    (edge-triggered, not level-triggered); a variant claim crossing the
+    threshold names the variant AND its own remaining count, not just the
+    product; an order crossing two lines sends ONE email per admin, not
+    two, and EACH admin's copy is checked for both items' content (not
+    just one admin's); a staff or plain user account gets nothing and the
+    recipient set is exactly the admins, no more, no less; `lowStockThreshold: 0`
+    sends nothing regardless of resulting stock.
+  - Rollback correctness — TWO distinct scenarios, not one: (1) a code
+    already at its usage limit refuses BEFORE the claim loop even runs
+    (nothing was ever claimed, so nothing to roll back — the cheap-refusal
+    path); (2) a claim that DOES cross the threshold, on an order whose
+    `order.save()` then fails for an unrelated reason (the Slice 5
+    malformed-phone-object lever, reused), exercising the genuine
+    claimed-then-restored path via `restoreOrderStock`. Only scenario (2)
+    is the one User Story 6 is actually about — an earlier draft of this
+    test used the usage-limit lever alone, which turned out to always
+    take path (1) and therefore never touched the claim loop at all
+    (review finding: a passing-but-vacuous test). Both are now separate,
+    named tests.
   - `GET /api/admin/products/low-stock`: returns plain products at/below
     threshold, one row per low variant value (not a product-level row)
     for variant products, sorted ascending by stock, admin-only (staff
@@ -188,3 +216,14 @@ A global, admin-configurable low-stock threshold on the settings singleton
   singleton settings pattern exist elsewhere in this codebase: computed
   once, at the moment of a real transition, not re-derived or re-fired on
   every read.
+- **Review findings, both fixed**: (1) the rollback test was vacuous — it
+  used a discount-usage-limit lever that refuses BEFORE the stock claim
+  loop runs, so it never actually exercised a rollback; replaced with a
+  genuine claimed-then-restored test using the Slice 5 malformed-phone
+  lever, and the vacuous case kept as its own, honestly-named "refused
+  before any claim" test. (2) the survey endpoint's Mongo filter
+  duplicated the option-axis check as a second, divergence-prone rule;
+  simplified to a plain superset filter with `hasAxis` as the one
+  definition. The frontend Low Stock panel also gained its own error
+  state (it previously showed the loading skeleton forever on a fetch
+  failure, unlike the sibling analytics panels on the same page).

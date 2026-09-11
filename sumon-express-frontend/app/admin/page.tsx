@@ -24,6 +24,7 @@ export default function AdminDashboardPage() {
   const [data, setData] = React.useState<AnalyticsResponse | null>(null);
   const [error, setError] = React.useState<string | null>(null);
   const [lowStock, setLowStock] = React.useState<LowStockResponse | null>(null);
+  const [lowStockError, setLowStockError] = React.useState<string | null>(null);
 
   React.useEffect(() => {
     let alive = true;
@@ -32,11 +33,13 @@ export default function AdminDashboardPage() {
       .then((res) => alive && setData(res.data))
       .catch((err) => alive && setError(getApiErrorMessage(err, "Failed to load analytics")));
     // Low stock is a separate, independent card — its own failure never
-    // blocks the rest of the dashboard from rendering.
+    // blocks the rest of the dashboard from rendering, but it still gets
+    // its own visible error state (a silently-forever-loading skeleton
+    // on a 500 or a cold-start hiccup is worse than saying so).
     api
       .get<LowStockResponse>("/admin/products/low-stock")
       .then((res) => alive && setLowStock(res.data))
-      .catch(() => {});
+      .catch((err) => alive && setLowStockError(getApiErrorMessage(err, "Failed to load")));
     return () => {
       alive = false;
     };
@@ -128,7 +131,9 @@ export default function AdminDashboardPage() {
 
         <div className="rounded-lg border bg-card p-5">
           <h2 className="text-sm font-semibold">Low stock</h2>
-          {lowStock === null ? (
+          {lowStockError ? (
+            <p className="mt-3 text-sm text-destructive">{lowStockError}</p>
+          ) : lowStock === null ? (
             <div className="mt-3 h-16 animate-pulse rounded-md bg-muted" />
           ) : lowStock.threshold === 0 ? (
             <p className="mt-3 text-sm text-muted-foreground">
