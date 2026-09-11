@@ -1,6 +1,6 @@
 # Slice 15 — Low-stock alerts
 
-Status: in progress
+Status: shipped 2026-09-11
 Branch: `slice-15-low-stock-alerts`
 Seam decision (full-autonomy contract): backend HTTP seam for the alerting
 matrix (threshold validation, edge-triggered detection, the mail fake reads

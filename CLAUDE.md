@@ -166,6 +166,53 @@ Allowlist in `app.ts` (`allowedOrigins`) + `credentials: true`. When the fronten
   `Stars`/`StarRow` (icons + numeric text, hidden at zero), `ProductReviews`
   (load-more accumulation, eligibility-driven form).
 
+### Low-stock alerts (since Slice 15)
+- **`StoreSettings.lowStockThreshold`** (default 5, 0 = disabled — an
+  explicit off switch, checked with `!== undefined`, never truthiness)
+  is validated in the `validateSettingsData` choke point like every
+  other setting. Two surfaces read it: an edge-triggered email and a
+  live survey list — they answer different questions and both are
+  needed (a threshold lowered after the fact, or a product created
+  already low, crosses no edge and fires no email, but must still show
+  up in the survey).
+- **Detection lives in the existing stock engine, not beside it**:
+  `claimItemStock` (`utils/orderItems.ts`) returns
+  `{claimed, stock?}` — `stock` is the POST-claim count of the unit
+  that actually moved (a variant VALUE's own stock, never the
+  variant-product aggregate sum — that's not what gets restocked).
+  `createOrder` detects a crossing with `stock <= threshold && stock +
+  quantity > threshold` (pre-claim stock, recovered from the two
+  values already in hand — no second read). **Alerts fire only after
+  `order.save()` succeeds** — a crossing collected during the claim
+  loop is discarded, never mailed, if a later step in the same request
+  (discount claim, the save itself) fails and triggers
+  `restoreOrderStock`. One batched email per admin per ORDER (not per
+  line) through the ordinary `dispatch()` door
+  (`mail/inventoryEmails.ts`); recipients are an AWAITED inline DB
+  read in the controller (`User.find({role:"admin"})`, mirroring
+  `adminOrder.controller.ts`'s `buyerEmail`) — resolving emails before
+  calling `notifyLowStock` keeps it exactly as synchronous and
+  throw-proof as `notifyOrderPlaced`/`notifyStatusChange` (an earlier
+  draft did the lookup INSIDE the notify function and raced the
+  response).
+- **`GET /api/admin/products/low-stock`** (admin-only, MUST be
+  registered before `/admin/products/:id` — Express would otherwise
+  swallow `low-stock` as `:id`) surveys everything currently at/below
+  threshold: one row per plain product, one row PER LOW VARIANT VALUE
+  for variant products (never a product-level row for those). The
+  query is a plain superset (`stock <= threshold OR variants.stock <=
+  threshold`) with the in-memory `hasAxis` check — the same one
+  `buildOrderItems` uses — as the ONE place that decides row shape;
+  don't re-derive the axis check inside the Mongo filter too, or the
+  two can silently disagree on an edge-case document. `threshold <= 0`
+  short-circuits to `{threshold: 0, items: []}`.
+- **Never triggered by manual admin stock edits** — only order-driven
+  depletion fires an alert (the admin already knows what they just
+  typed). Frontend: a threshold field on the settings form, a Low
+  Stock panel on the admin dashboard (disabled/all-clear/populated
+  states, its own error state — a sibling-panel fetch failure must
+  never leave it stuck on the loading skeleton forever).
+
 ### Auth hardening & RBAC (since Slice 14)
 - **Password reset**: `POST /api/auth/forgot-password` answers the SAME 200
   either way (no enumeration; a timing residual is accepted and rate-capped).
