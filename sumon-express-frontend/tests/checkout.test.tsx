@@ -9,7 +9,20 @@ import { render, screen, fireEvent, waitFor } from "@testing-library/react";
 import { AxiosError, AxiosResponse, InternalAxiosRequestConfig } from "axios";
 import { api } from "@/lib/api";
 import { CartProvider } from "@/context/CartContext";
+import { SettingsProvider } from "@/context/SettingsContext";
 import CheckoutPage from "@/app/checkout/page";
+
+// Checkout renders inside SettingsProvider (Slice 12: shipping methods
+// come from settings). The adapter 404s /settings, so the provider
+// serves DEFAULT_SETTINGS — Inside Dhaka ৳60 preselected.
+const renderCheckout = () =>
+  render(
+    <SettingsProvider>
+      <CartProvider>
+        <CheckoutPage />
+      </CartProvider>
+    </SettingsProvider>
+  );
 
 vi.mock("@/context/AuthContext", () => ({
   useAuth: () => ({ user: { _id: "u1", name: "Test", role: "user" }, loading: false }),
@@ -71,11 +84,7 @@ describe("checkout order payload", () => {
       return respond(config, 404, { message: "not found" });
     };
 
-    render(
-      <CartProvider>
-        <CheckoutPage />
-      </CartProvider>
-    );
+    renderCheckout();
 
     fillAddress();
     fireEvent.change(screen.getByLabelText("Discount code"), { target: { value: "EID10" } });
@@ -83,7 +92,7 @@ describe("checkout order payload", () => {
     await screen.findByText(/you save/i);
 
     // The summary shows the SERVER's total:
-    expect(screen.getByText("৳900")).toBeTruthy();
+    expect(screen.getByText("৳960")).toBeTruthy(); // 900 server total + ৳60 shipping
 
     fireEvent.click(screen.getByRole("button", { name: /place order/i }));
 
@@ -93,6 +102,7 @@ describe("checkout order payload", () => {
     expect(bodies["/orders"]).toMatchObject({
       discountCode: "EID10",
       items: [{ product: "p1", quantity: 1 }],
+      shippingMethod: "inside-dhaka",
     });
   });
 
@@ -105,11 +115,7 @@ describe("checkout order payload", () => {
       return respond(config, 404, { message: "not found" });
     };
 
-    render(
-      <CartProvider>
-        <CheckoutPage />
-      </CartProvider>
-    );
+    renderCheckout();
 
     fillAddress();
     fireEvent.click(screen.getByRole("button", { name: /place order/i }));
@@ -119,6 +125,27 @@ describe("checkout order payload", () => {
     });
     expect(bodies["/orders"]).not.toHaveProperty("discountCode");
     expect(bodies["/orders"]).toMatchObject({ paymentMethod: "cod" });
+  });
+
+  it("choosing another shipping method rides the payload and re-prices the display (Slice 12)", async () => {
+    const bodies: Record<string, unknown> = {};
+    api.defaults.adapter = async (config: Config) => {
+      const url = config.url ?? "";
+      bodies[url] = config.data ? JSON.parse(String(config.data)) : null;
+      if (url.endsWith("/orders")) return respond(config, 201, { _id: "o1" });
+      return respond(config, 404, { message: "not found" });
+    };
+
+    renderCheckout();
+    fillAddress();
+
+    fireEvent.click(screen.getByLabelText(/outside dhaka/i));
+    // Cart 999 + outside fee 120:
+    expect(screen.getByText("৳1,119")).toBeTruthy();
+
+    fireEvent.click(screen.getByRole("button", { name: /place order/i }));
+    await waitFor(() => expect(bodies["/orders"]).toBeTruthy());
+    expect(bodies["/orders"]).toMatchObject({ shippingMethod: "outside-dhaka" });
   });
 
   it("online: posts the order, initiates payment, navigates to the gateway (Slice 11)", async () => {
@@ -136,11 +163,7 @@ describe("checkout order payload", () => {
     vi.stubGlobal("location", { ...window.location, assign });
 
     try {
-      render(
-        <CartProvider>
-          <CheckoutPage />
-        </CartProvider>
-      );
+      renderCheckout();
 
       fillAddress();
       fireEvent.click(screen.getByLabelText(/pay online/i));

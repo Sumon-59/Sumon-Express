@@ -4,7 +4,7 @@ import React from "react";
 import { api, getApiErrorMessage } from "@/lib/api";
 import { uploadImage, validateImageFile } from "@/lib/uploads";
 import { useSettings } from "@/context/SettingsContext";
-import { StoreSettings, isHexColor } from "@/types/settings";
+import { StoreSettings, ShippingMethod, isHexColor } from "@/types/settings";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -83,6 +83,27 @@ export default function AdminSettingsPage() {
   const set = <K extends keyof StoreSettings>(key: K, value: StoreSettings[K]) =>
     setDraft((d) => ({ ...d, [key]: value }));
 
+  // Shipping editor (Slice 12): rows of label/fee/eta; the key is the
+  // slugified label, derived at save (order snapshots keep their own
+  // copy, so re-keying never rewrites the past).
+  const patchShipping = (i: number, patch: Partial<ShippingMethod>) =>
+    setDraft((d) => ({
+      ...d,
+      shippingMethods: d.shippingMethods.map((m, j) => (j === i ? { ...m, ...patch } : m)),
+    }));
+  const addShipping = () =>
+    setDraft((d) => ({
+      ...d,
+      shippingMethods: [...d.shippingMethods, { key: "", label: "", fee: 0, eta: "" }],
+    }));
+  const removeShipping = (i: number) =>
+    setDraft((d) => ({
+      ...d,
+      shippingMethods: d.shippingMethods.filter((_, j) => j !== i),
+    }));
+  const slug = (label: string) =>
+    label.toLowerCase().trim().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "");
+
   const accentIsHex = isHexColor(draft.accentColor);
 
   const onSave = async (e: React.FormEvent) => {
@@ -91,7 +112,14 @@ export default function AdminSettingsPage() {
       setSubmitting(true);
       setError(null);
       setSaved(false);
-      await api.put("/admin/settings", draft);
+      await api.put("/admin/settings", {
+        ...draft,
+        shippingMethods: draft.shippingMethods.map((m) => ({
+          ...m,
+          key: m.key || slug(m.label),
+          fee: Number(m.fee),
+        })),
+      });
       await refresh(); // the live storefront re-brands in place
       setSaved(true);
     } catch (err) {
@@ -195,6 +223,53 @@ export default function AdminSettingsPage() {
               value={draft.footerText}
               onChange={(e) => set("footerText", e.target.value)}
             />
+          </div>
+
+          <div className="space-y-2">
+            <Label>Shipping methods (1–5)</Label>
+            <div className="space-y-2">
+              {draft.shippingMethods.map((m, i) => (
+                <div key={i} className="flex items-center gap-2">
+                  <Input
+                    aria-label={`Shipping label ${i + 1}`}
+                    value={m.label}
+                    onChange={(e) => patchShipping(i, { label: e.target.value })}
+                    placeholder="Inside Dhaka"
+                  />
+                  <Input
+                    aria-label={`Shipping fee ${i + 1}`}
+                    type="number"
+                    min={0}
+                    step={1}
+                    value={m.fee}
+                    onChange={(e) => patchShipping(i, { fee: Number(e.target.value) })}
+                    className="w-24"
+                    placeholder="৳"
+                  />
+                  <Input
+                    aria-label={`Shipping ETA ${i + 1}`}
+                    value={m.eta}
+                    onChange={(e) => patchShipping(i, { eta: e.target.value })}
+                    className="w-28"
+                    placeholder="1-2 days"
+                  />
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => removeShipping(i)}
+                    disabled={draft.shippingMethods.length <= 1}
+                  >
+                    Remove
+                  </Button>
+                </div>
+              ))}
+            </div>
+            {draft.shippingMethods.length < 5 && (
+              <Button type="button" variant="outline" size="sm" onClick={addShipping}>
+                Add method
+              </Button>
+            )}
           </div>
 
           {error && <p className="text-sm text-destructive">{error}</p>}

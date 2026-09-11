@@ -32,6 +32,21 @@ export type OrderDiscount = {
   amount: number;
 };
 
+// Shipping snapshot at order time (Slice 12) — the receipt keeps the
+// fee the shopper saw, whatever the owner edits later.
+export type OrderShipping = {
+  key: string;
+  label: string;
+  fee: number;
+  eta: string;
+};
+
+// One timeline entry (Slice 12); appended per legal transition.
+export type OrderHistoryEntry = {
+  status: OrderStatus;
+  at: string;
+};
+
 // Receipt of the latest online payment attempt (Slice 11) — mirrors
 // the backend subdoc. isPaid stays the one paid-flag.
 export type OrderPayment = {

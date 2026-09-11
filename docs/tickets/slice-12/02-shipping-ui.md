@@ -9,9 +9,9 @@ page (label/fee/eta rows, 1–5, axis-editor pattern).
 
 **Blocked by:** 01.
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] Checkout radio + fee line + payload test green
-- [ ] OrderTimeline rendering with history + fallback (browser-checked)
-- [ ] Shipping snapshot visible on order cards
-- [ ] Settings editor rows wired to the full-array PUT
+- [x] Checkout radio + fee line + payload test green
+- [x] OrderTimeline rendering with history + fallback (browser-checked)
+- [x] Shipping snapshot visible on order cards
+- [x] Settings editor rows wired to the full-array PUT

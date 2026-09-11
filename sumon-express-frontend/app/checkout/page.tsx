@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { Banknote, CreditCard, ImageIcon } from "lucide-react";
 import { useCart, lineKey } from "@/context/CartContext";
 import { useAuth } from "@/context/AuthContext";
+import { useSettings } from "@/context/SettingsContext";
 import { api } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -31,6 +32,16 @@ export default function CheckoutPage() {
   // server re-validates the code again at order time regardless.
   const [discount, setDiscount] = React.useState<DiscountPreview | null>(null);
   const [method, setMethod] = React.useState<"cod" | "online">("cod");
+  const { settings } = useSettings();
+  const shippingMethods = settings.shippingMethods;
+  const [shippingKey, setShippingKey] = React.useState<string>("");
+  // First method preselected once settings resolve (defaults render
+  // immediately, so this fires on mount too).
+  React.useEffect(() => {
+    if (!shippingKey && shippingMethods.length > 0) setShippingKey(shippingMethods[0].key);
+  }, [shippingMethods, shippingKey]);
+  const shipping = shippingMethods.find((m) => m.key === shippingKey) ?? shippingMethods[0];
+  const shippingFee = shipping?.fee ?? 0;
 
   const cartLines = React.useMemo(
     () =>
@@ -65,6 +76,7 @@ export default function CheckoutPage() {
         items: cartLines,
         shippingAddress: { address: address.trim(), city: city.trim(), phone: phone.trim() },
         paymentMethod: method,
+        shippingMethod: shipping?.key,
         ...(discount ? { discountCode: discount.code } : {}),
       };
 
@@ -149,6 +161,36 @@ export default function CheckoutPage() {
                   required
                 />
               </div>
+            </div>
+          </section>
+
+          <section className="rounded-lg border bg-card p-5">
+            <h2 className="font-semibold">Shipping</h2>
+            <div className="mt-4 space-y-3">
+              {shippingMethods.map((m) => (
+                <label
+                  key={m.key}
+                  className={`flex cursor-pointer items-center gap-3 rounded-md border p-3 ${
+                    shippingKey === m.key ? "border-primary bg-primary/5" : "hover:bg-muted/50"
+                  }`}
+                >
+                  <input
+                    type="radio"
+                    name="shippingMethod"
+                    value={m.key}
+                    checked={shippingKey === m.key}
+                    onChange={() => setShippingKey(m.key)}
+                    className="accent-[var(--primary)]"
+                  />
+                  <div className="flex-1">
+                    <p className="text-sm font-medium">{m.label}</p>
+                    {m.eta && <p className="text-xs text-muted-foreground">{m.eta}</p>}
+                  </div>
+                  <span className="text-sm tabular-nums">
+                    {m.fee === 0 ? "Free" : formatTaka(m.fee)}
+                  </span>
+                </label>
+              ))}
             </div>
           </section>
 
@@ -242,15 +284,21 @@ export default function CheckoutPage() {
               </div>
             )}
             <div className="flex justify-between">
-              <span className="text-muted-foreground">Delivery</span>
-              <span className="text-green-600">Free</span>
+              <span className="text-muted-foreground">
+                Delivery{shipping ? ` (${shipping.label})` : ""}
+              </span>
+              {shippingFee === 0 ? (
+                <span className="text-green-600">Free</span>
+              ) : (
+                <span className="tabular-nums">{formatTaka(shippingFee)}</span>
+              )}
             </div>
           </div>
           <Separator className="my-4" />
           <div className="flex justify-between font-semibold">
             <span>Total</span>
             <span className="tabular-nums text-primary">
-              {formatTaka(discount ? discount.total : total)}
+              {formatTaka((discount ? discount.total : total) + shippingFee)}
             </span>
           </div>
 
