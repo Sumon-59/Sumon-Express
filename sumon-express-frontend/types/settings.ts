@@ -22,6 +22,7 @@ export type StoreSettings = {
   announcement: string; // empty = no announcement bar
   footerText: string;
   shippingMethods: ShippingMethod[];
+  lowStockThreshold: number; // 0 = alerts disabled
 };
 
 // Same defaults as the backend schema: the storefront renders the
@@ -41,4 +42,5 @@ export const DEFAULT_SETTINGS: StoreSettings = {
     { key: "inside-dhaka", label: "Inside Dhaka", fee: 60, eta: "1-2 days" },
     { key: "outside-dhaka", label: "Outside Dhaka", fee: 120, eta: "3-5 days" },
   ],
+  lowStockThreshold: 5,
 };

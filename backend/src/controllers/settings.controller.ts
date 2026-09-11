@@ -52,6 +52,7 @@ interface SettingsBody {
   announcement?: unknown;
   footerText?: unknown;
   shippingMethods?: unknown;
+  lowStockThreshold?: unknown;
 }
 
 // Shipping methods (Slice 12) — full-array replace, the variants-axis
@@ -131,6 +132,15 @@ export const validateSettingsData = (data: SettingsBody): Partial<IStoreSettings
 
   if (data.shippingMethods !== undefined)
     out.shippingMethods = validateShippingMethods(data.shippingMethods);
+
+  // Low-stock alerts (Slice 15): 0 is a legal, meaningful value (disables
+  // the feature) — checked with `!== undefined`, never a truthiness test.
+  if (data.lowStockThreshold !== undefined) {
+    const t = data.lowStockThreshold;
+    if (typeof t !== "number" || !Number.isInteger(t) || t < 0 || t > 10000)
+      throw httpError("Low-stock threshold must be a whole number from 0 to 10000", 400);
+    out.lowStockThreshold = t;
+  }
 
   return out;
 };

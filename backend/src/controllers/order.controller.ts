@@ -3,7 +3,9 @@ import Order, { IOrderItem, IOrderDiscount, IOrderShipping } from "../models/Ord
 import { readStoreSettings } from "./settings.controller";
 import { recordStatus } from "../utils/orderStatus";
 import { notifyOrderPlaced, notifyCancelled } from "../mail/orderEmails";
+import { notifyLowStock, LowStockCrossing } from "../mail/inventoryEmails";
 import Product from "../models/Product.model";
+import User from "../models/User.model";
 import asyncHandler from "../utils/asyncHandler";
 import { sessionUser } from "../middleware/requireAuth";
 import { httpError } from "../types/http.types";
@@ -20,6 +22,19 @@ import {
   restoreOrderStock,
   OrderItemInput,
 } from "../utils/orderItems";
+
+// Same shape as adminOrder.controller's buyerEmail: an inline DB read
+// for the RECIPIENT list (not mail itself), so a lookup failure skips
+// the alert instead of failing the order that already succeeded.
+const adminEmails = async (): Promise<string[]> => {
+  try {
+    const admins = await User.find({ role: "admin" }).select("email");
+    return admins.map((a) => a.email);
+  } catch (err) {
+    console.error("[mail] admin lookup failed:", err);
+    return [];
+  }
+};
 
 interface CreateOrderBody {
   items?: OrderItemInput[];
@@ -91,13 +106,33 @@ export const createOrder = asyncHandler(async (req: Request, res: Response) => {
   // engine); roll back prior claims if any line fails.
   const decremented: IOrderItem[] = [];
   const rollbackStock = () => restoreOrderStock(decremented);
+  // Low-stock crossings (Slice 15) are only COLLECTED here — a later
+  // failure in this request (discount limit, the save itself) still
+  // rolls this claim back via rollbackStock, and a crossing that never
+  // survives to a committed order must never alert. They're mailed only
+  // after order.save() succeeds, below.
+  const lowStockCrossings: LowStockCrossing[] = [];
+  const threshold = settings.lowStockThreshold;
   for (const item of orderItems) {
-    const claimed = await claimItemStock(item);
-    if (!claimed) {
+    const claim = await claimItemStock(item);
+    if (!claim.claimed) {
       await rollbackStock();
       throw httpError(`Insufficient stock for product: ${item.name}`, 400);
     }
     decremented.push(item);
+    if (
+      threshold > 0 &&
+      claim.stock !== undefined &&
+      claim.stock <= threshold &&
+      claim.stock + item.quantity > threshold
+    ) {
+      lowStockCrossings.push({
+        name: item.name,
+        variantName: item.variantName,
+        stock: claim.stock,
+        threshold,
+      });
+    }
   }
 
   // Claim one use of the code atomically (the guard re-checks the
@@ -134,6 +169,11 @@ export const createOrder = asyncHandler(async (req: Request, res: Response) => {
   // Fire-and-forget (Slice 13): the receipt email rides the session
   // user's address; delivery is never awaited, failure never thrown.
   notifyOrderPlaced(order, user.email);
+  // Only reached once the order is actually committed — see the
+  // comment above the claim loop for why crossings aren't mailed there.
+  if (lowStockCrossings.length > 0) {
+    notifyLowStock(lowStockCrossings, await adminEmails());
+  }
 
   res.status(201).json(order);
 });

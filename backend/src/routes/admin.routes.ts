@@ -8,7 +8,11 @@ import {
   updateOrderStatus,
   cancelOrderByAdmin,
 } from "../controllers/adminOrder.controller";
-import { getAdminProducts, getAdminProductById } from "../controllers/product.controller";
+import {
+  getAdminProducts,
+  getAdminProductById,
+  getLowStockProducts,
+} from "../controllers/product.controller";
 import { getUploadSignature } from "../controllers/upload.controller";
 import {
   getCustomers,
@@ -34,6 +38,9 @@ router.get("/dashboard", requireAuth, requireAdmin, (req, res) => {
 
 // admin: full catalog (all statuses, search, status filter, pagination)
 router.get("/products", requireAuth, requireAdmin, getAdminProducts);
+// admin: low-stock survey (Slice 15) — MUST precede /products/:id, or
+// Express's param route would swallow "low-stock" as :id.
+router.get("/products/low-stock", requireAuth, requireAdmin, getLowStockProducts);
 router.get("/products/:id", requireAuth, requireAdmin, getAdminProductById);
 
 // admin: sign a Cloudinary direct upload (Slice 2b)

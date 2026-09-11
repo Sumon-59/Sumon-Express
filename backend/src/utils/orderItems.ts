@@ -97,8 +97,18 @@ export const buildOrderItems = async (
 // update on one document — nothing to drift.
 // ---------------------------------------------------------------
 
-// Claim stock for one line. True = claimed; false = insufficient.
-export const claimItemStock = async (item: IOrderItem): Promise<boolean> => {
+export interface StockClaim {
+  claimed: boolean;
+  // Post-claim stock of the UNIT that moved — the variant value's own
+  // stock on a variant line, the top-level counter on a plain product.
+  // Never the variant-product aggregate sum: that's not what a low-stock
+  // alert should name, because it's not what gets restocked. Present
+  // only when claimed.
+  stock?: number;
+}
+
+// Claim stock for one line.
+export const claimItemStock = async (item: IOrderItem): Promise<StockClaim> => {
   if (item.variantName) {
     const updated = await Product.findOneAndUpdate(
       {
@@ -108,14 +118,16 @@ export const claimItemStock = async (item: IOrderItem): Promise<boolean> => {
       { $inc: { "variants.$.stock": -item.quantity, stock: -item.quantity } },
       { new: true }
     );
-    return updated !== null;
+    if (!updated) return { claimed: false };
+    const value = updated.variants!.find((v) => v.name === item.variantName);
+    return { claimed: true, stock: value?.stock };
   }
   const updated = await Product.findOneAndUpdate(
     { _id: item.product, stock: { $gte: item.quantity } },
     { $inc: { stock: -item.quantity } },
     { new: true }
   );
-  return updated !== null;
+  return updated ? { claimed: true, stock: updated.stock } : { claimed: false };
 };
 
 // Restore stock for one line. If the value no longer exists (the axis
