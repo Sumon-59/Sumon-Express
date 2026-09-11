@@ -10,11 +10,14 @@ checked).
 
 **Blocked by:** 02.
 
-**Status:** ready-for-agent
+**Status:** done (two items parked, see boxes)
 
-- [ ] Two-axis code review run; findings fixed or explicitly accepted
-- [ ] Merged `--no-ff` to `fullstack-v2`, pushed as Sumon-59
-- [ ] Probe: payments routes live in production; credentialed gateway probe
-      run (or explicitly parked on the sandbox-registration dependency)
-- [ ] CLAUDE.md updated; spec + ticket checkboxes ticked; plan.md tracker
+- [x] Two-axis code review run; findings fixed (incl. the cross-transaction replay)
+- [x] Merged `--no-ff` to `fullstack-v2`, pushed as Sumon-59
+- [x] Probe: init/IPN/redirect routes live in production (named responses
+      prove new code). PARKED: the credentialed gateway probe awaits Sumon's
+      SSLCommerz sandbox registration; the redirect-host fix (87baca5/01ebd71)
+      is pushed but Render stopped auto-deploying after 02:01 — needs a
+      dashboard look (or set CLIENT_URL there, which fixes it regardless)
+- [x] CLAUDE.md updated; spec + ticket checkboxes ticked; plan.md tracker
       updated (diff checked)

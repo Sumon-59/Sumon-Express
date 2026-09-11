@@ -1,6 +1,6 @@
 # Slice 11 — Online payments (SSLCommerz sandbox)
 
-Status: ready-for-agent
+Status: shipped 2026-09-11 (gateway round-trip parked on sandbox credentials)
 Branch: `slice-11-payments`
 Seam decision (full-autonomy contract): backend HTTP seam for the whole payment
 state machine with the provider FAKED at the provider interface (the one seam
