@@ -1,6 +1,9 @@
 import { Request, Response } from "express";
 import { Types } from "mongoose";
-import StoreSettings, { IStoreSettings } from "../models/StoreSettings.model";
+import StoreSettings, {
+  IStoreSettings,
+  IShippingMethod,
+} from "../models/StoreSettings.model";
 import asyncHandler from "../utils/asyncHandler";
 import { httpError } from "../types/http.types";
 
@@ -48,7 +51,36 @@ interface SettingsBody {
   heroImageUrl?: unknown;
   announcement?: unknown;
   footerText?: unknown;
+  shippingMethods?: unknown;
 }
+
+// Shipping methods (Slice 12) — full-array replace, the variants-axis
+// convention. Whole-taka fees (the Slice 5 money rule), unique keys.
+const validateShippingMethods = (value: unknown): IShippingMethod[] => {
+  if (!Array.isArray(value) || value.length < 1)
+    throw httpError("Shipping needs at least one method", 400);
+  if (value.length > 5)
+    throw httpError("Shipping allows at most 5 methods", 400);
+
+  const seen = new Set<string>();
+  return value.map((raw) => {
+    const m = (raw ?? {}) as Record<string, unknown>;
+    const key = typeof m.key === "string" ? m.key.trim().toLowerCase() : "";
+    if (!key) throw httpError("Every shipping method needs a key", 400);
+    if (seen.has(key)) throw httpError(`Duplicate shipping method key: ${key}`, 400);
+    seen.add(key);
+
+    const label = typeof m.label === "string" ? m.label.trim() : "";
+    if (!label) throw httpError("Every shipping method needs a label", 400);
+
+    const fee = m.fee;
+    if (typeof fee !== "number" || !Number.isInteger(fee) || fee < 0)
+      throw httpError("Shipping fee must be a whole non-negative amount in taka", 400);
+
+    const eta = typeof m.eta === "string" ? m.eta.trim() : "";
+    return { key, label, fee, eta };
+  });
+};
 
 const textField = (
   value: unknown,
@@ -97,8 +129,16 @@ export const validateSettingsData = (data: SettingsBody): Partial<IStoreSettings
   if (data.heroImageUrl !== undefined)
     out.heroImageUrl = urlField(data.heroImageUrl, "Hero image URL");
 
+  if (data.shippingMethods !== undefined)
+    out.shippingMethods = validateShippingMethods(data.shippingMethods);
+
   return out;
 };
+
+// The read every consumer shares (public GET, order pricing): a true
+// read, with the upsert only as the not-yet-created fallback.
+export const readStoreSettings = async (): Promise<IStoreSettings> =>
+  (await StoreSettings.findById(SETTINGS_ID)) ?? (await theSettings());
 
 // GET /api/settings — PUBLIC: the storefront brands itself before any
 // auth exists; nothing secret lives here. A read must BE a read — the
@@ -106,8 +146,7 @@ export const validateSettingsData = (data: SettingsBody): Partial<IStoreSettings
 // every storefront visit would be a DB write, and timestamps would
 // bump updatedAt into meaning "last page view").
 export const getSettings = asyncHandler(async (_req: Request, res: Response) => {
-  const existing = await StoreSettings.findById(SETTINGS_ID);
-  res.json(existing ?? (await theSettings()));
+  res.json(await readStoreSettings());
 });
 
 // PUT /api/admin/settings — partial merge: only sent fields change.

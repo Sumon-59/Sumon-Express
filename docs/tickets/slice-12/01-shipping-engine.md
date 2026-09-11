@@ -11,11 +11,11 @@ spec matrix.
 
 **Blocked by:** nothing.
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] Settings: defaults + replace + validation matrix green
-- [ ] Pricing: fee added server-side, snapshot holds across fee edits,
+- [x] Settings: defaults + replace + validation matrix green
+- [x] Pricing: fee added server-side, snapshot holds across fee edits,
       discount math untouched by fee; refusals pre-side-effect
-- [ ] History: seeded, appended on every legal transition + both cancels,
+- [x] History: seeded, appended on every legal transition + both cancels,
       never on illegal moves
-- [ ] Payments regression green (fee-inclusive totalPrice end to end)
+- [x] Payments regression green (fee-inclusive totalPrice end to end)

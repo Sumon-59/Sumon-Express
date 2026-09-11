@@ -48,10 +48,28 @@ export interface IOrderDiscount {
   amount: number; // whole taka actually taken off
 }
 
+// Snapshot of the shipping choice at order time (Slice 12) — the
+// receipts doctrine again: a later fee edit never re-prices the past.
+export interface IOrderShipping {
+  key: string;
+  label: string;
+  fee: number;
+  eta: string;
+}
+
+// One timeline entry. Appended ONLY by recordStatus (utils/orderStatus)
+// so history can never diverge from status.
+export interface IOrderHistoryEntry {
+  status: OrderStatus;
+  at: Date;
+}
+
 export interface IOrder {
   user: Types.ObjectId;
   items: IOrderItem[];
   totalPrice: number;
+  shipping?: IOrderShipping; // absent on pre-Slice-12 orders
+  history: IOrderHistoryEntry[];
   shippingAddress?: {
     address?: string;
     city?: string;
@@ -148,6 +166,32 @@ const orderSchema = new Schema<IOrder>(
       type: String,
       enum: [...ORDER_STATUSES],
       default: "pending",
+    },
+
+    shipping: {
+      type: new Schema<IOrderShipping>(
+        {
+          key: { type: String, required: true },
+          label: { type: String, required: true },
+          fee: { type: Number, required: true },
+          eta: { type: String, default: "" },
+        },
+        { _id: false }
+      ),
+      default: undefined, // absent on legacy orders
+    },
+
+    history: {
+      type: [
+        new Schema<IOrderHistoryEntry>(
+          {
+            status: { type: String, enum: [...ORDER_STATUSES], required: true },
+            at: { type: Date, required: true },
+          },
+          { _id: false }
+        ),
+      ],
+      default: () => [],
     },
 
     isPaid: {

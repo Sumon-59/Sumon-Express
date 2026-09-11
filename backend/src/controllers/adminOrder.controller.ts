@@ -4,6 +4,7 @@ import Order, { ORDER_STATUSES, isOrderStatus, OrderStatus } from "../models/Ord
 import Product from "../models/Product.model";
 import asyncHandler from "../utils/asyncHandler";
 import { httpError } from "../types/http.types";
+import { recordStatus } from "../utils/orderStatus";
 import { parsePagination, pageMeta } from "../utils/pagination";
 import { restoreOrderStock } from "../utils/orderItems";
 
@@ -90,7 +91,7 @@ export const updateOrderStatus = asyncHandler(async (req: Request, res: Response
     );
   }
 
-  order.status = status;
+  recordStatus(order, status);
 
   // Delivery implies collection, for ANY method: COD collects cash at
   // the door, and delivering an unpaid ONLINE order is the admin's
@@ -127,7 +128,7 @@ export const cancelOrderByAdmin = asyncHandler(async (req: Request, res: Respons
   // Restore stock via the shared variant-aware engine.
   await restoreOrderStock(order.items);
 
-  order.status = "cancelled";
+  recordStatus(order, "cancelled");
   order.cancelledAt = new Date();
   order.cancelledBy = "admin";
   await order.save();

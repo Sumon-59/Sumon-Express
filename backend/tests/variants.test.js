@@ -6,7 +6,7 @@
 import { describe, it, expect, beforeEach } from "vitest";
 import request from "supertest";
 import app from "../app";
-import { registerUser, registerAdmin, plantProduct } from "./helpers";
+import { registerUser, registerAdmin, plantProduct, ensureShipping } from "./helpers";
 
 // A t-shirt in S/M/L: 5 + 3 + 2 = 10 total.
 const shirtVariants = () => ({
@@ -24,10 +24,13 @@ const plantShirt = (extra = {}) =>
 const orderBody = (lines) => ({
   items: lines,
   shippingAddress: { address: "H1", city: "Dhaka", phone: "01700000000" },
+  shippingMethod: "standard", // Slice 12: required; fee 0 in test-world
 });
 
-const postOrder = (auth, lines) =>
-  request(app).post("/api/orders").set("Authorization", auth).send(orderBody(lines));
+const postOrder = async (auth, lines) => {
+  await ensureShipping();
+  return request(app).post("/api/orders").set("Authorization", auth).send(orderBody(lines));
+};
 
 const publicView = async (product) =>
   (await request(app).get(`/api/products/${product._id}`)).body;

@@ -1,5 +1,7 @@
 import { Request, Response } from "express";
-import Order, { IOrderItem, IOrderDiscount } from "../models/Order.model";
+import Order, { IOrderItem, IOrderDiscount, IOrderShipping } from "../models/Order.model";
+import { readStoreSettings } from "./settings.controller";
+import { recordStatus } from "../utils/orderStatus";
 import Product from "../models/Product.model";
 import asyncHandler from "../utils/asyncHandler";
 import { sessionUser } from "../middleware/requireAuth";
@@ -27,11 +29,12 @@ interface CreateOrderBody {
   };
   paymentMethod?: string;
   discountCode?: string;
+  shippingMethod?: string;
 }
 
 export const createOrder = asyncHandler(async (req: Request, res: Response) => {
   const user = sessionUser(req);
-  const { items, shippingAddress, paymentMethod, discountCode } =
+  const { items, shippingAddress, paymentMethod, discountCode, shippingMethod } =
     req.body as CreateOrderBody;
 
   // NEW orders take exactly two methods (Slice 11): cod or online (the
@@ -42,6 +45,23 @@ export const createOrder = asyncHandler(async (req: Request, res: Response) => {
   if (method !== "cod" && method !== "online") {
     throw httpError("Payment method must be cod or online", 400);
   }
+
+  // Shipping is resolved from settings AT order time and SNAPSHOTTED
+  // (Slice 12): the fee the shopper saw is the fee the receipt keeps,
+  // whatever the owner edits later. Refused BEFORE any side effect.
+  const settings = await readStoreSettings();
+  const chosenShipping = settings.shippingMethods.find(
+    (m) => m.key === String(shippingMethod ?? "")
+  );
+  if (!chosenShipping) {
+    throw httpError("Choose a valid shipping method", 400);
+  }
+  const shippingSnapshot: IOrderShipping = {
+    key: chosenShipping.key,
+    label: chosenShipping.label,
+    fee: chosenShipping.fee,
+    eta: chosenShipping.eta,
+  };
 
   const { orderItems, subtotal } = await buildOrderItems(items);
   let totalPrice = subtotal;
@@ -60,6 +80,10 @@ export const createOrder = asyncHandler(async (req: Request, res: Response) => {
     };
     totalPrice -= resolved.amount;
   }
+
+  // The fee joins AFTER discounting: discounts price the GOODS (their
+  // minimums and caps never see shipping); the fee is added on top.
+  totalPrice += shippingSnapshot.fee;
 
   // Claim stock atomically per line (variant-aware — the shared
   // engine); roll back prior claims if any line fails.
@@ -91,8 +115,11 @@ export const createOrder = asyncHandler(async (req: Request, res: Response) => {
       items: orderItems,
       shippingAddress,
       paymentMethod: method,
+      shipping: shippingSnapshot,
       totalPrice,
       discount: discountSnapshot,
+      // The timeline starts here; recordStatus appends the rest.
+      history: [{ status: "pending", at: new Date() }],
     });
   } catch (err) {
     // Creation failed after the side effects — undo both.
@@ -133,7 +160,7 @@ export const cancelOrder = asyncHandler(async (req: Request, res: Response) => {
   // Restore stock via the shared variant-aware engine.
   await restoreOrderStock(order.items);
 
-  order.status = "cancelled";
+  recordStatus(order, "cancelled");
   order.cancelledAt = new Date();
   order.cancelledBy = "user";
   await order.save();

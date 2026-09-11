@@ -7,6 +7,14 @@ import mongoose, { Schema, Model } from "mongoose";
 // controller — writes via `theSettings`, reads via findById first.
 // Defaults reproduce the storefront's pre-Slice-10 hardcoded look, so
 // a fresh database renders unchanged.
+// One shipping option (Slice 12): whole-taka fee, honest free-text ETA.
+export interface IShippingMethod {
+  key: string; // slug, unique within the array
+  label: string;
+  fee: number;
+  eta: string;
+}
+
 export interface IStoreSettings {
   storeName: string;
   logoUrl: string; // empty = text logo
@@ -16,6 +24,7 @@ export interface IStoreSettings {
   heroImageUrl: string; // empty = gradient-only hero
   announcement: string; // empty = no announcement bar
   footerText: string;
+  shippingMethods: IShippingMethod[];
   createdAt?: Date;
   updatedAt?: Date;
 }
@@ -39,6 +48,23 @@ const storeSettingsSchema = new Schema<IStoreSettings>(
     heroImageUrl: { type: String, default: "" },
     announcement: { type: String, default: "", trim: true },
     footerText: { type: String, default: "Sumon Express", trim: true },
+    shippingMethods: {
+      type: [
+        new Schema<IShippingMethod>(
+          {
+            key: { type: String, required: true },
+            label: { type: String, required: true, trim: true },
+            fee: { type: Number, required: true },
+            eta: { type: String, default: "", trim: true },
+          },
+          { _id: false }
+        ),
+      ],
+      default: () => [
+        { key: "inside-dhaka", label: "Inside Dhaka", fee: 60, eta: "1-2 days" },
+        { key: "outside-dhaka", label: "Outside Dhaka", fee: 120, eta: "3-5 days" },
+      ],
+    },
   },
   { timestamps: true }
 );
