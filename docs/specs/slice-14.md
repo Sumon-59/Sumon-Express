@@ -55,9 +55,11 @@ token, so a stolen session dies when the password does.
   "your password was changed" email. Single-use by construction (cleared
   on success).
 - **Password change**: `PUT /api/auth/password {currentPassword,
-  newPassword}` (requireAuth) — verify current (named 400), apply the SAME
-  password policy as register (min 6 — checked against the existing rule
-  at implementation time and mirrored, not reinvented), set, revoke the
+  newPassword}` (requireAuth) — verify current (named 400), apply THE
+  shared password policy (implementation finding: register had NO length
+  rule at all — min 8 was chosen and `validatePassword` in
+  `utils/password.ts` is now the one policy for register, reset, AND
+  change), set, revoke the
   stored refresh token, then issue a FRESH refresh cookie + access token
   in the response (the current session continues; every other session
   dies) — the login issuance path reused, not duplicated. Confirmation
@@ -126,7 +128,10 @@ token, so a stolen session dies when the password does.
   password change/reset already revokes globally, which is the security
   half of that feature).
 - Per-permission staff customization, admin-mint-admin over HTTP, audit
-  logs, 2FA, rate limiting beyond what exists.
+  logs, 2FA. (Review amendment: rate limiting WAS extended after all —
+  forgot/reset/change each got their own 10-per-15-min bucket; without
+  them forgot-password is an inbox-bombing lever and a stolen access
+  token could brute-force currentPassword.)
 - Password strength meters/zxcvbn; geo/IP lookup in login mails.
 
 ## Further Notes

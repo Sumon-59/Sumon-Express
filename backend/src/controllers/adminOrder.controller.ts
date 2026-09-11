@@ -152,6 +152,9 @@ export const cancelOrderByAdmin = asyncHandler(async (req: Request, res: Respons
 
   recordStatus(order, "cancelled");
   order.cancelledAt = new Date();
+  // "admin" here means THE STORE side (staff cancellations included —
+  // the enum stays user|admin; a per-person audit trail is a later
+  // concern if ever needed).
   order.cancelledBy = "admin";
   await order.save();
   const email = await buyerEmail(order);

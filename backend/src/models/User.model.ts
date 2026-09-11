@@ -48,6 +48,7 @@ const userSchema = new Schema<IUser>(
     },
     resetTokenExpires: {
       type: Date,
+      select: false,
     },
   },
   { timestamps: true }

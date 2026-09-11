@@ -11,7 +11,12 @@ import {
   changePassword,
 } from "../controllers/auth.controller";
 
-import { loginLimiter } from "../middleware/rateLimit.middleware";
+import {
+  loginLimiter,
+  forgotPasswordLimiter,
+  resetPasswordLimiter,
+  passwordChangeLimiter,
+} from "../middleware/rateLimit.middleware";
 import { requireAuth } from "../middleware/requireAuth";
 
 const router = express.Router();
@@ -27,8 +32,8 @@ router.post("/logout", logoutUser);
 
 // Slice 14 — credential hardening. forgot/reset are public by nature;
 // change proves the session AND the current password.
-router.post("/forgot-password", forgotPassword);
-router.post("/reset-password", resetPassword);
-router.put("/password", requireAuth, changePassword);
+router.post("/forgot-password", forgotPasswordLimiter, forgotPassword);
+router.post("/reset-password", resetPasswordLimiter, resetPassword);
+router.put("/password", passwordChangeLimiter, requireAuth, changePassword);
 
 export default router;

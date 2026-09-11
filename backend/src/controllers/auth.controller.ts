@@ -142,7 +142,9 @@ export const forgotPassword = asyncHandler(async (req: Request, res: Response) =
     notifyPasswordReset(user.email, rawToken); // raw token: email only
   }
 
-  // The SAME answer either way — an attacker learns nothing.
+  // The SAME answer either way — the response BODY teaches nothing.
+  // (A timing residual remains: the real-email path also saves and
+  // builds a mail. Accepted at this scale, capped by the rate limiter.)
   res.json(FORGOT_RESPONSE);
 });
 
@@ -155,7 +157,7 @@ export const resetPassword = asyncHandler(async (req: Request, res: Response) =>
   const user = await User.findOne({
     resetTokenHash: hashToken(String(token ?? "")),
     resetTokenExpires: { $gt: new Date() },
-  }).select("+resetTokenHash");
+  }).select("+resetTokenHash +resetTokenExpires");
   if (!user) {
     throw httpError("Reset link is invalid or expired", 400);
   }

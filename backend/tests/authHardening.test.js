@@ -230,6 +230,11 @@ describe("RBAC: staff manage orders and NOTHING else", () => {
       ["get", "/api/admin/analytics", null],
       ["post", "/api/admin/uploads/signature", {}],
       ["get", "/api/admin/mail-status", null],
+      ["get", "/api/admin/dashboard", null],
+      // Admin-gated routes OUTSIDE admin.routes.ts — exactly where a
+      // future regression would slip past an admin-router-only matrix:
+      ["post", "/api/products", { name: "X" }],
+      ["post", "/api/categories", { name: "X" }],
     ];
     for (const [method, url, body] of refusals) {
       const req = request(app)[method](url).set("Authorization", staff);
@@ -276,6 +281,22 @@ describe("RBAC: staff manage orders and NOTHING else", () => {
       .set("Authorization", admin)
       .send({ role: "admin" });
     expect(mint.status).toBe(400);
+
+    const garbage = await request(app)
+      .put(`/api/admin/customers/${emp._id}/role`)
+      .set("Authorization", admin)
+      .send({ role: "superuser" });
+    expect(garbage.status).toBe(400);
+
+    // Staff shop too: analytics customer counts must not lose them.
+    await User.updateOne({ email: "emp@example.com" }, { role: "staff" });
+    const analytics = await request(app)
+      .get("/api/admin/analytics")
+      .set("Authorization", admin);
+    // boss (admin) excluded; emp (staff) + any shoppers counted:
+    expect(analytics.body.totals.customers).toBe(
+      await User.countDocuments({ role: { $ne: "admin" } })
+    );
 
     const self = await request(app)
       .put(`/api/admin/customers/${adminDoc._id}/role`)

@@ -1,20 +1,9 @@
-import { getMailer } from "./mailer";
+import { dispatch } from "./dispatch";
 import { clientUrl } from "../utils/clientUrl";
 
-// Auth emails (Slice 14) — same fire-and-forget contract as
-// orderEmails: built synchronously, delivery never awaited by a
-// handler, failures logged and swallowed in ONE throw-proof dispatch.
-const dispatch = (to: string, subject: string, text: string) => {
-  try {
-    getMailer()
-      .sendMail({ to, subject, text })
-      .catch((err) => {
-        console.error(`[mail] failed to send "${subject}" to ${to}:`, err);
-      });
-  } catch (err) {
-    console.error(`[mail] failed to send "${subject}" to ${to}:`, err);
-  }
-};
+// Auth emails (Slice 14) — delivered through the ONE fire-and-forget
+// door (mail/dispatch): built synchronously, never awaited, failures
+// swallowed.
 
 // The raw token exists ONLY in this email and in the shopper's hands —
 // the database stores its hash.

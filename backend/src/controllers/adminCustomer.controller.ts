@@ -88,7 +88,7 @@ export const getCustomerById = asyncHandler(async (req: Request, res: Response) 
 // demote themselves (no lock-yourself-out foot-gun).
 export const setCustomerRole = asyncHandler(async (req: Request, res: Response) => {
   const id = String(req.params.id);
-  if (!Types.ObjectId.isValid(id)) throw httpError("Customer not found", 404);
+  if (!Types.ObjectId.isValid(id)) throw httpError("Invalid customer id", 400);
 
   const role = String((req.body as { role?: unknown })?.role ?? "");
   if (role !== "user" && role !== "staff") {

@@ -15,9 +15,13 @@ export default function ResetPasswordPage() {
   const [error, setError] = React.useState<string | null>(null);
   const [submitting, setSubmitting] = React.useState(false);
 
-  // Token off the URL directly (no Suspense dance, same as /orders).
+  // Token off the URL directly (no Suspense dance, same as /orders) —
+  // then scrubbed from the address bar so browser history never keeps
+  // the secret (single-use + 1h already cap the exposure).
   React.useEffect(() => {
-    setToken(new URLSearchParams(window.location.search).get("token") ?? "");
+    const t = new URLSearchParams(window.location.search).get("token") ?? "";
+    setToken(t);
+    if (t) window.history.replaceState(null, "", "/reset-password");
   }, []);
 
   const submit = async (e: React.FormEvent) => {
