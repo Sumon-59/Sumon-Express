@@ -8,9 +8,9 @@ the spec matrix.
 
 **Blocked by:** nothing.
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] Mailer selection + fake outbox + console/resend impls
-- [ ] Confirmation email content matrix green (items/shipping/discount/total)
-- [ ] Status + cancellation triggers green; refused orders send nothing
-- [ ] failNext(): mail failure never fails a request; mail-status endpoint
+- [x] Mailer selection + fake outbox + console/resend impls
+- [x] Confirmation email content matrix green (items/shipping/discount/total)
+- [x] Status + cancellation triggers green; refused orders send nothing
+- [x] failNext(): mail failure never fails a request; mail-status endpoint
