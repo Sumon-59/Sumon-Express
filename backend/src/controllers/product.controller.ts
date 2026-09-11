@@ -6,6 +6,7 @@ import { sessionUser } from "../middleware/requireAuth";
 import { httpError } from "../types/http.types";
 import { parsePagination, pageMeta } from "../utils/pagination";
 import { escapeRegex } from "../utils/regex";
+import { readStoreSettings } from "./settings.controller";
 
 interface VariantInput {
   name?: unknown;
@@ -320,6 +321,52 @@ export const getRelatedProducts = asyncHandler(async (req: Request, res: Respons
  * same query vocabulary as the public listing (q, page, limit) plus a
  * status filter (active | inactive | all, default all).
  */
+// Low-stock survey (Slice 15) — the static counterpart to the
+// edge-triggered email alert: everything CURRENTLY at or below the
+// threshold, regardless of whether an order ever crossed it (a product
+// created already low, or a threshold just lowered, fires no email but
+// must still show up here). One row per plain product; ONE ROW PER LOW
+// VARIANT VALUE for variant products — never a product-level row for
+// those, since the value is what actually gets restocked.
+//
+// MUST be registered before /admin/products/:id in the router — Express
+// would otherwise match "low-stock" as that route's :id.
+export const getLowStockProducts = asyncHandler(async (req: Request, res: Response) => {
+  const { lowStockThreshold: threshold } = await readStoreSettings();
+
+  if (threshold <= 0) {
+    res.json({ threshold, items: [] });
+    return;
+  }
+
+  const products = await Product.find({
+    isActive: true,
+    $or: [
+      { optionName: { $exists: false }, stock: { $lte: threshold } },
+      { "variants.stock": { $lte: threshold } },
+    ],
+  }).select("name stock optionName variants");
+
+  const items: { productId: string; name: string; variantName?: string; stock: number }[] = [];
+  for (const p of products) {
+    const hasAxis = Boolean(p.optionName && p.variants?.length);
+    if (!hasAxis) {
+      if (p.stock <= threshold) {
+        items.push({ productId: String(p._id), name: p.name, stock: p.stock });
+      }
+      continue;
+    }
+    for (const v of p.variants!) {
+      if (v.stock <= threshold) {
+        items.push({ productId: String(p._id), name: p.name, variantName: v.name, stock: v.stock });
+      }
+    }
+  }
+  items.sort((a, b) => a.stock - b.stock);
+
+  res.json({ threshold, items });
+});
+
 export const getAdminProducts = asyncHandler(async (req: Request, res: Response) => {
   const paging = parsePagination(req);
 

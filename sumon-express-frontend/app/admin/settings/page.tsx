@@ -276,6 +276,23 @@ export default function AdminSettingsPage() {
             )}
           </div>
 
+          <div className="space-y-2">
+            <Label htmlFor="lowStockThreshold">Low-stock alert threshold (0 disables)</Label>
+            <Input
+              id="lowStockThreshold"
+              type="number"
+              min={0}
+              max={10000}
+              step={1}
+              value={draft.lowStockThreshold}
+              onChange={(e) => set("lowStockThreshold", Number(e.target.value))}
+              className="w-24"
+            />
+            <p className="text-xs text-muted-foreground">
+              An email goes out the moment a product or variant drops to or below this many units left.
+            </p>
+          </div>
+
           {error && <p className="text-sm text-destructive">{error}</p>}
           {saved && !error && (
             <p className="text-sm text-green-600">Saved — the storefront is rebranded.</p>

@@ -25,6 +25,9 @@ export interface IStoreSettings {
   announcement: string; // empty = no announcement bar
   footerText: string;
   shippingMethods: IShippingMethod[];
+  // Low-stock alerts (Slice 15): whole units, 0 disables the feature
+  // outright (not "never crosses" — an explicit off switch).
+  lowStockThreshold: number;
   createdAt?: Date;
   updatedAt?: Date;
 }
@@ -65,6 +68,7 @@ const storeSettingsSchema = new Schema<IStoreSettings>(
         { key: "outside-dhaka", label: "Outside Dhaka", fee: 120, eta: "3-5 days" },
       ],
     },
+    lowStockThreshold: { type: Number, default: 5 },
   },
   { timestamps: true }
 );
