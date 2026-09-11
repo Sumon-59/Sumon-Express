@@ -19,6 +19,7 @@ import {
   updateDiscount,
 } from "../controllers/discount.controller";
 import { updateSettings } from "../controllers/settings.controller";
+import { getMailStatus } from "../controllers/mailStatus.controller";
 
 const router = express.Router();
 
@@ -49,6 +50,9 @@ router.put("/discounts/:id", requireAuth, requireAdmin, updateDiscount);
 
 // admin: store settings (Slice 10) — the public read lives at /api/settings
 router.put("/settings", requireAuth, requireAdmin, updateSettings);
+
+// admin: which mailer is the runtime actually using (Slice 13 probe seam)
+router.get("/mail-status", requireAuth, requireAdmin, getMailStatus);
 
 // admin: get all orders
 router.get("/orders", requireAuth, requireAdmin, getAllOrders);

@@ -1,12 +1,32 @@
 import { Request, Response } from "express";
 import { Types } from "mongoose";
-import Order, { ORDER_STATUSES, isOrderStatus, OrderStatus } from "../models/Order.model";
+import Order, {
+  ORDER_STATUSES,
+  isOrderStatus,
+  OrderStatus,
+  IOrder,
+} from "../models/Order.model";
 import Product from "../models/Product.model";
 import asyncHandler from "../utils/asyncHandler";
 import { httpError } from "../types/http.types";
 import { recordStatus } from "../utils/orderStatus";
+import User from "../models/User.model";
+import { notifyStatusChange, notifyCancelled } from "../mail/orderEmails";
 import { parsePagination, pageMeta } from "../utils/pagination";
 import { restoreOrderStock } from "../utils/orderItems";
+
+// The address lookup is a DB read like any other in these handlers —
+// done inline; only the mail SEND is fire-and-forget (notify* never
+// awaits delivery). A failed lookup skips the email, never the request.
+const buyerEmail = async (order: Pick<IOrder, "user">): Promise<string | null> => {
+  try {
+    const buyer = await User.findById(order.user).select("email");
+    return buyer?.email ?? null;
+  } catch (err) {
+    console.error("[mail] buyer lookup failed:", err);
+    return null;
+  }
+};
 
 interface UpdateStatusBody {
   status?: string;
@@ -103,6 +123,8 @@ export const updateOrderStatus = asyncHandler(async (req: Request, res: Response
   }
 
   await order.save();
+  const email = await buyerEmail(order);
+  if (email) notifyStatusChange(order, email);
   res.json(order);
 });
 
@@ -132,5 +154,7 @@ export const cancelOrderByAdmin = asyncHandler(async (req: Request, res: Respons
   order.cancelledAt = new Date();
   order.cancelledBy = "admin";
   await order.save();
+  const email = await buyerEmail(order);
+  if (email) notifyCancelled(order, email, "admin");
   res.json({ message: "Order cancelled by admin successfully" });
 });

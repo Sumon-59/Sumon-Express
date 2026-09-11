@@ -166,6 +166,28 @@ Allowlist in `app.ts` (`allowedOrigins`) + `credentials: true`. When the fronten
   `Stars`/`StarRow` (icons + numeric text, hidden at zero), `ProductReviews`
   (load-more accumulation, eligibility-driven form).
 
+### Transactional email (since Slice 13)
+- **The mailer boundary** (`src/mail/`): shared shapes in `types.ts`;
+  `getMailer()` selects test → FAKE (in-memory `outbox` + `failNext()` dial,
+  `resetMailFake()` in beforeEach), `RESEND_API_KEY` → Resend (plain fetch,
+  no SDK, 10s timeout, `MAIL_FROM` default), else → console mailer (logs
+  every mail; unconfigured environments stay functional, never silently
+  broken).
+- **Fire-and-forget is the contract, enforced in ONE place**: `dispatch` in
+  `orderEmails.ts` is throw-proof AND rejection-proof — mail is never
+  awaited by a handler, and a mail failure can never fail or delay a
+  request (pinned by the failNext test). The buyer-address lookup is an
+  inline DB read (that's not mail).
+- Emails are built synchronously from the ORDER SNAPSHOT only (items,
+  shipping, discount, total — never re-reading Product/Settings). Triggers:
+  order confirmation, each status change (delivered mentions collection),
+  both cancel doors (say who cancelled). Deliberately NO payment-received
+  email on IPN success (owned in the spec's Out of Scope).
+- `GET /api/admin/mail-status` answers `{mailer, from}` — the deploy-probe
+  seam: proves which mailer the runtime selected without leaking any
+  credential. Optional: a free Resend API key in Render flips it from
+  "console" to "resend".
+
 ### Shipping & order timeline (since Slice 12)
 - **`shippingMethods` live on the StoreSettings singleton** (defaults: Inside
   Dhaka ৳60 / Outside ৳120) — full-array replace through

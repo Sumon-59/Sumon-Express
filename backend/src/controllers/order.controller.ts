@@ -2,6 +2,7 @@ import { Request, Response } from "express";
 import Order, { IOrderItem, IOrderDiscount, IOrderShipping } from "../models/Order.model";
 import { readStoreSettings } from "./settings.controller";
 import { recordStatus } from "../utils/orderStatus";
+import { notifyOrderPlaced, notifyCancelled } from "../mail/orderEmails";
 import Product from "../models/Product.model";
 import asyncHandler from "../utils/asyncHandler";
 import { sessionUser } from "../middleware/requireAuth";
@@ -130,6 +131,10 @@ export const createOrder = asyncHandler(async (req: Request, res: Response) => {
     throw err;
   }
 
+  // Fire-and-forget (Slice 13): the receipt email rides the session
+  // user's address; delivery is never awaited, failure never thrown.
+  notifyOrderPlaced(order, user.email);
+
   res.status(201).json(order);
 });
 
@@ -166,6 +171,7 @@ export const cancelOrder = asyncHandler(async (req: Request, res: Response) => {
   order.cancelledAt = new Date();
   order.cancelledBy = "user";
   await order.save();
+  notifyCancelled(order, user.email, "user");
 
   res.json({ message: "Order cancelled successfully" });
 });
