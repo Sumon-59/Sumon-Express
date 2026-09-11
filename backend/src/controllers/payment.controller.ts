@@ -19,16 +19,21 @@ import { getPaymentProvider, PaymentUrls } from "../payments/provider";
 const makeTranId = (orderId: string) =>
   `${orderId.slice(-8)}-${crypto.randomBytes(8).toString("hex")}`;
 
-// CLIENT_URL overrides; the deployed fallback names the frontend the
-// same way app.ts's CORS allowlist already does. Keyed on RENDER (set
-// by the platform itself on every service) rather than NODE_ENV —
-// deploy probes caught the localhost fallback leaking into gateway
-// redirects, and platform-set beats user-set for "are we deployed?".
-const clientUrl = () =>
-  process.env.CLIENT_URL ??
-  (process.env.RENDER || process.env.NODE_ENV === "production"
-    ? "https://sumon-express.vercel.app"
-    : "http://localhost:3000");
+// CLIENT_URL overrides — EXCEPT a localhost value on a deployed
+// platform, which is always a misconfiguration (deploy probes traced
+// exactly that: Render's CLIENT_URL was set to http://localhost:3000
+// at service creation and silently won over every fallback; CORS never
+// exposed it because localhost is in the allowlist anyway). The
+// deployed fallback names the frontend the same way app.ts's CORS
+// allowlist does; RENDER is platform-set on every service.
+const clientUrl = () => {
+  const configured = process.env.CLIENT_URL;
+  const deployed = !!process.env.RENDER || process.env.NODE_ENV === "production";
+  if (configured && !(deployed && /^https?:\/\/localhost/i.test(configured))) {
+    return configured;
+  }
+  return deployed ? "https://sumon-express.vercel.app" : "http://localhost:3000";
+};
 
 // Absolute callback URLs, derived from the request the same way the
 // gateway will reach us (Render terminates TLS in front — trust the
