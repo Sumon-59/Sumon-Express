@@ -1,4 +1,4 @@
-import { Mailer } from "./mailer";
+import { Mailer } from "./types";
 
 // The no-configuration mailer: logs the full email. Dev sees every
 // mail in the server log; production without a Resend key stays

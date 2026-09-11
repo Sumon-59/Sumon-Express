@@ -96,6 +96,10 @@ error is logged, never thrown.
 - Queues, retries, dead-letter handling, delivery/open tracking.
 - Marketing email, digests, admin notification emails.
 - Email verification / password reset (Slice 14 owns auth mail).
+- A payment-received email on IPN success — the status emails are the only
+  lifecycle mail (the delivered email mentions collection); a payments-mail
+  moment is a later slice if ever. This silence is a decision, not an
+  oversight (review-owned).
 - Nodemailer/Ethereal (a dependency for marginal dev value — the console
   mailer shows every mail in the dev log already).
 

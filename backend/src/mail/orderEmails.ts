@@ -36,11 +36,18 @@ const orderLines = (order: OrderLike): string => {
 };
 
 const dispatch = (to: string, subject: string, text: string) => {
-  getMailer()
-    .sendMail({ to, subject, text })
-    .catch((err) => {
-      console.error(`[mail] failed to send "${subject}" to ${to}:`, err);
-    });
+  // The fire-and-forget guarantee lives HERE, not in each mailer's
+  // async keyword: a synchronous throw from a future implementation
+  // must be swallowed exactly like a rejection.
+  try {
+    getMailer()
+      .sendMail({ to, subject, text })
+      .catch((err) => {
+        console.error(`[mail] failed to send "${subject}" to ${to}:`, err);
+      });
+  } catch (err) {
+    console.error(`[mail] failed to send "${subject}" to ${to}:`, err);
+  }
 };
 
 export const notifyOrderPlaced = (order: OrderLike, email: string) => {

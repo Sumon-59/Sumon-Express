@@ -1,17 +1,24 @@
 import { Request, Response } from "express";
 import { Types } from "mongoose";
-import Order, { ORDER_STATUSES, isOrderStatus, OrderStatus } from "../models/Order.model";
+import Order, {
+  ORDER_STATUSES,
+  isOrderStatus,
+  OrderStatus,
+  IOrder,
+} from "../models/Order.model";
 import Product from "../models/Product.model";
 import asyncHandler from "../utils/asyncHandler";
 import { httpError } from "../types/http.types";
 import { recordStatus } from "../utils/orderStatus";
 import User from "../models/User.model";
 import { notifyStatusChange, notifyCancelled } from "../mail/orderEmails";
+import { parsePagination, pageMeta } from "../utils/pagination";
+import { restoreOrderStock } from "../utils/orderItems";
 
 // The address lookup is a DB read like any other in these handlers —
 // done inline; only the mail SEND is fire-and-forget (notify* never
 // awaits delivery). A failed lookup skips the email, never the request.
-const buyerEmail = async (order: { user: unknown }): Promise<string | null> => {
+const buyerEmail = async (order: Pick<IOrder, "user">): Promise<string | null> => {
   try {
     const buyer = await User.findById(order.user).select("email");
     return buyer?.email ?? null;
@@ -20,8 +27,6 @@ const buyerEmail = async (order: { user: unknown }): Promise<string | null> => {
     return null;
   }
 };
-import { parsePagination, pageMeta } from "../utils/pagination";
-import { restoreOrderStock } from "../utils/orderItems";
 
 interface UpdateStatusBody {
   status?: string;

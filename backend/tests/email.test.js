@@ -6,7 +6,7 @@
 import { describe, it, expect, beforeEach } from "vitest";
 import request from "supertest";
 import app from "../app";
-import { outbox, failNext } from "../src/mail/fake";
+import { outbox, failNext, resetMailFake } from "../src/mail/fake";
 import {
   registerUser,
   registerAdmin,
@@ -16,7 +16,7 @@ import {
 } from "./helpers";
 
 beforeEach(() => {
-  outbox.length = 0;
+  resetMailFake(); // clears the outbox AND disarms any leftover failNext
 });
 
 describe("order confirmation email", () => {
@@ -25,17 +25,39 @@ describe("order confirmation email", () => {
     const product = await plantProduct({ name: "Blue Mug", price: 100, stock: 10 });
     const { auth, user } = await registerUser({ email: "buyer@example.com" });
 
-    await placeOrder(auth, product, 2, { discountCode: "EID10" });
+    const order = await placeOrder(auth, product, 2, { discountCode: "EID10" });
 
     expect(outbox).toHaveLength(1);
     const mail = outbox[0];
     expect(mail.to).toBe(user.email);
-    expect(mail.subject).toMatch(/order/i);
+    expect(mail.subject).toContain(String(order._id).slice(-8)); // names THE order
     expect(mail.text).toContain("Blue Mug");
     expect(mail.text).toMatch(/× 2|x 2/);
     expect(mail.text).toContain("Standard"); // shipping label
     expect(mail.text).toContain("EID10");
     expect(mail.text).toContain("180"); // (200 − 20) + 0
+  });
+
+  it("a NONZERO shipping fee appears on the delivery line and in the total", async () => {
+    // The test-world default fee is 0 (renders "free") — this pins the
+    // fee half of "label+fee", which would otherwise be unfalsifiable.
+    const { auth: admin } = await registerAdmin({ email: "admin@example.com" });
+    await request(app)
+      .put("/api/admin/settings")
+      .set("Authorization", admin)
+      .send({
+        shippingMethods: [{ key: "dhaka", label: "Inside Dhaka", fee: 60, eta: "1-2 days" }],
+      });
+    const product = await plantProduct({ price: 100, stock: 10 });
+    const { auth } = await registerUser({ email: "buyer@example.com" });
+
+    outbox.length = 0;
+    await placeOrder(auth, product, 1, { shippingMethod: "dhaka" });
+
+    const mail = outbox[0];
+    expect(mail.text).toContain("Inside Dhaka");
+    expect(mail.text).toContain("60"); // the fee itself
+    expect(mail.text).toContain("160"); // fee-inclusive total
   });
 
   it("a refused order sends nothing", async () => {
@@ -74,6 +96,7 @@ describe("status change and cancellation emails", () => {
     expect(outbox[0].text).toMatch(/processing/i);
     expect(outbox[1].text).toMatch(/shipped/i);
     expect(outbox[2].text).toMatch(/delivered/i);
+    expect(outbox[2].text).toMatch(/payment/i); // delivered mentions collection
   });
 
   it("user cancel and admin cancel each send one email saying who cancelled", async () => {

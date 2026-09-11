@@ -1,4 +1,4 @@
-import { Mailer, mailFrom } from "./mailer";
+import { Mailer, mailFrom } from "./types";
 import { requireEnv } from "../utils/env";
 
 // Resend over plain HTTPS — no SDK, the Cloudinary house style. The
