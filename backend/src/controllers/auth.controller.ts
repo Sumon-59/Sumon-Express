@@ -1,10 +1,17 @@
 import bcrypt from "bcryptjs";
+import crypto from "crypto";
 import { Request, Response } from "express";
 import User from "../models/User.model";
 import asyncHandler from "../utils/asyncHandler";
 import { generateAccessToken, generateRefreshToken, verifyToken } from "../utils/token";
 import { httpError } from "../types/http.types";
 import { sessionUser } from "../middleware/requireAuth";
+import { validatePassword, hashPassword } from "../utils/password";
+import {
+  notifyPasswordReset,
+  notifyPasswordChanged,
+  notifyLogin,
+} from "../mail/authEmails";
 
 interface RegisterBody {
   name?: string;
@@ -45,12 +52,14 @@ export const registerUser = asyncHandler(async (req: Request, res: Response) => 
     throw httpError("All fields are required", 400);
   }
 
+  validatePassword(password); // THE policy — shared with reset/change
+
   const existingUser = await User.findOne({ email });
   if (existingUser) {
     throw httpError("User already exists", 409);
   }
 
-  const hashedPassword = await bcrypt.hash(password, 10);
+  const hashedPassword = await hashPassword(password);
 
   const newUser = await User.create({
     name,
@@ -104,7 +113,95 @@ export const loginUser = asyncHandler(async (req: Request, res: Response) => {
   // Set refresh cookie
   setRefreshCookie(res, refreshToken);
 
+  // Takeovers should be visible (Slice 14) — fire-and-forget.
+  notifyLogin(user.email, String(req.headers["user-agent"] ?? ""));
+
   res.json({ accessToken });
+});
+
+// ---------------------------------------------------------------
+// Password reset (Slice 14). The threat model, in code: constant
+// responses (no enumeration), only the token's SHA-256 at rest (a DB
+// leak exposes nothing usable), single-use + 1h expiry, and global
+// refresh revocation on success (stolen sessions die with the old
+// password).
+// ---------------------------------------------------------------
+const hashToken = (raw: string) => crypto.createHash("sha256").update(raw).digest("hex");
+
+const FORGOT_RESPONSE = { message: "If that account exists, an email is on its way" };
+
+export const forgotPassword = asyncHandler(async (req: Request, res: Response) => {
+  const email = String((req.body as { email?: unknown })?.email ?? "");
+  const user = await User.findOne({ email });
+
+  if (user) {
+    const rawToken = crypto.randomBytes(32).toString("hex");
+    user.resetTokenHash = hashToken(rawToken);
+    user.resetTokenExpires = new Date(Date.now() + 60 * 60 * 1000); // 1h
+    await user.save();
+    notifyPasswordReset(user.email, rawToken); // raw token: email only
+  }
+
+  // The SAME answer either way — an attacker learns nothing.
+  res.json(FORGOT_RESPONSE);
+});
+
+export const resetPassword = asyncHandler(async (req: Request, res: Response) => {
+  const { token, password } = req.body as { token?: unknown; password?: unknown };
+  validatePassword(password);
+
+  // One named 400 for every bad-token shape — invalid and expired are
+  // deliberately indistinguishable.
+  const user = await User.findOne({
+    resetTokenHash: hashToken(String(token ?? "")),
+    resetTokenExpires: { $gt: new Date() },
+  }).select("+resetTokenHash");
+  if (!user) {
+    throw httpError("Reset link is invalid or expired", 400);
+  }
+
+  user.password = await hashPassword(password as string);
+  user.resetTokenHash = undefined; // single-use by construction
+  user.resetTokenExpires = undefined;
+  user.refreshToken = ""; // every session dies with the old password
+  await user.save();
+
+  notifyPasswordChanged(user.email);
+  res.json({ message: "Password reset — you can sign in now" });
+});
+
+/**
+ * @desc    Change password (prove the current one)
+ * @route   PUT /api/auth/password (requireAuth)
+ * Other sessions are revoked; THIS one continues on a fresh pair.
+ */
+export const changePassword = asyncHandler(async (req: Request, res: Response) => {
+  const { currentPassword, newPassword } = req.body as {
+    currentPassword?: unknown;
+    newPassword?: unknown;
+  };
+  validatePassword(newPassword);
+
+  const session = sessionUser(req);
+  const user = await User.findById(session._id);
+  if (!user) throw httpError("Not authorized", 401);
+
+  const isMatch = await bcrypt.compare(String(currentPassword ?? ""), user.password);
+  if (!isMatch) throw httpError("Current password is incorrect", 400);
+
+  user.password = await hashPassword(newPassword as string);
+
+  // The login issuance path, reused: the caller gets a fresh pair (the
+  // new refresh token REPLACES the stored one, so every other session's
+  // cookie stops minting tokens).
+  const accessToken = generateAccessToken(user._id);
+  const refreshToken = generateRefreshToken(user._id);
+  user.refreshToken = refreshToken;
+  await user.save();
+  setRefreshCookie(res, refreshToken);
+
+  notifyPasswordChanged(user.email);
+  res.json({ message: "Password changed", accessToken });
 });
 
 /**

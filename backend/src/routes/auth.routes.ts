@@ -6,6 +6,9 @@ import {
   refreshTokenHandler,
   logoutUser,
   me,
+  forgotPassword,
+  resetPassword,
+  changePassword,
 } from "../controllers/auth.controller";
 
 import { loginLimiter } from "../middleware/rateLimit.middleware";
@@ -21,5 +24,11 @@ router.post("/login", loginLimiter, loginUser);
 router.get("/me", requireAuth, me);
 router.get("/refresh", refreshTokenHandler);
 router.post("/logout", logoutUser);
+
+// Slice 14 — credential hardening. forgot/reset are public by nature;
+// change proves the session AND the current password.
+router.post("/forgot-password", forgotPassword);
+router.post("/reset-password", resetPassword);
+router.put("/password", requireAuth, changePassword);
 
 export default router;

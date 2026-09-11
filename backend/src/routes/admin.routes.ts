@@ -1,6 +1,6 @@
 import express from "express";
 
-import { requireAuth, requireAdmin } from "../middleware/requireAuth";
+import { requireAuth, requireAdmin, requireRole } from "../middleware/requireAuth";
 
 // admin order controllers
 import {
@@ -10,7 +10,11 @@ import {
 } from "../controllers/adminOrder.controller";
 import { getAdminProducts, getAdminProductById } from "../controllers/product.controller";
 import { getUploadSignature } from "../controllers/upload.controller";
-import { getCustomers, getCustomerById } from "../controllers/adminCustomer.controller";
+import {
+  getCustomers,
+  getCustomerById,
+  setCustomerRole,
+} from "../controllers/adminCustomer.controller";
 import { getAnalytics } from "../controllers/adminAnalytics.controller";
 import {
   getAdminDiscounts,
@@ -41,6 +45,7 @@ router.get("/analytics", requireAuth, requireAdmin, getAnalytics);
 // admin: the customer census (Slice 4)
 router.get("/customers", requireAuth, requireAdmin, getCustomers);
 router.get("/customers/:id", requireAuth, requireAdmin, getCustomerById);
+router.put("/customers/:id/role", requireAuth, requireAdmin, setCustomerRole);
 
 // admin: discount codes (Slice 5) — no hard delete; deactivate via update
 router.get("/discounts", requireAuth, requireAdmin, getAdminDiscounts);
@@ -54,11 +59,12 @@ router.put("/settings", requireAuth, requireAdmin, updateSettings);
 // admin: which mailer is the runtime actually using (Slice 13 probe seam)
 router.get("/mail-status", requireAuth, requireAdmin, getMailStatus);
 
-// admin: get all orders
-router.get("/orders", requireAuth, requireAdmin, getAllOrders);
-
-// admin: update order status
-router.put("/orders/:id", requireAuth, requireAdmin, updateOrderStatus);
-router.put("/orders/:id/cancel", requireAuth, requireAdmin, cancelOrderByAdmin);
+// admin+staff: order management is the ONE surface staff may touch
+// (Slice 14 RBAC — the permission map lives here, in this file, never
+// in controllers). Everything else on this router stays admin-only.
+const requireOrderStaff = requireRole("staff", "admin");
+router.get("/orders", requireAuth, requireOrderStaff, getAllOrders);
+router.put("/orders/:id", requireAuth, requireOrderStaff, updateOrderStatus);
+router.put("/orders/:id/cancel", requireAuth, requireOrderStaff, cancelOrderByAdmin);
 
 export default router;

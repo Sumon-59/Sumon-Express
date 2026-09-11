@@ -4,8 +4,10 @@ export interface IUser {
   name: string;
   email: string;
   password: string;
-  role: "user" | "admin";
+  role: "user" | "staff" | "admin"; // staff (Slice 14): orders only
   refreshToken?: string;
+  resetTokenHash?: string;
+  resetTokenExpires?: Date;
   createdAt?: Date;
   updatedAt?: Date;
 }
@@ -29,12 +31,23 @@ const userSchema = new Schema<IUser>(
     },
     role: {
       type: String,
-      enum: ["user", "admin"],
+      enum: ["user", "staff", "admin"],
       default: "user",
     },
 
     refreshToken: {
       type: String,
+    },
+
+    // Password reset (Slice 14): only the SHA-256 of the emailed token
+    // is stored — a DB leak exposes nothing usable. select:false keeps
+    // it out of every ordinary query; cleared on successful reset.
+    resetTokenHash: {
+      type: String,
+      select: false,
+    },
+    resetTokenExpires: {
+      type: Date,
     },
   },
   { timestamps: true }

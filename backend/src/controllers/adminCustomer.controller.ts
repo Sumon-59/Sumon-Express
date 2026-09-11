@@ -3,6 +3,7 @@ import { PipelineStage, Types } from "mongoose";
 import User from "../models/User.model";
 import asyncHandler from "../utils/asyncHandler";
 import { httpError } from "../types/http.types";
+import { sessionUser } from "../middleware/requireAuth";
 import { parsePagination, pageMeta } from "../utils/pagination";
 
 // The customer census (Slice 4): computed IN the database with an
@@ -79,4 +80,33 @@ export const getCustomerById = asyncHandler(async (req: Request, res: Response) 
   }
 
   res.json(customer);
+});
+
+// PUT /api/admin/customers/:id/role — the ONE role write over HTTP
+// (Slice 14). Closed set user|staff: an admin cannot mint another
+// admin here (promotion to admin stays the CLI script), and cannot
+// demote themselves (no lock-yourself-out foot-gun).
+export const setCustomerRole = asyncHandler(async (req: Request, res: Response) => {
+  const id = String(req.params.id);
+  if (!Types.ObjectId.isValid(id)) throw httpError("Customer not found", 404);
+
+  const role = String((req.body as { role?: unknown })?.role ?? "");
+  if (role !== "user" && role !== "staff") {
+    throw httpError("Role must be user or staff", 400);
+  }
+
+  const caller = sessionUser(req);
+  if (String(caller._id) === id) {
+    throw httpError("You cannot change your own role", 400);
+  }
+
+  const target = await User.findById(id);
+  if (!target || target.role === "admin") {
+    // Admins are not customers; also refuses demoting an admin here.
+    throw httpError(target ? "Admins are managed via the CLI" : "Customer not found", target ? 400 : 404);
+  }
+
+  target.role = role;
+  await target.save();
+  res.json({ _id: target._id, role: target.role });
 });

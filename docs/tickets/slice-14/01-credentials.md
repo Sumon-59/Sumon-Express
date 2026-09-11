@@ -9,9 +9,9 @@ extracted from payments and reused. TDD per the spec matrix.
 
 **Blocked by:** nothing.
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] Forgot: constant response, email only for real users, token hashed
-- [ ] Reset: single-use, expiring, revokes refresh, confirmation email
-- [ ] Change: current proved, policy mirrored, fresh session, email
-- [ ] Login notification on success only
+- [x] Forgot: constant response, email only for real users, token hashed
+- [x] Reset: single-use, expiring, revokes refresh, confirmation email
+- [x] Change: current proved, policy mirrored, fresh session, email
+- [x] Login notification on success only

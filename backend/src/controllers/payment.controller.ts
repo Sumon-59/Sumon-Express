@@ -6,6 +6,7 @@ import asyncHandler from "../utils/asyncHandler";
 import { httpError } from "../types/http.types";
 import { sessionUser } from "../middleware/requireAuth";
 import { getPaymentProvider, PaymentUrls } from "../payments/provider";
+import { clientUrl } from "../utils/clientUrl";
 
 // isPaid has exactly TWO writers in this codebase: the admin delivered
 // rule (Slice 3 — ANY method: delivery implies collection, the
@@ -19,21 +20,6 @@ import { getPaymentProvider, PaymentUrls } from "../payments/provider";
 const makeTranId = (orderId: string) =>
   `${orderId.slice(-8)}-${crypto.randomBytes(8).toString("hex")}`;
 
-// CLIENT_URL overrides — EXCEPT a localhost value on a deployed
-// platform, which is always a misconfiguration (deploy probes traced
-// exactly that: Render's CLIENT_URL was set to http://localhost:3000
-// at service creation and silently won over every fallback; CORS never
-// exposed it because localhost is in the allowlist anyway). The
-// deployed fallback names the frontend the same way app.ts's CORS
-// allowlist does; RENDER is platform-set on every service.
-const clientUrl = () => {
-  const configured = process.env.CLIENT_URL;
-  const deployed = !!process.env.RENDER || process.env.NODE_ENV === "production";
-  if (configured && !(deployed && /^https?:\/\/localhost/i.test(configured))) {
-    return configured;
-  }
-  return deployed ? "https://sumon-express.vercel.app" : "http://localhost:3000";
-};
 
 // Absolute callback URLs, derived from the request the same way the
 // gateway will reach us (Render terminates TLS in front — trust the
