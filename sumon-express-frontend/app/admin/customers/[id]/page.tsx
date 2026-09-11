@@ -21,6 +21,7 @@ export default function AdminCustomerDetailPage() {
   const [historyPage, setHistoryPage] = React.useState(1);
   const [error, setError] = React.useState<string | null>(null);
   const [loading, setLoading] = React.useState(true);
+  const [roleSaving, setRoleSaving] = React.useState(false);
 
   React.useEffect(() => {
     if (!id) return;
@@ -80,6 +81,32 @@ export default function AdminCustomerDetailPage() {
                 Customer since {formatDate(customer.createdAt)}
               </p>
             </div>
+            {/* Role (Slice 14): user ↔ staff only — the server refuses
+                anything else, including your own row. */}
+            <label className="flex items-center gap-2 text-sm">
+              <span className="text-muted-foreground">Role</span>
+              <select
+                value={customer.role ?? "user"}
+                disabled={roleSaving}
+                onChange={async (e) => {
+                  const role = e.target.value as "user" | "staff";
+                  try {
+                    setRoleSaving(true);
+                    setError(null);
+                    await api.put(`/admin/customers/${id}/role`, { role });
+                    setCustomer((c) => (c ? { ...c, role } : c));
+                  } catch (err) {
+                    setError(getApiErrorMessage(err, "Could not change the role"));
+                  } finally {
+                    setRoleSaving(false);
+                  }
+                }}
+                className="h-8 rounded-md border bg-card px-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+              >
+                <option value="user">Customer</option>
+                <option value="staff">Staff (orders only)</option>
+              </select>
+            </label>
           </div>
 
           {/* The three computed totals, straight from the census. */}

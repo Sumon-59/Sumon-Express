@@ -257,6 +257,14 @@ describe("RBAC: staff manage orders and NOTHING else", () => {
     expect(promote.status).toBe(200);
     expect((await User.findById(emp._id)).role).toBe("staff");
 
+    // Staff REMAIN in the census (they shop too), row carries the role:
+    const census = await request(app)
+      .get("/api/admin/customers")
+      .set("Authorization", admin);
+    const row = census.body.customers.find((c) => c.email === "emp@example.com");
+    expect(row).toBeTruthy();
+    expect(row.role).toBe("staff");
+
     const demote = await request(app)
       .put(`/api/admin/customers/${emp._id}/role`)
       .set("Authorization", admin)

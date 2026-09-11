@@ -14,7 +14,7 @@ import { parsePagination, pageMeta } from "../utils/pagination";
 //
 // Cancelled orders count for nothing — one rule for all three columns.
 const CENSUS_STAGES: PipelineStage[] = [
-  { $match: { role: "user" } },
+  { $match: { role: { $in: ["user", "staff"] } } }, // staff shop too (Slice 14)
   {
     $lookup: {
       from: "orders",
@@ -33,7 +33,7 @@ const CENSUS_STAGES: PipelineStage[] = [
       lastOrderAt: { $max: "$orders.createdAt" },
     },
   },
-  { $project: { name: 1, email: 1, createdAt: 1, orderCount: 1, totalSpent: 1, lastOrderAt: 1 } },
+  { $project: { name: 1, email: 1, role: 1, createdAt: 1, orderCount: 1, totalSpent: 1, lastOrderAt: 1 } },
 ];
 
 // Closed sort set, like the orders status filter: unknown values are a
@@ -58,7 +58,7 @@ export const getCustomers = asyncHandler(async (req: Request, res: Response) => 
       { $skip: paging.skip },
       { $limit: paging.limit },
     ]),
-    User.countDocuments({ role: "user" }),
+    User.countDocuments({ role: { $in: ["user", "staff"] } }),
   ]);
 
   res.json({ ...pageMeta(total, paging), customers });

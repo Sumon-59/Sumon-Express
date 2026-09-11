@@ -9,9 +9,9 @@ role select on customer detail. TDD the RBAC matrix.
 
 **Blocked by:** 01.
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] requireRole; orders accept staff; everything else admin-only (matrix)
-- [ ] Role route: closed set, self-demotion 400, staff refused
-- [ ] Auth pages + account page + staff-aware admin nav (browser-checked)
-- [ ] Existing auth suite untouched and green
+- [x] requireRole; orders accept staff; everything else admin-only (matrix)
+- [x] Role route: closed set, self-demotion 400, staff refused
+- [x] Auth pages + account page + staff-aware admin nav (browser-checked)
+- [x] Existing auth suite untouched and green

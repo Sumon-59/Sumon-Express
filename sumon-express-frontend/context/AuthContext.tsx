@@ -14,7 +14,7 @@ import {
 type User = {
   _id: string;
   email: string;
-  role: "user" | "admin";
+  role: "user" | "staff" | "admin";
   name?: string;
 };
 

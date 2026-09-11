@@ -95,9 +95,17 @@ export default function Navbar() {
                 <DropdownMenuItem onClick={() => router.push("/orders")}>
                   <Package className="mr-2 h-4 w-4" /> My Orders
                 </DropdownMenuItem>
-                {user.role === "admin" && (
-                  <DropdownMenuItem onClick={() => router.push("/admin")}>
-                    <LayoutDashboard className="mr-2 h-4 w-4" /> Admin
+                <DropdownMenuItem onClick={() => router.push("/account")}>
+                  <User className="mr-2 h-4 w-4" /> Account
+                </DropdownMenuItem>
+                {(user.role === "admin" || user.role === "staff") && (
+                  <DropdownMenuItem
+                    onClick={() =>
+                      router.push(user.role === "staff" ? "/admin/orders" : "/admin")
+                    }
+                  >
+                    <LayoutDashboard className="mr-2 h-4 w-4" />
+                    {user.role === "staff" ? "Orders (staff)" : "Admin"}
                   </DropdownMenuItem>
                 )}
                 <DropdownMenuSeparator />

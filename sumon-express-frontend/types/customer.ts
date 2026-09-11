@@ -7,6 +7,7 @@ import { PageMeta } from "./api";
 export type CustomerSort = "spent" | "newest";
 
 export type AdminCustomer = {
+  role?: "user" | "staff";
   _id: string;
   name: string;
   email: string;
