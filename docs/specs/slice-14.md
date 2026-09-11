@@ -1,6 +1,6 @@
 # Slice 14 — Auth & authorization hardening
 
-Status: ready-for-agent
+Status: shipped 2026-09-11
 Branch: `slice-14-auth-hardening`
 Seam decision (full-autonomy contract): backend HTTP seam for the whole
 threat matrix (reset tokens, role boundaries, notification triggers — the

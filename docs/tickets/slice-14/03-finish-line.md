@@ -9,10 +9,10 @@ boxes; tracker (diff checked).
 
 **Blocked by:** 02.
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] Two-axis code review run; findings fixed or explicitly accepted
-- [ ] Merged `--no-ff` to `fullstack-v2`, pushed as Sumon-59
-- [ ] Probe: forgot-password live; requireRole regression clean
-- [ ] CLAUDE.md updated; spec + ticket checkboxes ticked; plan.md tracker
+- [x] Two-axis code review run; findings fixed or explicitly accepted
+- [x] Merged `--no-ff` to `fullstack-v2`, pushed as Sumon-59
+- [x] Probe: forgot-password live; requireRole regression clean
+- [x] CLAUDE.md updated; spec + ticket checkboxes ticked; plan.md tracker
       updated (diff checked)
