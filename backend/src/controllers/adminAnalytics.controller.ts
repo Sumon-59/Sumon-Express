@@ -58,8 +58,8 @@ export const getAnalytics = asyncHandler(async (req: Request, res: Response) => 
       { $limit: 5 },
       { $project: { _id: 0, productId: "$_id", name: 1, quantity: 1 } },
     ]),
-    User.countDocuments({ role: "user" }),
-    User.countDocuments({ role: "user", createdAt: { $gte: windowStart } }),
+    User.countDocuments({ role: { $ne: "admin" } }),
+    User.countDocuments({ role: { $ne: "admin" }, createdAt: { $gte: windowStart } }),
   ]);
 
   const ordersByStatus = Object.fromEntries(

@@ -3,6 +3,7 @@ import { PipelineStage, Types } from "mongoose";
 import User from "../models/User.model";
 import asyncHandler from "../utils/asyncHandler";
 import { httpError } from "../types/http.types";
+import { sessionUser } from "../middleware/requireAuth";
 import { parsePagination, pageMeta } from "../utils/pagination";
 
 // The customer census (Slice 4): computed IN the database with an
@@ -13,7 +14,7 @@ import { parsePagination, pageMeta } from "../utils/pagination";
 //
 // Cancelled orders count for nothing — one rule for all three columns.
 const CENSUS_STAGES: PipelineStage[] = [
-  { $match: { role: "user" } },
+  { $match: { role: { $in: ["user", "staff"] } } }, // staff shop too (Slice 14)
   {
     $lookup: {
       from: "orders",
@@ -32,7 +33,7 @@ const CENSUS_STAGES: PipelineStage[] = [
       lastOrderAt: { $max: "$orders.createdAt" },
     },
   },
-  { $project: { name: 1, email: 1, createdAt: 1, orderCount: 1, totalSpent: 1, lastOrderAt: 1 } },
+  { $project: { name: 1, email: 1, role: 1, createdAt: 1, orderCount: 1, totalSpent: 1, lastOrderAt: 1 } },
 ];
 
 // Closed sort set, like the orders status filter: unknown values are a
@@ -57,7 +58,7 @@ export const getCustomers = asyncHandler(async (req: Request, res: Response) => 
       { $skip: paging.skip },
       { $limit: paging.limit },
     ]),
-    User.countDocuments({ role: "user" }),
+    User.countDocuments({ role: { $in: ["user", "staff"] } }),
   ]);
 
   res.json({ ...pageMeta(total, paging), customers });
@@ -79,4 +80,33 @@ export const getCustomerById = asyncHandler(async (req: Request, res: Response) 
   }
 
   res.json(customer);
+});
+
+// PUT /api/admin/customers/:id/role — the ONE role write over HTTP
+// (Slice 14). Closed set user|staff: an admin cannot mint another
+// admin here (promotion to admin stays the CLI script), and cannot
+// demote themselves (no lock-yourself-out foot-gun).
+export const setCustomerRole = asyncHandler(async (req: Request, res: Response) => {
+  const id = String(req.params.id);
+  if (!Types.ObjectId.isValid(id)) throw httpError("Invalid customer id", 400);
+
+  const role = String((req.body as { role?: unknown })?.role ?? "");
+  if (role !== "user" && role !== "staff") {
+    throw httpError("Role must be user or staff", 400);
+  }
+
+  const caller = sessionUser(req);
+  if (String(caller._id) === id) {
+    throw httpError("You cannot change your own role", 400);
+  }
+
+  const target = await User.findById(id);
+  if (!target || target.role === "admin") {
+    // Admins are not customers; also refuses demoting an admin here.
+    throw httpError(target ? "Admins are managed via the CLI" : "Customer not found", target ? 400 : 404);
+  }
+
+  target.role = role;
+  await target.save();
+  res.json({ _id: target._id, role: target.role });
 });

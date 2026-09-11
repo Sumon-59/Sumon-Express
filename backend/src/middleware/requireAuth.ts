@@ -50,20 +50,30 @@ export const requireAuth = async (
 };
 
 /**
- * Role gate. Assumes requireAuth already ran — the server-side security
- * boundary for the admin area (the frontend guard is only UX).
+ * Role gate (Slice 14 generalization). Assumes requireAuth already
+ * ran — the server-side security boundary for the admin area (the
+ * frontend guard is only UX). The permission MAP lives in
+ * admin.routes.ts: which roles a route accepts is declared there, in
+ * one auditable file, never in controllers.
  */
-export const requireAdmin = (req: Request, res: Response, next: NextFunction): void => {
-  if (!req.user) {
-    res.status(401).json({ message: "Not authorized" });
-    return;
-  }
-  if (req.user.role !== "admin") {
-    res.status(403).json({ message: "Admin access only" });
-    return;
-  }
-  next();
-};
+export const requireRole =
+  (...roles: Array<SessionUser["role"]>) =>
+  (req: Request, res: Response, next: NextFunction): void => {
+    if (!req.user) {
+      res.status(401).json({ message: "Not authorized" });
+      return;
+    }
+    if (!roles.includes(req.user.role)) {
+      res.status(403).json({
+        message: `Requires ${roles.join(" or ")} access`,
+      });
+      return;
+    }
+    next();
+  };
+
+// Every existing call site keeps meaning exactly what it meant.
+export const requireAdmin = requireRole("admin");
 
 /**
  * Accessor for handlers behind requireAuth: returns the attached

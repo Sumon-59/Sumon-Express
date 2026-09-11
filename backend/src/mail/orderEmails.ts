@@ -1,5 +1,5 @@
 import { IOrder } from "../models/Order.model";
-import { getMailer } from "./mailer";
+import { dispatch } from "./dispatch";
 
 // Order emails (Slice 13). Every body is built SYNCHRONOUSLY from the
 // order SNAPSHOT — items, shipping, discount, total — never re-reading
@@ -33,21 +33,6 @@ const orderLines = (order: OrderLike): string => {
   }
   lines.push(`  Total: ৳${order.totalPrice}`);
   return lines.join("\n");
-};
-
-const dispatch = (to: string, subject: string, text: string) => {
-  // The fire-and-forget guarantee lives HERE, not in each mailer's
-  // async keyword: a synchronous throw from a future implementation
-  // must be swallowed exactly like a rejection.
-  try {
-    getMailer()
-      .sendMail({ to, subject, text })
-      .catch((err) => {
-        console.error(`[mail] failed to send "${subject}" to ${to}:`, err);
-      });
-  } catch (err) {
-    console.error(`[mail] failed to send "${subject}" to ${to}:`, err);
-  }
 };
 
 export const notifyOrderPlaced = (order: OrderLike, email: string) => {
