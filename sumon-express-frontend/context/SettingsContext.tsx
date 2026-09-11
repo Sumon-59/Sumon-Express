@@ -34,7 +34,11 @@ export function SettingsProvider({ children }: { children: React.ReactNode }) {
   const refresh = async () => {
     try {
       const res = await api.get<StoreSettings>("/settings");
-      if (res.data?.storeName !== undefined) setSettings(res.data);
+      // Merge over defaults: during a deploy window the backend may be
+      // older than this frontend and omit newer fields (review catch —
+      // a missing shippingMethods array must not kill checkout).
+      if (res.data?.storeName !== undefined)
+        setSettings({ ...DEFAULT_SETTINGS, ...res.data });
     } catch {
       // Defaults already render a complete brand; a failed fetch
       // (cold start, offline) must never blank the storefront.

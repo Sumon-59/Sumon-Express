@@ -8,7 +8,11 @@
 import { describe, it, expect, beforeEach } from "vitest";
 import request from "supertest";
 import app from "../app";
-import { registerUser, plantProduct } from "./helpers";
+import { registerUser, plantProduct, ensureShipping } from "./helpers";
+
+// Slice 12: orders need a shipping method — plant the free test-world
+// "standard" method before every test (see helpers.ensureShipping).
+beforeEach(ensureShipping);
 
 describe("POST /api/orders", () => {
   let auth;
@@ -26,6 +30,7 @@ describe("POST /api/orders", () => {
       .send({
         items: [{ product: product._id.toString(), quantity: 2 }],
         shippingAddress: { address: "House 1, Road 2", city: "Dhaka", phone: "01700000000" },
+        shippingMethod: "standard",
         // A malicious client claims the order is worth 1 taka:
         totalPrice: 1,
       });
@@ -53,7 +58,7 @@ describe("POST /api/orders", () => {
     const res = await request(app)
       .post("/api/orders")
       .set("Authorization", auth)
-      .send({ items: [{ product: product._id.toString(), quantity: 5 }] });
+      .send({ items: [{ product: product._id.toString(), quantity: 5 }], shippingMethod: "standard" });
 
     expect(res.status).toBe(400);
     expect(res.body.message).toMatch(/insufficient stock/i);
@@ -66,7 +71,7 @@ describe("POST /api/orders", () => {
     const product = await plantProduct();
     const res = await request(app)
       .post("/api/orders")
-      .send({ items: [{ product: product._id.toString(), quantity: 1 }] });
+      .send({ items: [{ product: product._id.toString(), quantity: 1 }], shippingMethod: "standard" });
 
     expect(res.status).toBe(401);
   });
@@ -78,7 +83,7 @@ describe("POST /api/orders", () => {
     const res = await request(app)
       .post("/api/orders")
       .set("Authorization", auth)
-      .send({ items: [{ product: product._id.toString(), quantity: 1 }] });
+      .send({ items: [{ product: product._id.toString(), quantity: 1 }], shippingMethod: "standard" });
 
     // Assert: the server must refuse as if the product doesn't exist
     expect(res.status).toBe(404);
@@ -94,7 +99,7 @@ describe("PUT /api/orders/:id/cancel", () => {
     const order = await request(app)
       .post("/api/orders")
       .set("Authorization", auth)
-      .send({ items: [{ product: product._id.toString(), quantity: 4 }] });
+      .send({ items: [{ product: product._id.toString(), quantity: 4 }], shippingMethod: "standard" });
     expect(order.status).toBe(201);
 
     const cancel = await request(app)
@@ -119,7 +124,7 @@ describe("PUT /api/orders/:id/cancel", () => {
     const order = await request(app)
       .post("/api/orders")
       .set("Authorization", alice.auth)
-      .send({ items: [{ product: product._id.toString(), quantity: 1 }] });
+      .send({ items: [{ product: product._id.toString(), quantity: 1 }], shippingMethod: "standard" });
 
     const cancel = await request(app)
       .put(`/api/orders/${order.body._id}/cancel`)

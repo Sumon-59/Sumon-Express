@@ -8,6 +8,8 @@ import app from "../app";
 import Product from "../src/models/Product.model";
 import User from "../src/models/User.model";
 import Discount from "../src/models/Discount.model";
+import StoreSettings from "../src/models/StoreSettings.model";
+import { SETTINGS_ID } from "../src/controllers/settings.controller";
 
 // Register a user through the public API and keep the cookie jar (the
 // "jwt" httpOnly cookie) so later requests are authenticated — exactly
@@ -42,13 +44,32 @@ export async function registerAdmin(overrides = {}) {
 // Place an order through the public API, exactly like a shopper would.
 // Returns the created order body (status starts as "pending").
 // `extra` merges into the payload (e.g. { discountCode: "EID10" }).
+// Slice 12: orders require a shipping method. The TEST-world default
+// is a free "standard" method, planted only if no settings document
+// exists yet ($setOnInsert) — so every pre-slice total assertion
+// stays honest (fee 0 adds nothing), while tests that PUT their own
+// methods keep them and pass an explicit key.
+export async function ensureShipping() {
+  await StoreSettings.updateOne(
+    { _id: SETTINGS_ID },
+    {
+      $setOnInsert: {
+        shippingMethods: [{ key: "standard", label: "Standard", fee: 0, eta: "1-3 days" }],
+      },
+    },
+    { upsert: true }
+  );
+}
+
 export async function placeOrder(auth, product, quantity = 2, extra = {}) {
+  await ensureShipping();
   const res = await request(app)
     .post("/api/orders")
     .set("Authorization", auth)
     .send({
       items: [{ product: product._id.toString(), quantity }],
       shippingAddress: { address: "House 1, Road 2", city: "Dhaka", phone: "01700000000" },
+      shippingMethod: "standard",
       ...extra,
     });
   if (res.status !== 201) {

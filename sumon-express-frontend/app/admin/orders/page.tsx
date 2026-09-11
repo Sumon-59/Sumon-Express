@@ -309,6 +309,19 @@ function AdminOrdersPageInner() {
                 </span>
               </div>
             )}
+            {selectedOrder.shipping && (
+              <div className="mt-2 flex items-center justify-between text-sm">
+                <span className="text-muted-foreground">
+                  Delivery ({selectedOrder.shipping.label}
+                  {selectedOrder.shipping.eta ? ` · ${selectedOrder.shipping.eta}` : ""})
+                </span>
+                <span className="tabular-nums">
+                  {selectedOrder.shipping.fee === 0
+                    ? "Free"
+                    : formatTaka(selectedOrder.shipping.fee)}
+                </span>
+              </div>
+            )}
             <div className="mt-3 flex items-center justify-between border-t pt-3 text-sm font-medium">
               <span>Total</span>
               <span className="tabular-nums">{formatTaka(selectedOrder.totalPrice)}</span>

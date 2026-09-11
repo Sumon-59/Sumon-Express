@@ -4,6 +4,14 @@
 // guards what actually reaches the DOM (defense in depth for legacy or
 // hand-edited documents).
 export const isHexColor = (value: string) => /^#(?:[0-9a-f]{3}|[0-9a-f]{6})$/i.test(value);
+// One shipping option (Slice 12) — fee in whole taka, ETA free text.
+export type ShippingMethod = {
+  key: string;
+  label: string;
+  fee: number;
+  eta: string;
+};
+
 export type StoreSettings = {
   storeName: string;
   logoUrl: string; // empty = text logo
@@ -13,6 +21,7 @@ export type StoreSettings = {
   heroImageUrl: string; // empty = gradient-only hero
   announcement: string; // empty = no announcement bar
   footerText: string;
+  shippingMethods: ShippingMethod[];
 };
 
 // Same defaults as the backend schema: the storefront renders the
@@ -28,4 +37,8 @@ export const DEFAULT_SETTINGS: StoreSettings = {
   heroImageUrl: "",
   announcement: "",
   footerText: "Sumon Express",
+  shippingMethods: [
+    { key: "inside-dhaka", label: "Inside Dhaka", fee: 60, eta: "1-2 days" },
+    { key: "outside-dhaka", label: "Outside Dhaka", fee: 120, eta: "3-5 days" },
+  ],
 };

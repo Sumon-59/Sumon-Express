@@ -8,7 +8,9 @@
 import { describe, it, expect, beforeEach } from "vitest";
 import request from "supertest";
 import app from "../app";
-import { registerUser, plantProduct, plantDiscount, placeOrder } from "./helpers";
+import { registerUser, plantProduct, plantDiscount, placeOrder, ensureShipping } from "./helpers";
+
+beforeEach(ensureShipping); // Slice 12: plant the free "standard" method
 
 const YESTERDAY = new Date(Date.now() - 24 * 60 * 60 * 1000);
 const TOMORROW = new Date(Date.now() + 24 * 60 * 60 * 1000);
@@ -22,6 +24,7 @@ const tryOrder = (auth, product, quantity, discountCode) =>
     .send({
       items: [{ product: product._id.toString(), quantity }],
       shippingAddress: { address: "House 1, Road 2", city: "Dhaka", phone: "01700000000" },
+      shippingMethod: "standard",
       discountCode,
     });
 
@@ -169,6 +172,7 @@ describe("discount codes at order creation", () => {
       .send({
         items: [{ product: product._id.toString(), quantity: 2 }],
         shippingAddress: { address: "H1", city: "Dhaka", phone: { evil: true } },
+        shippingMethod: "standard",
         discountCode: "EID10",
       });
     expect(res.status).toBeGreaterThanOrEqual(400);

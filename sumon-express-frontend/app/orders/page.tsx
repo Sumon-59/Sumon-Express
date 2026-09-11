@@ -15,9 +15,12 @@ import {
   OrderStatus,
   OrderItem,
   OrderPayment,
+  OrderShipping,
+  OrderHistoryEntry,
   paymentBadge,
 } from "@/types/order";
 import { lineLabel } from "@/lib/format";
+import OrderTimeline from "@/components/OrderTimeline";
 
 type Order = {
   _id: string;
@@ -30,6 +33,8 @@ type Order = {
   paymentMethod?: string;
   isPaid?: boolean;
   payment?: OrderPayment;
+  shipping?: OrderShipping;
+  history?: OrderHistoryEntry[];
 };
 
 // The gateway return notice (?paid=…). The success wording is honest:
@@ -220,6 +225,10 @@ export default function OrdersPage() {
                   </div>
                 </div>
 
+                <div className="mt-3">
+                  <OrderTimeline status={o.status} history={o.history} createdAt={o.createdAt} />
+                </div>
+
                 {o.items && o.items.length > 0 && (
                   <>
                     <Separator className="my-3" />
@@ -249,6 +258,12 @@ export default function OrdersPage() {
                       </p>
                     )}
                     <p className="uppercase">{o.paymentMethod ?? "cod"}</p>
+                    {o.shipping && (
+                      <p>
+                        {o.shipping.label} — {o.shipping.fee === 0 ? "free" : formatTaka(o.shipping.fee)}
+                        {o.shipping.eta ? ` · ${o.shipping.eta}` : ""}
+                      </p>
+                    )}
                   </div>
                   <div className="flex items-center gap-3">
                     {o.discount && (
