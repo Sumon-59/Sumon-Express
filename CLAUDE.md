@@ -166,6 +166,35 @@ Allowlist in `app.ts` (`allowedOrigins`) + `credentials: true`. When the fronten
   `Stars`/`StarRow` (icons + numeric text, hidden at zero), `ProductReviews`
   (load-more accumulation, eligibility-driven form).
 
+### Auth hardening & RBAC (since Slice 14)
+- **Password reset**: `POST /api/auth/forgot-password` answers the SAME 200
+  either way (no enumeration; a timing residual is accepted and rate-capped).
+  Only the token's SHA-256 is stored (`resetTokenHash`/`resetTokenExpires`,
+  both select:false); the raw token exists in the email alone. 1h expiry,
+  single-use (cleared on success), lookup by hashed filter (no string
+  compare). `POST /api/auth/reset-password`: one named 400 for
+  invalid-and-expired alike; success revokes the refresh token (every
+  session dies) and emails a changed notice.
+- **`PUT /api/auth/password`** proves currentPassword, applies THE shared
+  policy (`validatePassword` in utils/password.ts, min 8 — register/reset/
+  change all use it), revokes other sessions, and re-issues a fresh pair to
+  the caller. Login sends a fire-and-forget notification email.
+  forgot/reset/change each have their OWN 10-per-15-min rate bucket
+  (rateLimit.middleware) — never share buckets across credential routes.
+- **RBAC**: `requireRole(...roles)` generalizes `requireAdmin`
+  (= requireRole("admin"), same export). The permission map lives in
+  admin.routes.ts: staff touch ORDERS ONLY; everything else (incl. product/
+  category writes outside that file) stays admin-only — the matrix test
+  pins all of it. Role writes: `PUT /api/admin/customers/:id/role`, closed
+  set user|staff (no admin-minting over HTTP, no self-demotion; admin
+  promotion stays `npm run promote`). Demotion is instant — requireAuth
+  reloads the role from the DB per request. The census AND analytics count
+  staff as customers (they shop too).
+- Production console-mailer REDACTS bodies (reset links must never reach
+  platform logs). Frontend: /forgot-password, /reset-password (token
+  scrubbed from history), /account; admin nav mirrors the permission map
+  for staff.
+
 ### Transactional email (since Slice 13)
 - **The mailer boundary** (`src/mail/`): shared shapes in `types.ts`;
   `getMailer()` selects test → FAKE (in-memory `outbox` + `failNext()` dial,
