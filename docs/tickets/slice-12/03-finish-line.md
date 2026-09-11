@@ -10,11 +10,14 @@ tracker (diff checked).
 
 **Blocked by:** 02.
 
-**Status:** ready-for-agent
+**Status:** done
 
-- [ ] Two-axis code review run; findings fixed or explicitly accepted
-- [ ] Merged `--no-ff` to `fullstack-v2`, pushed as Sumon-59
-- [ ] Probe: shippingMethods live + named-400 pricing seam (or parked on
-      the Render stall with the watch running)
-- [ ] CLAUDE.md updated; spec + ticket checkboxes ticked; plan.md tracker
+- [x] Two-axis code review run; findings fixed (drawer Delivery row, deploy-window settings merge, Bangla-label slug fallback, true one-door seed)
+- [x] Merged `--no-ff` to `fullstack-v2`, pushed as Sumon-59
+- [x] Probe: Render deploys RESUMED; shippingMethods live, unknown-key
+      named 400 verified, fee-edit round-trip 60→70→60 clean. Bonus: probes
+      traced Slice 11's localhost redirects to CLIENT_URL=localhost set in
+      the Render dashboard — code now refuses localhost on a deployed
+      platform (bfda71c)
+- [x] CLAUDE.md updated; spec + ticket checkboxes ticked; plan.md tracker
       updated (diff checked)
