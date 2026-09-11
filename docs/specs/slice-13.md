@@ -1,6 +1,6 @@
 # Slice 13 — Transactional email
 
-Status: ready-for-agent
+Status: shipped 2026-09-11
 Branch: `slice-13-email`
 Seam decision (full-autonomy contract): backend HTTP seam with the mailer
 FAKED at the mailer interface (an in-memory outbox — the payments-provider
