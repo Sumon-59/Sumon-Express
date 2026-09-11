@@ -83,9 +83,10 @@ export default function AdminSettingsPage() {
   const set = <K extends keyof StoreSettings>(key: K, value: StoreSettings[K]) =>
     setDraft((d) => ({ ...d, [key]: value }));
 
-  // Shipping editor (Slice 12): rows of label/fee/eta; the key is the
-  // slugified label, derived at save (order snapshots keep their own
-  // copy, so re-keying never rewrites the past).
+  // Shipping editor (Slice 12): rows of label/fee/eta. Keys are derived
+  // from the label at save for NEW rows only — existing keys never
+  // change (in-flight checkouts hold them; order snapshots keep their
+  // own copy regardless).
   const patchShipping = (i: number, patch: Partial<ShippingMethod>) =>
     setDraft((d) => ({
       ...d,
@@ -112,14 +113,17 @@ export default function AdminSettingsPage() {
       setSubmitting(true);
       setError(null);
       setSaved(false);
-      await api.put("/admin/settings", {
-        ...draft,
-        shippingMethods: draft.shippingMethods.map((m) => ({
-          ...m,
-          key: m.key || slug(m.label),
-          fee: Number(m.fee),
-        })),
+      // New rows get slugified-label keys; a label that slugifies to
+      // nothing (Bangla, punctuation) falls back to a positional key,
+      // and collisions get a numeric suffix — no confusing 400s.
+      const usedKeys = new Set<string>();
+      const withKeys = draft.shippingMethods.map((m, i) => {
+        let key = m.key || slug(m.label) || `method-${i + 1}`;
+        while (usedKeys.has(key)) key = `${key}-${i + 1}`;
+        usedKeys.add(key);
+        return { ...m, key, fee: Number(m.fee) };
       });
+      await api.put("/admin/settings", { ...draft, shippingMethods: withKeys });
       await refresh(); // the live storefront re-brands in place
       setSaved(true);
     } catch (err) {

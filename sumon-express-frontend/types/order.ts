@@ -81,6 +81,7 @@ export type AdminOrder = {
   totalPrice: number;
   isPaid?: boolean;
   paidAt?: string;
+  shipping?: OrderShipping;
   discount?: OrderDiscount;
   items: OrderItem[];
   shippingAddress?: { address?: string; city?: string; phone?: string };

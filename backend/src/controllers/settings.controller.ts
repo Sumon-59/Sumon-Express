@@ -67,17 +67,17 @@ const validateShippingMethods = (value: unknown): IShippingMethod[] => {
     const m = (raw ?? {}) as Record<string, unknown>;
     const key = typeof m.key === "string" ? m.key.trim().toLowerCase() : "";
     if (!key) throw httpError("Every shipping method needs a key", 400);
+    if (!/^[a-z0-9-]{1,40}$/.test(key))
+      throw httpError("Shipping method keys use only letters, digits and dashes", 400);
     if (seen.has(key)) throw httpError(`Duplicate shipping method key: ${key}`, 400);
     seen.add(key);
 
-    const label = typeof m.label === "string" ? m.label.trim() : "";
-    if (!label) throw httpError("Every shipping method needs a label", 400);
-
+    const label = textField(m.label, "Shipping method label", 60, { required: true });
     const fee = m.fee;
     if (typeof fee !== "number" || !Number.isInteger(fee) || fee < 0)
       throw httpError("Shipping fee must be a whole non-negative amount in taka", 400);
 
-    const eta = typeof m.eta === "string" ? m.eta.trim() : "";
+    const eta = textField(m.eta ?? "", "Shipping ETA", 40);
     return { key, label, fee, eta };
   });
 };

@@ -50,9 +50,10 @@ export const createOrder = asyncHandler(async (req: Request, res: Response) => {
   // (Slice 12): the fee the shopper saw is the fee the receipt keeps,
   // whatever the owner edits later. Refused BEFORE any side effect.
   const settings = await readStoreSettings();
-  const chosenShipping = settings.shippingMethods.find(
-    (m) => m.key === String(shippingMethod ?? "")
-  );
+  // Keys are stored trimmed+lowercased — normalize the input the same
+  // way so "Inside-Dhaka" matches what validation stored.
+  const wantedKey = String(shippingMethod ?? "").trim().toLowerCase();
+  const chosenShipping = settings.shippingMethods.find((m) => m.key === wantedKey);
   if (!chosenShipping) {
     throw httpError("Choose a valid shipping method", 400);
   }
@@ -110,7 +111,7 @@ export const createOrder = asyncHandler(async (req: Request, res: Response) => {
 
   let order;
   try {
-    order = await Order.create({
+    order = new Order({
       user: user._id,
       items: orderItems,
       shippingAddress,
@@ -118,9 +119,10 @@ export const createOrder = asyncHandler(async (req: Request, res: Response) => {
       shipping: shippingSnapshot,
       totalPrice,
       discount: discountSnapshot,
-      // The timeline starts here; recordStatus appends the rest.
-      history: [{ status: "pending", at: new Date() }],
     });
+    // The timeline starts through the same door every transition uses.
+    recordStatus(order, "pending");
+    await order.save();
   } catch (err) {
     // Creation failed after the side effects — undo both.
     if (resolved) await releaseDiscountUsage(resolved.discount._id);

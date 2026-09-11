@@ -37,6 +37,12 @@ describe("shipping methods in settings", () => {
       key: "inside-dhaka",
       fee: 60,
     });
+    expect(res.body.shippingMethods[1]).toMatchObject({
+      key: "outside-dhaka",
+      label: "Outside Dhaka",
+      fee: 120,
+      eta: "3-5 days",
+    });
   });
 
   it("PUT replaces the whole array; the matrix of bad arrays answers named 400s", async () => {

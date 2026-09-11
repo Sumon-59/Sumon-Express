@@ -79,12 +79,12 @@ export default function OrderTimeline({
       })}
       {cancelled && (
         <li className="flex items-start gap-2">
-          <span className="mt-2.5 h-0.5 w-6 shrink-0 rounded bg-red-300" aria-hidden />
+          <span className="mt-2.5 h-0.5 w-6 shrink-0 rounded bg-destructive/40" aria-hidden />
           <div className="flex flex-col items-center">
-            <span className="flex h-5 w-5 items-center justify-center rounded-full bg-red-600 text-white">
+            <span className="flex h-5 w-5 items-center justify-center rounded-full bg-destructive text-white">
               <X className="h-3 w-3" aria-hidden />
             </span>
-            <span className="mt-1 text-xs font-medium text-red-700">cancelled</span>
+            <span className="mt-1 text-xs font-medium text-destructive">cancelled</span>
             {at.has("cancelled") && (
               <span className="text-[10px] text-muted-foreground">
                 {formatDate(at.get("cancelled")!)}

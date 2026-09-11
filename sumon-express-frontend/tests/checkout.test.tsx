@@ -127,6 +127,30 @@ describe("checkout order payload", () => {
     expect(bodies["/orders"]).toMatchObject({ paymentMethod: "cod" });
   });
 
+  it("the shipping radio renders from the SERVER's methods, not just defaults", async () => {
+    // Serve a method that exists nowhere in DEFAULT_SETTINGS — the
+    // radio must render it (settings-driven, not default-constant).
+    const bodies: Record<string, unknown> = {};
+    api.defaults.adapter = async (config: Config) => {
+      const url = config.url ?? "";
+      bodies[url] = config.data ? JSON.parse(String(config.data)) : null;
+      if (url.endsWith("/settings"))
+        return respond(config, 200, {
+          storeName: "Test Store",
+          shippingMethods: [{ key: "by-boat", label: "By Boat", fee: 33, eta: "a week" }],
+        });
+      if (url.endsWith("/orders")) return respond(config, 201, { _id: "o1" });
+      return respond(config, 404, { message: "not found" });
+    };
+
+    renderCheckout();
+    await screen.findByLabelText(/by boat/i);
+    fillAddress();
+    fireEvent.click(screen.getByRole("button", { name: /place order/i }));
+    await waitFor(() => expect(bodies["/orders"]).toBeTruthy());
+    expect(bodies["/orders"]).toMatchObject({ shippingMethod: "by-boat" });
+  });
+
   it("choosing another shipping method rides the payload and re-prices the display (Slice 12)", async () => {
     const bodies: Record<string, unknown> = {};
     api.defaults.adapter = async (config: Config) => {

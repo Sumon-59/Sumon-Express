@@ -36,9 +36,16 @@ export default function CheckoutPage() {
   const shippingMethods = settings.shippingMethods;
   const [shippingKey, setShippingKey] = React.useState<string>("");
   // First method preselected once settings resolve (defaults render
-  // immediately, so this fires on mount too).
+  // immediately, so this fires on mount too) — and re-selected if a
+  // settings change removed the chosen key (review catch: pricing fell
+  // back while no radio rendered checked).
   React.useEffect(() => {
-    if (!shippingKey && shippingMethods.length > 0) setShippingKey(shippingMethods[0].key);
+    if (
+      shippingMethods.length > 0 &&
+      (!shippingKey || !shippingMethods.some((m) => m.key === shippingKey))
+    ) {
+      setShippingKey(shippingMethods[0].key);
+    }
   }, [shippingMethods, shippingKey]);
   const shipping = shippingMethods.find((m) => m.key === shippingKey) ?? shippingMethods[0];
   const shippingFee = shipping?.fee ?? 0;
