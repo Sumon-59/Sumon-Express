@@ -166,6 +166,29 @@ Allowlist in `app.ts` (`allowedOrigins`) + `credentials: true`. When the fronten
   `Stars`/`StarRow` (icons + numeric text, hidden at zero), `ProductReviews`
   (load-more accumulation, eligibility-driven form).
 
+### Shipping & order timeline (since Slice 12)
+- **`shippingMethods` live on the StoreSettings singleton** (defaults: Inside
+  Dhaka ৳60 / Outside ৳120) — full-array replace through
+  `validateSettingsData`: 1–5 methods, slug keys (`[a-z0-9-]`, stored
+  lowercase), whole-taka integer fees, capped label/eta, named 400s.
+- **Orders require a known `shippingMethod` key** (named 400 pre-side-effect,
+  input normalized like stored keys) and carry a `shipping`
+  `{key,label,fee,eta}` SNAPSHOT — fee edits never re-price the past.
+  `totalPrice = (subtotal − discount) + fee`; discounts stay GOODS-only
+  (resolveDiscount sees the subtotal, never the fee). Payments are
+  fee-transparent (they trust totalPrice).
+- **`history: [{status, at}]` is written ONLY through `recordStatus`**
+  (`utils/orderStatus.ts`) — creation seeds pending through it, the status
+  route and both cancel doors append through it; illegal moves append
+  nothing; history is append-only and caps at ~5 entries. Legacy orders
+  (no shipping/history) stay readable; the frontend `OrderTimeline` falls
+  back to createdAt + current status.
+- Tests: `helpers.ensureShipping()` plants a FREE "standard" method
+  ($setOnInsert) and `placeOrder` sends it by default, keeping pre-slice
+  total assertions honest; nonzero-fee behavior is pinned in
+  `shipping.test.js`. Frontend `SettingsProvider` merges responses over
+  `DEFAULT_SETTINGS` (deploy-window skew must not break checkout).
+
 ### Online payments (since Slice 11)
 - **The trust boundary**: the PROVIDER (`src/payments/`) answers "what does
   the gateway say happened"; the CONTROLLER (`payment.controller.ts`) judges
